@@ -1,0 +1,35 @@
+body{
+    margin:0;
+    padding:0;
+    display: flex;
+    align-items: center;
+    flex-direction: column;
+}
+.input-container > input[type="text"]{
+    width:50vw;
+    height:5vh;
+    border:none;
+    background-blend-mode:normal;
+    opacity: 0.7;
+    border:1px solid black;
+    border-radius:5px;
+}
+.input-container > button{
+    width:10vw;
+    height: 5vh;
+    border:none;
+    background-color: black;
+    border-radius:5px;
+    color:white;
+}
+.task{
+    list-style-type: none;
+    width: 30vw;
+    height: 4vh;
+    background:whitesmoke;
+    box-shadow: 2px 2px 1px black;
+    color:black;
+    margin:10px;
+    text-align: center;
+}
+
