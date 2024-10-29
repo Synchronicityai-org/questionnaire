@@ -1,8 +1,14 @@
 {
   "tasks": [
     {
-      "id": "59fb",
-      "task": "Eat"
+      "id": "d848",
+      "task": "Eat",
+      "completed": true
+    },
+    {
+      "id": "12ec",
+      "task": "Play",
+      "completed": false
     }
   ]
 }

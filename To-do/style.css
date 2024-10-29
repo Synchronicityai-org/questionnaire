@@ -5,6 +5,11 @@ body{
     align-items: center;
     flex-direction: column;
 }
+.header{
+    display: flex;
+    justify-content:space-between;
+    align-items: center;
+}
 .input-container > input[type="text"]{
     width:50vw;
     height:5vh;
@@ -27,10 +32,23 @@ body{
     width: 30vw;
     height: 4vh;
     line-height: 2rem;
-    background:whitesmoke;
-    box-shadow: 2px 2px 1px black;
     color:black;
-    margin:10px;
     text-align: center;
 }
-
+.tickmark{
+ appearance: none;
+ width:20px;
+ height:20px;
+ border-radius:50%;
+ border:2px solid black;
+ line-height: 2rem;
+ cursor: pointer;
+ background-color: white;
+}
+.wholetask{
+    display: flex;
+    background-color: whitesmoke;
+    box-shadow: 2px 2px 1px black;
+    margin:10px;
+    align-items: center;
+}
