@@ -52,3 +52,20 @@ body{
     margin:10px;
     align-items: center;
 }
+.subtaskContainer{
+    margin-left:40px;
+    display: none;
+}
+.subtaskContainer >form> input[type="text"]{
+    border:1px solid grey;
+    border-radius: 5px;
+    width:20vw;
+    height:3vh;
+    margin:0 5px;
+}
+.subtaskContainer > form > button{
+    border:none;
+    background-color: black;
+    color: white;
+    border-radius: 5px;
+}
