@@ -1,4 +1,4 @@
-const jsonData = {};
+const jsonData = {tasks:[]};
 // get the form
 const form = document.getElementById('myForm');
 // listen for the submit event
@@ -6,13 +6,17 @@ form.addEventListener('submit', async event => {
     event.preventDefault();
     
     const data = new FormData(form);//get the data from form
-    
+    const newTask = {
+        id: Date.now().toString(), 
+        task: '', 
+        subtasks: []
+    };
     for (const [key,value] of data.entries()) {
-        jsonData[key] = value; // copy the tasks into object
-        jsonData.completed = false;
+        newTask.task = value;
     }
     //post the data with json server
-    await postData(jsonData);
+    jsonData.tasks.push(newTask);
+     await postData(newTask);
 });
 // fetch the tasks from the db.json
 const fetchTasks = async ()=>{
@@ -47,11 +51,34 @@ const displayTasks = (tasks)=>{
         wholetask.appendChild(taskCheck);
         wholetask.appendChild(taskItem);
         tasksList.appendChild(wholetask);
+
+        taskCheck.addEventListener('click', () => {
+            deleteTask(task.id);
+        });
     
         // Create subtask button and container
         const subTaskContainer = document.createElement('div');
         subTaskContainer.classList.add('subtaskContainer');
         wholetask.insertAdjacentElement('afterend', subTaskContainer);
+
+        // create subtasks and append
+        task.subtasks.forEach(subtask =>{
+            const subtaskItem = document.createElement('li');
+            const subtaskCheck = document.createElement('input');
+            subtaskCheck.type = "checkbox";
+            const wholesubtask = document.createElement('div');
+            wholesubtask.classList.add('wholetask');
+            subtaskCheck.classList.add('tickmark');
+            wholesubtask.appendChild(subtaskCheck);
+            wholesubtask.appendChild(subtaskItem);
+            subTaskContainer.appendChild(wholesubtask);
+            subtaskItem.textContent = `${subtask.subtask}`;
+            subtaskItem.classList.add('task');
+            subtaskCheck.addEventListener('click',()=>{
+                deletesubTask(task.id,subtask.id);
+            })
+        })
+        
     
         // Create input field and add button
         const inputField = document.createElement('input');
@@ -63,6 +90,7 @@ const displayTasks = (tasks)=>{
         addButton.type = "submit";
     
         const form = document.createElement('form');
+        form.classList.add('subForm');
         form.appendChild(inputField);
         form.appendChild(addButton);
         subTaskContainer.appendChild(form);
@@ -73,44 +101,50 @@ const displayTasks = (tasks)=>{
     
         // Toggle functionality
         subtaskButton.addEventListener('click', toggleSubtask);
-    
-       const toggleSubtask = ()=>{
-            if (subTaskContainer.style.display === 'none') {
-                // Show the subtask container
-                subTaskContainer.style.display = 'block';
-                subtaskButton.remove(); 
-                subtaskButton = svgCancel(); 
-                wholetask.appendChild(subtaskButton);
-    
-                // Remove previous event listener
-                subtaskButton.removeEventListener('click', toggleSubtask);
-                subtaskButton.addEventListener('click', hideSubtask);
-            }
-        }
-    
-        const hideSubtask = ()=>{
-            // Hide the subtask container
-            subTaskContainer.style.display = 'none';
+
+    function toggleSubtask() {
+        if (subTaskContainer.style.display === 'none' || subTaskContainer.style.display === '') {
+            // Show the subtask container
+            subTaskContainer.style.display = 'flex';
             subtaskButton.remove(); 
-            subtaskButton = svgPlus();
+            subtaskButton = svgCancel(); 
             wholetask.appendChild(subtaskButton); 
-    
-            // Remove previous event listener 
-            subtaskButton.removeEventListener('click', hideSubtask);
-            subtaskButton.addEventListener('click', toggleSubtask);
+
+            // Remove previous event listener if it exists
+            subtaskButton.removeEventListener('click', toggleSubtask);
+            subtaskButton.addEventListener('click', hideSubtask);
         }
+    }
+
+    function hideSubtask() {
+        // Hide the subtask container
+        subTaskContainer.style.display = 'none';
+        subtaskButton.remove(); 
+        subtaskButton = svgPlus(); 
+        wholetask.appendChild(subtaskButton);
+
+        // Remove previous event listener if it exists
+        subtaskButton.removeEventListener('click', hideSubtask);
+        subtaskButton.addEventListener('click', toggleSubtask);
+    }
+        form.addEventListener('submit', async (event)=>{
+            event.preventDefault();
+            const subtaskValue = inputField.value;
+            task.subtasks.push({ id: Date.now().toString(), subtask: subtaskValue });
+            await postsubData(task);
+        });
     });
     const taskHeading = document.getElementById('taskListHeading');
     let heading = tasks.length >0 ? 'List of Tasks' : 'No tasks to display';
     taskHeading.innerHTML = heading;
 }
-const postData = async (jsonData)=>{
+const postData = async (newTask)=>{
     await fetch('http://localhost:3000/tasks',{
         method: 'POST',
         headers:{
             'Content-Type': 'application/json',
         },
-        body: JSON.stringify(jsonData)
+        body: JSON.stringify(newTask)
     })
     .then(response => response.json())
     .then((data)=>{
@@ -122,7 +156,7 @@ const postData = async (jsonData)=>{
     }
 
 //update the tasks
-const toggletask = async (taskId) => {
+    const deleteTask = async (taskId) => {
     try {
         const response = await fetch(`http://localhost:3000/tasks/${taskId}`, {
             method: 'DELETE',
@@ -136,6 +170,68 @@ const toggletask = async (taskId) => {
         console.error('Error deleting task:', error);
     }
 };
+const deletesubTask = async (taskId, subtaskId) => {
+    try {
+        const response = await fetch(`http://localhost:3000/tasks/${taskId}`);
+        if (!response.ok) {
+            throw new Error(`Error fetching task: ${response.statusText}`);
+        }
+
+        const task = await response.json();
+
+        // Check if the subtask exists
+        const subtaskIndex = task.subtasks.findIndex(sub => sub.id === subtaskId);
+        if (subtaskIndex === -1) {
+            throw new Error('Subtask not found');
+        }
+
+        // Remove the subtask from the array
+        task.subtasks.splice(subtaskIndex, 1);
+
+        // Update the task with the modified subtasks
+        const updateResponse = await fetch(`http://localhost:3000/tasks/${taskId}`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(task),
+        });
+
+        if (!updateResponse.ok) {
+            throw new Error(`Error updating task: ${updateResponse.statusText}`);
+        }
+
+        console.log('Subtask deleted:', subtaskId);
+        await fetchTasks(); 
+        alert(`Subtask ${subtaskId} deleted successfully.`);
+    } catch (error) {
+        console.error('Error deleting subtask:', error);
+        alert('Failed to delete subtask: ' + error.message);
+    }
+};
+
+const postsubData = async(updatedTask)=>{
+    await fetch(`http://localhost:3000/tasks/${updatedTask.id}`, {
+        method: 'PUT',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(updatedTask),
+    })
+    .then(response => {
+        if (!response.ok) {
+            throw new Error('Network response was not ok');
+        }
+        return response.json();
+    })
+    .then((data) => {
+        console.log('Task updated successfully:', data);
+        fetchTasks();
+    })
+    .catch(error => {
+        console.error('Error updating task:', error);
+    });
+}
 
 const svgPlus = ()=>{
     const svgns = "http://www.w3.org/2000/svg";

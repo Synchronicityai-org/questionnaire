@@ -55,6 +55,7 @@ body{
 .subtaskContainer{
     margin-left:40px;
     display: none;
+    flex-direction: column-reverse;
 }
 .subtaskContainer >form> input[type="text"]{
     border:1px solid grey;
