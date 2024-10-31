@@ -263,3 +263,26 @@ const svgCancel = ()=>{
     svg.appendChild(path);
     return svg;
 }
+
+//search functionality
+const searchForm = document.getElementById('searchForm');
+searchForm.addEventListener('submit',async (event)=>{
+    event.preventDefault();
+    const searchData = new FormData(searchForm);
+    let searchTask = '';
+    for(let [key,value] of searchData.entries()){
+        searchTask = value;
+    }
+    await search(searchTask);
+});
+const search = async (searchTask)=>{
+    await fetch('http://localhost:3000/tasks')
+    .then(response => response.json())
+    .then(data =>{
+        task = data.filter(item => item.task === searchTask)
+        displayTasks(task);
+    })
+    .catch(error =>{
+        console.error(error);
+    })
+}

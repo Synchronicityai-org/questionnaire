@@ -1,14 +1,44 @@
 body{
     margin:0;
     padding:0;
+    /* display: flex;
+    align-items: center;
+    flex-direction: column; */
+}
+.title{
+    margin:0 auto;
     display: flex;
     align-items: center;
-    flex-direction: column;
+    justify-content: center;
+    margin-right:380px;
 }
 .header{
     display: flex;
-    justify-content:space-between;
     align-items: center;
+}
+.search{
+    border:1px solid black;
+    border-radius: 5px;
+    margin-right:10px;
+    padding:2px;
+}
+.search>input[type="text"]{
+    width:16vw;
+    height:3vh;
+    border:none;
+    outline: none;
+}
+.search > button{
+    border:none;
+    background-color: transparent;
+    cursor: pointer;
+}
+.input-container{
+    width:65vw;
+    margin: 0 auto;
+}
+#taskListHeading{
+    text-align:center;
 }
 .input-container > input[type="text"]{
     width:50vw;
@@ -29,11 +59,15 @@ body{
 }
 .task{
     list-style-type: none;
-    width: 30vw;
+    width: 34vw;
     height: 4vh;
     line-height: 2rem;
     color:black;
     text-align: center;
+}
+#tasksContainer{
+    width:40vw;
+    margin:0 auto;
 }
 .tickmark{
  appearance: none;
@@ -69,4 +103,7 @@ body{
     background-color: black;
     color: white;
     border-radius: 5px;
+}
+#search{
+    align-self: flex-end;
 }
