@@ -1,4 +1,3 @@
-const jsonData = {tasks:[]};
 // get the form
 const form = document.getElementById('myForm');
 // listen for the submit event
@@ -9,33 +8,37 @@ form.addEventListener('submit', async event => {
     const newTask = {
         id: Date.now().toString(), 
         task: '', 
-        subtasks: []
+        subtasks: [],
+        date: '',
+        completed: false
     };
     for (const [key,value] of data.entries()) {
         newTask.task = value;
     }
     //post the data with json server
-    jsonData.tasks.push(newTask);
      await postData(newTask);
 });
 // fetch the tasks from the db.json
-const fetchTasks = async ()=>{
+const fetchTasks = async (status)=>{
     await fetch('http://localhost:3000/tasks')
     .then(response => response.json())
     .then(data =>{
-        displayTasks(data);
+        displayTasks(data,status);
     })
     .catch(error =>{
         console.error(error);
     })
 }
-fetchTasks();
+fetchTasks('false');
 //create the list and append to the task container
-const displayTasks = (tasks)=>{
+const displayTasks = (tasks,value)=>{
     const tasksList = document.getElementById('tasksContainer');
     tasksList.innerHTML = '';
     tasks.forEach(task => {
-        //create the task
+        let status = value === 'false' ? !task.completed : task.completed;
+        console.log(status);
+        if(status){
+             //create the task
         const taskItem = document.createElement('li');
         const taskCheck = document.createElement('input');
         taskCheck.type = "checkbox";
@@ -53,7 +56,8 @@ const displayTasks = (tasks)=>{
         tasksList.appendChild(wholetask);
 
         taskCheck.addEventListener('click', () => {
-            deleteTask(task.id);
+            let status = true;
+            deleteTask(task.id, status);
         });
     
         // Create subtask button and container
@@ -94,7 +98,19 @@ const displayTasks = (tasks)=>{
         form.appendChild(inputField);
         form.appendChild(addButton);
         subTaskContainer.appendChild(form);
-    
+
+        //create calendar form
+        const calendarInput = document.createElement('input');
+        calendarInput.type = 'date';
+        calendarInput.id = 'calendarInput';
+        calendarInput.value = `${task.date}`;
+        wholetask.appendChild(calendarInput);
+        let dueDate ='';
+        calendarInput.addEventListener('change',async ()=>{
+            dueDate = calendarInput.value;
+            dueDateUpdate(task.id,dueDate);
+        })
+        
         // Create and append the initial plus button
         let subtaskButton = svgPlus();
         wholetask.appendChild(subtaskButton);
@@ -133,6 +149,8 @@ const displayTasks = (tasks)=>{
             task.subtasks.push({ id: Date.now().toString(), subtask: subtaskValue });
             await postsubData(task);
         });
+        }
+       
     });
     const taskHeading = document.getElementById('taskListHeading');
     let heading = tasks.length >0 ? 'List of Tasks' : 'No tasks to display';
@@ -156,18 +174,28 @@ const postData = async (newTask)=>{
     }
 
 //update the tasks
-    const deleteTask = async (taskId) => {
+    const deleteTask = async (taskId,status) => {
     try {
-        const response = await fetch(`http://localhost:3000/tasks/${taskId}`, {
-            method: 'DELETE',
-        });
+        const response = await fetch(`http://localhost:3000/tasks/${taskId}`);
         if (!response.ok) {
             throw new Error('Network response was not ok');
         }
-        console.log('Task deleted:', taskId);
-        fetchTasks();
+        const task = await response.json();
+        task.completed = status;
+        const updateResponse = await fetch(`http://localhost:3000/tasks/${taskId}`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(task),
+        });
+
+        if (!updateResponse.ok) {
+            throw new Error(`Error updating task: ${updateResponse.statusText}`);
+        }
+        await fetchTasks(status); 
     } catch (error) {
-        console.error('Error deleting task:', error);
+        console.error('Error:', error);
     }
 };
 const deletesubTask = async (taskId, subtaskId) => {
@@ -286,3 +314,44 @@ const search = async (searchTask)=>{
         console.error(error);
     })
 }
+const dueDateUpdate = async (taskId, dueDate)=>{
+    try {
+        const response = await fetch(`http://localhost:3000/tasks/${taskId}`);
+        if (!response.ok) {
+            throw new Error(`Error fetching task: ${response.statusText}`);
+        }
+        const task = await response.json();
+        task.date = dueDate;
+
+        // Update the task with the modified due date
+        const updateResponse = await fetch(`http://localhost:3000/tasks/${taskId}`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(task),
+        });
+
+        if (!updateResponse.ok) {
+            throw new Error(`Error updating task: ${updateResponse.statusText}`);
+        }
+        await fetchTasks(); 
+    } catch (error) {
+        console.error('Error:', error);
+    }
+};
+//function to display completed tasks
+    const completedTaksId = document.getElementById('completed');
+    completedTaksId.addEventListener('click' ,()=>{
+        completedTaksId.className = 'dotted';
+        activetasks.className = 'none';
+        let value = 'true';
+        fetchTasks(value);
+    });
+    const activetasks = document.getElementById('active');
+    activetasks.addEventListener('click',()=>{
+        activetasks.className = 'dotted';
+        completedTaksId.className = 'none';
+        let value = 'false';
+        fetchTasks(value);
+    })
