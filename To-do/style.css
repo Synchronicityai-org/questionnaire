@@ -142,4 +142,7 @@ body{
     color: black;
     border-radius: 10px;
 }
+#taskContainer{
+    display: none;
+}
   
