@@ -152,7 +152,8 @@ const displayTasks = (tasks,value)=>{
        
     });
     const taskHeading = document.getElementById('taskListHeading');
-    let heading = tasks.length >0 ? 'List of Tasks' : 'No tasks to display';
+    let isTrue = tasks.find(task => task.completed === false)
+    let heading = isTrue ? 'List of Tasks' : 'No tasks to display';
     taskHeading.innerHTML = heading;
 }
 const postData = async (newTask)=>{
