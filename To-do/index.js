@@ -36,7 +36,6 @@ const displayTasks = (tasks,value)=>{
     tasksList.innerHTML = '';
     tasks.forEach(task => {
         let status = value === 'false' ? !task.completed : task.completed;
-        console.log(status);
         if(status){
              //create the task
         const taskItem = document.createElement('li');
