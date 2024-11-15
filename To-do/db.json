@@ -4,8 +4,8 @@
       "id": "1731006980749",
       "task": "Js",
       "subtasks": [],
-      "date": "",
-      "completed": false
+      "date": "2024-11-26",
+      "completed": true
     },
     {
       "id": "1731007806964",
@@ -17,6 +17,29 @@
     {
       "id": "1731007810364",
       "task": "Jump",
+      "subtasks": [],
+      "date": "",
+      "completed": true
+    },
+    {
+      "id": "1731684220055",
+      "task": "Exercise",
+      "subtasks": [
+        {
+          "id": "1731684226065",
+          "subtask": "Run"
+        },
+        {
+          "id": "1731684236833",
+          "subtask": "Jump"
+        }
+      ],
+      "date": "",
+      "completed": true
+    },
+    {
+      "id": "1731684427095",
+      "task": "Js",
       "subtasks": [],
       "date": "",
       "completed": true
