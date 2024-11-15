@@ -11,16 +11,19 @@ body{
     align-items: center;
     justify-content: center;
     margin-right:380px;
+    color:white;
 }
 .header{
     display: flex;
     align-items: center;
+    background-color: #1795ad;
+    margin-bottom: 10px;
 }
 .search{
-    border:1px solid black;
     border-radius: 5px;
     margin-right:10px;
     padding:2px;
+    background-color: white;
 }
 .search>input[type="text"]{
     width:16vw;
@@ -52,10 +55,16 @@ body{
 .input-container > button{
     width:10vw;
     height: 5vh;
-    border:none;
-    background-color: black;
+    border:1px solid #1795ad;
+    background-color: transparent;
     border-radius:5px;
-    color:white;
+    color:black;
+    cursor: pointer;
+}
+.input-container > button:hover{
+    background-color:#1795ad ;
+    color: black;
+    box-shadow: 3px 3px 15px gray;
 }
 .task{
     list-style-type: none;
@@ -66,7 +75,7 @@ body{
     text-align: center;
 }
 #tasksContainer{
-    width:40vw;
+    width:50vw;
     margin:0 auto;
 }
 .tickmark{
@@ -81,8 +90,8 @@ body{
 }
 .wholetask{
     display: flex;
-    background-color: whitesmoke;
-    box-shadow: 2px 2px 1px black;
+    background-color: white;
+    box-shadow: 2px 2px 1px #a1d7e2;
     margin:10px;
     align-items: center;
 }
@@ -100,10 +109,37 @@ body{
 }
 .subtaskContainer > form > button{
     border:none;
-    background-color: black;
+    background-color: #1795ad;
     color: white;
     border-radius: 5px;
 }
 #search{
     align-self: flex-end;
 }
+#calendarInput{
+    margin-right: 30px;
+    border:1px solid black;
+    border-radius: 5px;
+}
+.taskListContainer{
+    display: flex;
+    justify-content: flex-end;
+}
+.taskListContainer ul{
+    list-style: none;
+    display: flex;
+    width:12vw;
+    justify-content: space-between;
+    align-items: center;
+    margin: 5px 0 5px 500px;
+    padding:10px;
+    cursor: pointer;
+}
+.dotted{
+    padding:15px;
+    font-size: large;
+    background-color: #1795ad;
+    color: black;
+    border-radius: 10px;
+}
+  

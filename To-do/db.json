@@ -1,36 +1,25 @@
 {
   "tasks": [
     {
-      "id": "1730387552114",
-      "task": "Code",
-      "subtasks": [
-        {
-          "id": "1730387769147",
-          "subtask": "leet"
-        },
-        {
-          "id": "1730387786044",
-          "subtask": "replit"
-        },
-        {
-          "id": "1730387803368",
-          "subtask": "code pen"
-        }
-      ]
+      "id": "1731006980749",
+      "task": "Js",
+      "subtasks": [],
+      "date": "",
+      "completed": false
     },
     {
-      "id": "1730387817133",
-      "task": "javaScript",
-      "subtasks": [
-        {
-          "id": "1730387823902",
-          "subtask": "Node"
-        },
-        {
-          "id": "1730387833356",
-          "subtask": "react"
-        }
-      ]
+      "id": "1731007806964",
+      "task": "Play",
+      "subtasks": [],
+      "date": "",
+      "completed": true
+    },
+    {
+      "id": "1731007810364",
+      "task": "Jump",
+      "subtasks": [],
+      "date": "",
+      "completed": true
     }
   ]
 }
