@@ -1,0 +1,55 @@
+.task-list{
+    background-color: var(--Very-Dark-Desaturated-Blue);
+    margin-bottom: 5px;
+    color:var(--Very-Light-Gray);
+    width: 500px;
+    height: fit-content;
+    display: flex;
+    align-items: center;
+    padding:10px;
+    border-radius: 5px;
+    }
+    .check-mark {
+        appearance: none;
+        width:20px;
+        height:20px;
+        border-radius: 50%;
+        border:1px solid var(--Very-Light-Grayish-Blue);
+        margin-right:10px;
+        cursor: pointer;
+    }
+    .task-list > li{
+        list-style: none;
+    }
+    .strike{
+        text-decoration: line-through;
+    }
+    .check-mark-checked{
+        appearance: none;
+        width:20px;
+        height:20px;
+        border-radius: 50%;
+        border:1px solid var(--Very-Light-Grayish-Blue);
+        margin-right:10px;
+        cursor: pointer;
+        background: url(../assets/icon-check.svg),var(--Check-Background);
+        background-repeat: no-repeat;
+        background-position: center;
+    }
+    .footer{
+        background-color: var(--Very-Dark-Desaturated-Blue);
+        width: 500px;
+        height: fit-content;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 10px;
+        color: var(--Very-Light-Grayish-Blue);
+        border-radius: 5px;
+    }
+    .filters > button{
+        margin-right: 10px;
+    }
+    .footer > button{
+        cursor: pointer;
+    }

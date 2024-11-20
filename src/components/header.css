@@ -1,0 +1,15 @@
+header{
+    background: url(../assets/bg-desktop-dark.jpg);
+}
+input{
+    width: 300px;
+    height: 30px;
+    border: none;
+    background-color: var(--Very-Dark-Desaturated-Blue);
+    color:var(--Light-Grayish-Blue)
+}
+h1{
+    color:var(--Very-Light-Gray);
+    font-size: 51px;
+    margin:0;
+}
