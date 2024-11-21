@@ -1,16 +1,14 @@
 import React, { useEffect, useState } from 'react';
 import './task.css';
 
-function Task({ tasks }) {
-  const [filteredTasks, setFilteredTasks] = useState([]);
-  const [activeTasks, setActiveTasks] = useState([]);
-  const numberOfTasks = activeTasks.length;
+function Task({ tasks, fetchTasks }) {
+  const [filter, setFilter] = useState('All');
 
-  useEffect(() => {
-    setActiveTasks(tasks.filter(task => !task.completed));
-    setFilteredTasks(activeTasks);
-    
-  }, [tasks]);
+  const filteredTasks = tasks.filter((task) => {
+    if (filter === 'All') return true;
+    if (filter === 'Active') return !task.completed;
+    if (filter === 'Completed') return task.completed;
+  });
   // Updates a task status to completed or not completed
   const updatedTasks = async (id, updateTask) => {
     try {
@@ -23,10 +21,7 @@ function Task({ tasks }) {
       });
       if (response.ok) {
         const data = await response.json();
-        // Update filteredTasks based on the response
-        setFilteredTasks(prevTasks => 
-          prevTasks.map(task => task.id === data.id ? data : task)
-        );
+        await fetchTasks();
         console.log('Task updated successfully');
       } else {
         console.error('Failed to update task');
@@ -46,6 +41,7 @@ function Task({ tasks }) {
                 method: 'DELETE'
             });
         }
+        await fetchTasks();
     }
     catch(error){
         console.error('Error', error);
@@ -60,13 +56,7 @@ function Task({ tasks }) {
 
   // Filters tasks based on the provided filter
   const handleTasks = (filter) => {
-    if (filter === 'All') {
-      setFilteredTasks(tasks); 
-    } else if (filter === 'Active') {
-      setFilteredTasks(activeTasks);
-    } else if (filter === 'Completed') {
-      setFilteredTasks(tasks.filter(task => task.completed));
-    }
+    setFilter(filter);
   };
 
   return (
@@ -83,7 +73,7 @@ function Task({ tasks }) {
         </div>
       ))}
       <div className='footer'>
-        <span>{numberOfTasks} Items left</span>
+        <span>{filteredTasks.length} Items left</span>
         <div className='filters'>
           <button onClick={() => handleTasks('All')}>All</button>
           <button onClick={() => handleTasks('Active')}>Active</button>

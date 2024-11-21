@@ -36,38 +36,36 @@ function App() {
 
   // fetch tasks every time when a new task is added 
   useEffect(() => {
-    if (taskName) {
-      const newTask = createNewTask(taskName);
-
-      async function postData() {
-        try {
-          const response = await fetch('http://localhost:3000/tasks', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(newTask),
-          });
-          if (response.ok) {
-            const data = await response.json();
-            setTasks((prevTasks) => [...prevTasks, data]);
-            console.log('Task added successfully');
-          } else {
-            console.error('Failed to add task');
-          }
-        } catch (error) {
-          console.error('Error:', error);
-        }
-      }
-
-      postData();
-    }
+      postData(taskName);
   }, [taskName]);
+  async function postData(taskName) {
+    try {
+      if (taskName) {
+      const newTask = createNewTask(taskName);
+      const response = await fetch('http://localhost:3000/tasks', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(newTask),
+      });
+      if (response.ok) {
+        const data = await response.json();
+        await fetchTasks();
+        // setTasks((prevTasks) => [...prevTasks, data]);
+        console.log('Task added successfully');
+      } else {
+        console.error('Failed to add task');
+      }
+    }} catch (error) {
+      console.error('Error:', error);
+    }
+  }
 
   return (
     <div>
       <Header getData={getTasks} />
-      <Task tasks={tasks}/>
+      <Task tasks={tasks} fetchTasks={fetchTasks}/>
     </div>
   );
 }
