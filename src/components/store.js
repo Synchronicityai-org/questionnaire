@@ -20,7 +20,7 @@ const store = (set, get) => ({
     completed: false,
   }),
 
-  // Handle checkbox toggle (task completion)
+  // Handle checkbox toggle
   handleData: (task) => {
     const updatedTask = { ...task, completed: !task.completed };
     get().updateTask(task.id, updatedTask);
@@ -80,9 +80,8 @@ const store = (set, get) => ({
   // Delete completed tasks from Firestore
   clearCompleted: async () => {
     try {
-      const querySnapshot = await getDocs(collection(db, 'tasks'));
-      const tasksToDelete = querySnapshot.docs.filter(doc => doc.data().completed);
-      // Delete the completed tasks
+      const response = await getDocs(collection(db, 'tasks'));
+      const tasksToDelete = response.docs.filter(doc => doc.data().completed);
       tasksToDelete.forEach(async (taskDoc) => {
         await deleteDoc(doc(db, 'tasks', taskDoc.id));
       });
