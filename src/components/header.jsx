@@ -1,16 +1,8 @@
 import React from 'react';
-import './header.css'
-import { useState} from 'react';
-function Header({getData}) {
-    const [input, setInput] = useState('');
-    const handleChange = (e) => {
-        const inputValue = e.target.value;
-        setInput(inputValue);
-    }
-    const handleInput = ()=>{
-        getData(input);
-        setInput('');
-    }
+import './header.css';
+import { useStore } from './store';
+function Header() {
+  const{input,handleChange,handleInput} = useStore();
   return (
     <header className='w-full h-[250px] bg-cover flex items-center justify-center flex-col'>
       <div className='w-[500px] h-fit'>
@@ -20,5 +12,4 @@ function Header({getData}) {
     </header>
   )
 }
-
 export default Header
