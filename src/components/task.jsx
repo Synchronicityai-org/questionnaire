@@ -1,5 +1,5 @@
-import './task.css';
-import {useStore} from './store';
+import '@components/task.css';
+import {useStore} from '@components/store';
 
 function Task() {
   const {filter,tasks,handleData,handleTasks, clearCompleted} = useStore();

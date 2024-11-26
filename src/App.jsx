@@ -1,7 +1,7 @@
-import React, {useEffect } from 'react';
-import Header from './components/header';
-import Task from './components/task';
-import {useStore} from './components/store';
+import React, {Component, useEffect } from 'react';
+import Header from '@components/header';
+import Task from '@components/task';
+import {useStore} from '@components/store';
 
 function App() {
   const {taskName,tasks, setTaskName, setTasks, fetchTasks, postData} = useStore();
