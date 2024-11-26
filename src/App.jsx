@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import Header from './components/header';
-import Task from './components/task';
+import Header from '@components/header';
+import Task from '@components/task';
 
 function App() {
   const [tasks, setTasks] = useState([]);
