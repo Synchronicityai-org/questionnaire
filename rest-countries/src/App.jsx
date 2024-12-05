@@ -1,35 +1,37 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
-import './App.css'
+import React, { useEffect } from 'react';
+import dark from '/Images/dark.png';
+import light from '/Images/light.png';
+import { useStore } from './store';
+import Countries from './Countries';
+import Country from './Country'
+import { BrowserRouter as Router, Route, Routes } from 'react-router'
 
 function App() {
-  const [count, setCount] = useState(0)
+  const { fetchCountries, theme, setTheme} = useStore();
+
+  useEffect(() => {
+    fetchCountries();
+  }, [fetchCountries]);
 
   return (
-    <>
-      <div>
-        <a href="https://vite.dev" target="_blank">
-          <img src={viteLogo} className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
+    <div className={`${theme === 'light' ? 'bg-lightBackground' : 'bg-darkBackground'} min-h-screen`}>
+      <div className={`${theme === 'light' ? 'bg-light-elements' : 'bg-dark-elements'} flex h-fit p-5`}>
+        <h1 className={`${theme === 'light' ? 'text-dark' : 'text-light'} text-3xl w-2/3`}>Where in the world?</h1>
+        <div className='flex flex-wrap justify-end w-1/3 content-center'>
+          <img src={theme === 'light' ? dark : light} alt="dark theme" className='w-[25px] h-[25px]' />
+          <span className={`${theme === 'light' ? 'text-dark' : 'text-light'} cursor-pointer`} onClick={() => setTheme(theme === 'light' ? 'dark' : 'light')}>
+            {theme === 'light' ? 'Dark Mode' : 'Light Mode'}
+          </span>
+        </div>
       </div>
-      <h1>Vite + React</h1>
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </button>
-        <p>
-          Edit <code>src/App.jsx</code> and save to test HMR
-        </p>
-      </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
-    </>
-  )
+      <Router>
+        <Routes>
+          <Route path="/" element={<Countries />} />
+          <Route path="/:name" element={<Country />} />
+        </Routes>
+    </Router>
+    </div>
+  );
 }
 
-export default App
+export default App;
