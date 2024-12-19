@@ -1,8 +1,0 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
-:root{
-  --woodColor:#a7532d;
-  --lightGray: #f0f0f0;
-  --bookGradient: linear-gradient(to right, #02a9f4, #ff6666, #fbac0f);
-}
