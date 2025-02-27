@@ -1,57 +1,106 @@
 import { type ClientSchema, a, defineData } from "@aws-amplify/backend";
 
-/*== STEP 1 ===============================================================
-The section below creates a Todo database table with a "content" field. Try
-adding a new "isDone" field as a boolean. The authorization rule below
-specifies that any user authenticated via an API key can "create", "read",
-"update", and "delete" any "Todo" records.
-=========================================================================*/
+// == STEP 1: Define Database Schema ==
 const schema = a.schema({
-  Todo: a
+  // User Model
+  User: a
     .model({
-      content: a.string(),
+      id: a.id(), // Fixed: Use lowercase 'id'
+      username: a.string(),
+      fName: a.string(),
+      lName: a.string(),
+      phoneNumber: a.string(),
+      email: a.string(),
+      password: a.string(),
+      address: a.string(),
+      dob: a.date(),
+      role: a.enum(["PARENT", "CAREGIVER", "CLINICIAN", "ADMIN", "SME"]),
     })
-    .authorization((allow) => [allow.publicApiKey()]),
+    .authorization((allow) => [allow.owner(), allow.publicApiKey()]),
+
+  // Kid Profile
+  KidProfile: a
+    .model({
+      id: a.id(),
+      name: a.string(),
+      age: a.integer(),
+      dob: a.date(),
+      parent: a.belongsTo("User", "id"),
+      milestones: a.hasMany("Milestone", "id"),
+    })
+    .authorization((allow) => [allow.owner()]),
+
+  // Milestone
+  Milestone: a
+    .model({
+      id: a.id(),
+      title: a.string(),
+      description: a.string(),
+      tasks: a.hasMany("Task", "id"),
+      kidProfile: a.belongsTo("KidProfile", "id"),
+    })
+    .authorization((allow) => [allow.owner(), allow.publicApiKey()]),
+
+  // Task
+  Task: a
+    .model({
+      id: a.id(),
+      title: a.string(),
+      description: a.string(),
+      videoLink: a.string(),
+      milestone: a.belongsTo("Milestone", "id"),
+      feedback: a.hasMany("TaskFeedback", "id"),
+    })
+    .authorization((allow) => [allow.owner(), allow.publicApiKey()]),
+
+  // Task Feedback
+  TaskFeedback: a
+    .model({
+      id: a.id(),
+      task: a.belongsTo("Task", "id"),
+      user: a.belongsTo("User", "id"),
+      rating: a.integer(),
+      comment: a.string(),
+    })
+    .authorization((allow) => [allow.owner()]),
+
+  // Question Bank
+  QuestionBank: a
+    .model({
+      id: a.id(),
+      question_text: a.string(),
+      category: a.enum(["COGNITION", "LANGUAGE", "MOTOR", "SOCIAL", "EMOTIONAL"]),
+      options: a.string().array(),
+    })
+    .authorization((allow) => [allow.groups(["ADMIN"]), allow.owner()]),
+
+  // User Responses
+  UserResponse: a
+    .model({
+      id: a.id(),
+      kidProfile: a.belongsTo("KidProfile", "id"),
+      question: a.belongsTo("QuestionBank", "id"),
+      answer: a.string(),
+      timestamp: a.datetime(),
+    })
+    .authorization((allow) => [allow.owner(), allow.publicApiKey()]),
 });
 
+// == STEP 2: Define Authorization Modes ==
 export type Schema = ClientSchema<typeof schema>;
 
 export const data = defineData({
   schema,
   authorizationModes: {
     defaultAuthorizationMode: "apiKey",
-    // API Key is used for a.allow.public() rules
     apiKeyAuthorizationMode: {
       expiresInDays: 30,
     },
+    oidcAuthorizationMode: {
+      oidcProviderName: "MyOIDCProvider",
+      oidcIssuerUrl: "https://example.com",
+      tokenExpiryFromAuthInSeconds: 3600,
+      tokenExpireFromIssueInSeconds: 7200,
+    },
   },
 });
-
-/*== STEP 2 ===============================================================
-Go to your frontend source code. From your client-side code, generate a
-Data client to make CRUDL requests to your table. (THIS SNIPPET WILL ONLY
-WORK IN THE FRONTEND CODE FILE.)
-
-Using JavaScript or Next.js React Server Components, Middleware, Server 
-Actions or Pages Router? Review how to generate Data clients for those use
-cases: https://docs.amplify.aws/gen2/build-a-backend/data/connect-to-API/
-=========================================================================*/
-
-/*
-"use client"
-import { generateClient } from "aws-amplify/data";
-import type { Schema } from "@/amplify/data/resource";
-
-const client = generateClient<Schema>() // use this Data client for CRUDL requests
-*/
-
-/*== STEP 3 ===============================================================
-Fetch records from the database and use them in your frontend component.
-(THIS SNIPPET WILL ONLY WORK IN THE FRONTEND CODE FILE.)
-=========================================================================*/
-
-/* For example, in a React component, you can use this snippet in your
-  function's RETURN statement */
-// const { data: todos } = await client.models.Todo.list()
-
-// return <ul>{todos.map(todo => <li key={todo.id}>{todo.content}</li>)}</ul>
