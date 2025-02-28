@@ -15,6 +15,7 @@ const schema = a.schema({
     role: a.enum(["PARENT", "CAREGIVER", "CLINICIAN", "ADMIN", "SME"]),
     // ✅ Fix: Define relationship with KidProfile
     kidProfiles: a.hasMany("KidProfile", "parentId"),
+    taskFeedbacks: a.hasMany("TaskFeedback", "userId"),
   })
   .authorization((allow) => [allow.owner(), allow.publicApiKey()]),
 
