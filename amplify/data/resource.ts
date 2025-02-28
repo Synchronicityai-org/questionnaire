@@ -1,92 +1,91 @@
 import { type ClientSchema, a, defineData } from "@aws-amplify/backend";
 
-// == STEP 1: Define Database Schema ==
 const schema = a.schema({
   // User Model
   User: a.model({
-    id: a.id(),
+    id: a.id(), // Auto-generated ID by Amplify
     username: a.string(),
-      fName: a.string(),
-      lName: a.string(),
-      phoneNumber: a.string(),
-      email: a.string(),
-      password: a.string(),
-      address: a.string(),
-      dob: a.date(),
-      role: a.enum(["PARENT", "CAREGIVER", "CLINICIAN", "ADMIN", "SME"]),
-    })
-    .authorization((allow) => [allow.owner(), allow.publicApiKey()]),
+    fName: a.string(),
+    lName: a.string(),
+    phoneNumber: a.string(),
+    email: a.string(),
+    password: a.string(),
+    address: a.string(),
+    dob: a.date(),
+    role: a.enum(["PARENT", "CAREGIVER", "CLINICIAN", "ADMIN", "SME"]),
+    // ✅ Fix: Define relationship with KidProfile
+    kidProfiles: a.hasMany("KidProfile", "parentId"),
+  })
+  .authorization((allow) => [allow.owner(), allow.publicApiKey()]),
 
   // Kid Profile
-  KidProfile: a
-    .model({
-      id: a.id(),
+  KidProfile: a.model({
+    id: a.id(),
     name: a.string(),
-      age: a.integer(),
-      dob: a.date(),
-      parentId: a.id(), // Reference to User
+    age: a.integer(),
+    dob: a.date(),
+    // ✅ Fix: Ensure correct reference field
+    parentId: a.id(), // Reference to User.id
     parent: a.belongsTo("User", "parentId"),
-      milestones: a.hasMany("Milestone", "id"),
-    })
-    .authorization((allow) => [allow.owner()]),
+    milestones: a.hasMany("Milestone", "kidProfileId"),
+  })
+  .authorization((allow) => [allow.owner()]),
 
   // Milestone
-  Milestone: a
-    .model({
-      id: a.id(),
+  Milestone: a.model({
+    id: a.id(),
     title: a.string(),
-      description: a.string(),
-      tasks: a.hasMany("Task", "id"),
-      kidProfileId: a.id(), // Reference to KidProfile
+    description: a.string(),
+    kidProfileId: a.id(), // Reference to KidProfile
     kidProfile: a.belongsTo("KidProfile", "kidProfileId"),
-    })
-    .authorization((allow) => [allow.owner(), allow.publicApiKey()]),
+    tasks: a.hasMany("Task", "milestoneId"),
+  })
+  .authorization((allow) => [allow.owner(), allow.publicApiKey()]),
 
   // Task
-  Task: a
-    .model({
-      id: a.id(),
+  Task: a.model({
+    id: a.id(),
     title: a.string(),
-      description: a.string(),
-      videoLink: a.string(),
-      milestoneId: a.id(), // Reference to Milestone
+    description: a.string(),
+    videoLink: a.string(),
+    milestoneId: a.id(), // Reference to Milestone
     milestone: a.belongsTo("Milestone", "milestoneId"),
-      feedback: a.hasMany("TaskFeedback", "id"),
-    })
-    .authorization((allow) => [allow.owner(), allow.publicApiKey()]),
+    feedback: a.hasMany("TaskFeedback", "taskId"),
+  })
+  .authorization((allow) => [allow.owner(), allow.publicApiKey()]),
 
   // Task Feedback
   TaskFeedback: a.model({
+    id: a.id(),
     taskId: a.id(), // Reference to Task
     userId: a.id(), // Reference to User
-      task: a.belongsTo("Task", "taskId"),
-      user: a.belongsTo("User", "userId"),
-      rating: a.integer(),
-      comment: a.string(),
-    })
-    .authorization((allow) => [allow.owner()]),
+    task: a.belongsTo("Task", "taskId"),
+    user: a.belongsTo("User", "userId"),
+    rating: a.integer(),
+    comment: a.string(),
+  })
+  .authorization((allow) => [allow.owner()]),
 
   // Question Bank
-  QuestionBank: a
-    .model({
-      id: a.id(),
+  QuestionBank: a.model({
+    id: a.id(),
     question_text: a.string(),
-      category: a.enum(["COGNITION", "LANGUAGE", "MOTOR", "SOCIAL", "EMOTIONAL"]),
-      options: a.string().array(),
-    })
-    .authorization((allow) => [allow.groups(["ADMIN"]), allow.owner()]),
+    category: a.enum(["COGNITION", "LANGUAGE", "MOTOR", "SOCIAL", "EMOTIONAL"]),
+    options: a.string().array(),
+  })
+  .authorization((allow) => [allow.groups(["ADMIN"]), allow.owner()]),
 
   // User Responses
-  UserResponse: a
-    .model({
-      id: a.id(),
-    kidProfileId: a.id(),
+  UserResponse: a.model({
+    id: a.id(),
+    kidProfileId: a.id(), // Reference to KidProfile
+    questionId: a.id(), // Reference to QuestionBank
     kidProfile: a.belongsTo("KidProfile", "kidProfileId"),
-      question: a.belongsTo("QuestionBank", "id"),
-      answer: a.string(),
-      timestamp: a.datetime(),
-    })
-    .authorization((allow) => [allow.owner(), allow.publicApiKey()]),
+    question: a.belongsTo("QuestionBank", "questionId"),
+    answer: a.string(),
+    timestamp: a.datetime(),
+  })
+  .authorization((allow) => [allow.owner(), allow.publicApiKey()]),
 });
 
 // == STEP 2: Define Authorization Modes ==
