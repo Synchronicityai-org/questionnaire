@@ -2,35 +2,34 @@ import { type ClientSchema, a, defineData } from "@aws-amplify/backend";
 
 // == STEP 1: Define Database Schema ==
 const schema = a.schema({
- // User Model
-User: a
-.model({
-  id: a.id(), // Ensure id exists
-  username: a.string(),
-  fName: a.string(),
-  lName: a.string(),
-  phoneNumber: a.string(),
-  email: a.string(),
-  password: a.string(),
-  address: a.string(),
-  dob: a.date(),
-  role: a.enum(["PARENT", "CAREGIVER", "CLINICIAN", "ADMIN", "SME"]),
-})
-.authorization((allow) => [allow.owner(), allow.publicApiKey()]),
+  // User Model
+  User: a
+    .model({
+      id: a.id(), // Ensure id exists
+      username: a.string(),
+      fName: a.string(),
+      lName: a.string(),
+      phoneNumber: a.string(),
+      email: a.string(),
+      password: a.string(),
+      address: a.string(),
+      dob: a.date(),
+      role: a.enum(["PARENT", "CAREGIVER", "CLINICIAN", "ADMIN", "SME"]),
+      kidProfiles: a.hasMany("KidProfile", "parent"), // Add this line to define the relationship
+    })
+    .authorization((allow) => [allow.owner(), allow.publicApiKey()]),
 
-
-// Kid Profile
-KidProfile: a
-  .model({
-    id: a.id(),
-    name: a.string(),
-    age: a.integer(),
-    dob: a.date(),
-    parent: a.belongsTo("User", "id"), // FIX: Ensure "id" exists in User model
-    milestones: a.hasMany("Milestone", "id"),
-  })
-  .authorization((allow) => [allow.owner()]),
-
+  // Kid Profile
+  KidProfile: a
+    .model({
+      id: a.id(),
+      name: a.string(),
+      age: a.integer(),
+      dob: a.date(),
+      parent: a.belongsTo("User", "id"), // Ensure "id" exists in User model
+      milestones: a.hasMany("Milestone", "id"),
+    })
+    .authorization((allow) => [allow.owner()]),
 
   // Milestone
   Milestone: a
