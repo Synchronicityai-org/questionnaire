@@ -29,6 +29,8 @@ const schema = a.schema({
     parentId: a.id(), // Reference to User.id
     parent: a.belongsTo("User", "parentId"),
     milestones: a.hasMany("Milestone", "kidProfileId"),
+    userResponses: a.hasMany("UserResponse", "kidProfileId"),
+
   })
   .authorization((allow) => [allow.owner()]),
 
