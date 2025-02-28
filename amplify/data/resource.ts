@@ -75,6 +75,8 @@ const schema = a.schema({
     question_text: a.string(),
     category: a.enum(["COGNITION", "LANGUAGE", "MOTOR", "SOCIAL", "EMOTIONAL"]),
     options: a.string().array(),
+    userResponses: a.hasMany("UserResponse", "questionId"),
+
   })
   .authorization((allow) => [allow.groups(["ADMIN"]), allow.owner()]),
 
