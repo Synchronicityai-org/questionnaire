@@ -7,7 +7,7 @@ const schema = a.schema({
   })
   .authorization((allow) => [allow.owner(), allow.publicApiKey()]),
   // User Model
-  User: a.model({
+  User: a.model({ 
     id: a.id(), // Auto-generated ID by Amplify
     username: a.string(),
     fName: a.string(),
