@@ -1,11 +1,10 @@
 import { type ClientSchema, a, defineData } from "@aws-amplify/backend";
 
-// == STEP 1: Define Database Schema ==
 const schema = a.schema({
   // User Model
-  User: a.model({
-    id: a.id(),
-    username: a.string(),
+  User: a
+    .model({
+      username: a.string(),
       fName: a.string(),
       lName: a.string(),
       phoneNumber: a.string(),
@@ -14,63 +13,69 @@ const schema = a.schema({
       address: a.string(),
       dob: a.date(),
       role: a.enum(["PARENT", "CAREGIVER", "CLINICIAN", "ADMIN", "SME"]),
+      // Relationship
+      kidProfiles: a.hasMany("KidProfile", "userId"), // References KidProfile.userId
     })
     .authorization((allow) => [allow.owner(), allow.publicApiKey()]),
 
   // Kid Profile
   KidProfile: a
     .model({
-      id: a.id(),
-    name: a.string(),
+      name: a.string(),
       age: a.integer(),
       dob: a.date(),
-      parentId: a.id(), // Reference to User
-    parent: a.belongsTo("User", "parentId"),
-      milestones: a.hasMany("Milestone", "id"),
+      // Reference field
+      userId: a.id(), // References User's auto-generated id
+      // Relationship
+      user: a.belongsTo("User", "userId"),
+      milestones: a.hasMany("Milestone", "kidProfileId"), // References Milestone.kidProfileId
     })
     .authorization((allow) => [allow.owner()]),
 
   // Milestone
   Milestone: a
     .model({
-      id: a.id(),
-    title: a.string(),
+      title: a.string(),
       description: a.string(),
-      tasks: a.hasMany("Task", "id"),
-      kidProfileId: a.id(), // Reference to KidProfile
-    kidProfile: a.belongsTo("KidProfile", "kidProfileId"),
+      // Reference field
+      kidProfileId: a.id(), // References KidProfile's auto-generated id
+      // Relationship
+      kidProfile: a.belongsTo("KidProfile", "kidProfileId"),
+      tasks: a.hasMany("Task", "milestoneId"), // References Task.milestoneId
     })
     .authorization((allow) => [allow.owner(), allow.publicApiKey()]),
 
   // Task
   Task: a
     .model({
-      id: a.id(),
-    title: a.string(),
+      title: a.string(),
       description: a.string(),
       videoLink: a.string(),
-      milestoneId: a.id(), // Reference to Milestone
-    milestone: a.belongsTo("Milestone", "milestoneId"),
-      feedback: a.hasMany("TaskFeedback", "id"),
+      // Reference field
+      milestoneId: a.id(), // References Milestone's auto-generated id
+      // Relationship
+      milestone: a.belongsTo("Milestone", "milestoneId"),
+      feedback: a.hasMany("TaskFeedback", "taskId"), // References TaskFeedback.taskId
     })
     .authorization((allow) => [allow.owner(), allow.publicApiKey()]),
 
   // Task Feedback
-  TaskFeedback: a.model({
-    userId: a.id(), // Reference field to User
-    taskId: a.id(), // Reference field to Task
-    task: a.belongsTo("Task", "taskId"), // Corrected
-    user: a.belongsTo("User", "userId"), // Corrected
-    rating: a.integer(),
-    comment: a.string(),
-})
-.authorization((allow) => [allow.owner()]),
-
+  TaskFeedback: a
+    .model({
+      rating: a.integer(),
+      comment: a.string(),
+      // Reference fields
+      taskId: a.id(), // References Task's auto-generated id
+      userId: a.id(), // References User's auto-generated id
+      // Relationships
+      task: a.belongsTo("Task", "taskId"),
+      user: a.belongsTo("User", "userId"),
+    })
+    .authorization((allow) => [allow.owner()]),
 
   // Question Bank
   QuestionBank: a
     .model({
-      id: a.id(),
       question_text: a.string(),
       category: a.enum(["COGNITION", "LANGUAGE", "MOTOR", "SOCIAL", "EMOTIONAL"]),
       options: a.string().array(),
@@ -80,11 +85,14 @@ const schema = a.schema({
   // User Responses
   UserResponse: a
     .model({
-      id: a.id(),
-      kidProfile: a.belongsTo("KidProfile", "id"),
-      question: a.belongsTo("QuestionBank", "id"),
       answer: a.string(),
       timestamp: a.datetime(),
+      // Reference fields
+      kidProfileId: a.id(), // References KidProfile's auto-generated id
+      questionId: a.id(), // References QuestionBank's auto-generated id
+      // Relationships
+      kidProfile: a.belongsTo("KidProfile", "kidProfileId"),
+      question: a.belongsTo("QuestionBank", "questionId"),
     })
     .authorization((allow) => [allow.owner(), allow.publicApiKey()]),
 });
