@@ -15,7 +15,7 @@ const schema = a.schema({
       address: a.string(),
       dob: a.date(),
       role: a.enum(["PARENT", "CAREGIVER", "CLINICIAN", "ADMIN", "SME"]),
-      kidProfiles: a.hasMany("KidProfile", "parent"), // Add this line to define the relationship
+      kidProfile: a.hasMany("KidProfile", "parent"), // Add this line to define the relationship
     })
     .authorization((allow) => [allow.owner(), allow.publicApiKey()]),
 
