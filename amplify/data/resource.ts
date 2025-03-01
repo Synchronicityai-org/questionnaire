@@ -11,7 +11,6 @@ const schema = a.schema({
     id: a.id(), // Auto-generated ID by Amplify
     username: a.string(),
     fName: a.string(),
-    user_info: a.string(),
     lName: a.string(),
     phoneNumber: a.string(),
     email: a.string(),
