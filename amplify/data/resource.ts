@@ -6,6 +6,7 @@ const schema = a.schema({
    content: a.string(),
   })
   .authorization((allow) => [allow.owner(), allow.publicApiKey()]),
+
   // User Model
   User: a.model({ 
     id: a.id(), // Auto-generated ID by Amplify
@@ -31,14 +32,12 @@ const schema = a.schema({
     name: a.string(),
     age: a.integer(),
     dob: a.date(),
-    // ✅ Fix: Ensure correct reference field
     parentId: a.id(), // Reference to User.id
     parent: a.belongsTo("User", "parentId"),
     milestones: a.hasMany("Milestone", "kidProfileId"),
     userResponses: a.hasMany("UserResponse", "kidProfileId"),
-
   })
-  .authorization((allow) => [allow.owner()]),
+  .authorization((allow) => [allow.owner(), allow.publicApiKey()]),
 
   // Milestone
   Milestone: a.model({
@@ -73,18 +72,17 @@ const schema = a.schema({
     rating: a.integer(),
     comment: a.string(),
   })
-  .authorization((allow) => [allow.owner()]),
+  .authorization((allow) => [allow.owner(), allow.publicApiKey()]),
 
-  // Question Bank
+  // ✅ Fix: Allowed Public API access to create questions
   QuestionBank: a.model({
     id: a.id(),
     question_text: a.string(),
     category: a.enum(["COGNITION", "LANGUAGE", "MOTOR", "SOCIAL", "EMOTIONAL"]),
     options: a.string().array(),
     userResponses: a.hasMany("UserResponse", "questionId"),
-
   })
-  .authorization((allow) => [allow.groups(["ADMIN"]), allow.owner()]),
+  .authorization((allow) => [allow.groups(["ADMIN"]), allow.owner(), allow.publicApiKey()]),
 
   // User Responses
   UserResponse: a.model({
