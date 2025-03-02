@@ -6,29 +6,29 @@ import { AssessmentHistory } from './AssessmentHistory';
 
 const client = generateClient<Schema>();
 
+type QuestionCategory = 'COGNITION' | 'LANGUAGE' | 'MOTOR' | 'SOCIAL' | 'EMOTIONAL';
+
+interface Question {
+  id: string;
+  question_text: string;
+  category: QuestionCategory;
+  options: string[];
+}
+
 interface QuestionnaireFormProps {
   kidProfileId: string;
+  onBack?: () => void;
 }
 
-type Category = "COGNITION" | "LANGUAGE" | "MOTOR" | "SOCIAL" | "EMOTIONAL";
-
-interface Response {
-  question: string;
-  answer: string;
-  category: Category;
-}
-
-export function QuestionnaireForm({ kidProfileId }: QuestionnaireFormProps) {
-  const [questions, setQuestions] = useState<Schema["QuestionBank"]["type"][]>([]);
-  const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
-  const [selectedAnswer, setSelectedAnswer] = useState('');
+export function QuestionnaireForm({ kidProfileId, onBack }: QuestionnaireFormProps) {
+  const [questions, setQuestions] = useState<Question[]>([]);
+  const [answers, setAnswers] = useState<Record<string, string>>({});
+  const [activeCategory, setActiveCategory] = useState<QuestionCategory>('COGNITION');
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [responses, setResponses] = useState<Response[]>([]);
-  const [isCompleted, setIsCompleted] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
 
-  const DEFAULT_OPTIONS = ["Yes", "No", "Don't Know"];
+  const categories: QuestionCategory[] = ['COGNITION', 'LANGUAGE', 'MOTOR', 'SOCIAL', 'EMOTIONAL'];
 
   useEffect(() => {
     fetchQuestions();
@@ -36,11 +36,23 @@ export function QuestionnaireForm({ kidProfileId }: QuestionnaireFormProps) {
 
   const fetchQuestions = async () => {
     try {
-      console.log('Fetching questions...');
       const response = await client.models.QuestionBank.list();
-      console.log('Questions fetched:', response.data);
-      console.log('Sample question:', response.data[0]);
-      setQuestions(response.data.filter(q => q && q.question_text && q.category));
+      const validQuestions = response.data
+        .filter((q): q is NonNullable<typeof q> => 
+          q !== null && 
+          q.id != null &&
+          q.question_text != null &&
+          q.category != null &&
+          categories.includes(q.category as QuestionCategory)
+        )
+        .map(q => ({
+          id: q.id!,
+          question_text: q.question_text!,
+          category: q.category as QuestionCategory,
+          options: Array.isArray(q.options) ? q.options.filter((opt): opt is string => opt != null) : ['Yes', 'No', "Don't Know"]
+        }));
+
+      setQuestions(validQuestions);
       setIsLoading(false);
     } catch (err) {
       console.error('Error fetching questions:', err);
@@ -49,92 +61,53 @@ export function QuestionnaireForm({ kidProfileId }: QuestionnaireFormProps) {
     }
   };
 
-  const saveResponse = async (answer: string) => {
-    try {
-      const currentQuestion = questions[currentQuestionIndex];
-      if (!currentQuestion?.id) return;
-
-      await client.models.UserResponse.create({
-        kidProfileId,
-        questionId: currentQuestion.id,
-        answer,
-        timestamp: new Date().toISOString()
-      });
-
-      // Add to local responses array for summary
-      if (currentQuestion.question_text && currentQuestion.category) {
-        const newResponse: Response = {
-          question: currentQuestion.question_text,
-          answer: answer,
-          category: currentQuestion.category as Category
-        };
-        setResponses(prev => [...prev, newResponse]);
-      }
-
-      console.log('Response saved successfully');
-    } catch (err) {
-      console.error('Error saving response:', err);
-      setError('Failed to save response. Please try again.');
-    }
+  const handleAnswerChange = (questionId: string, answer: string) => {
+    setAnswers(prev => ({
+      ...prev,
+      [questionId]: answer
+    }));
   };
 
-  const handleNext = async () => {
-    if (!selectedAnswer) {
-      setError('Please select an answer before proceeding.');
+  const handleSubmitCategory = async () => {
+    const categoryQuestions = questions.filter(q => q.category === activeCategory);
+    const allCategoryQuestionsAnswered = categoryQuestions.every(q => answers[q.id]);
+    
+    if (!allCategoryQuestionsAnswered) {
+      alert('Please answer all questions in this category before submitting.');
       return;
     }
 
-    await saveResponse(selectedAnswer);
-    setSelectedAnswer('');
-    setError(null);
+    try {
+      // Submit answers for the current category
+      await Promise.all(
+        categoryQuestions.map(question => 
+          client.models.UserResponse.create({
+            kidProfileId,
+            questionId: question.id,
+            answer: answers[question.id],
+            timestamp: new Date().toISOString()
+          })
+        )
+      );
 
-    if (currentQuestionIndex < questions.length - 1) {
-      setCurrentQuestionIndex(prev => prev + 1);
-    } else {
-      setIsCompleted(true);
+      // Clear answers for this category
+      const newAnswers = { ...answers };
+      categoryQuestions.forEach(q => delete newAnswers[q.id]);
+      setAnswers(newAnswers);
+
+      // Move to next category if available
+      const currentIndex = categories.indexOf(activeCategory);
+      if (currentIndex < categories.length - 1) {
+        setActiveCategory(categories[currentIndex + 1]);
+      } else {
+        // All categories completed
+        alert('Assessment completed successfully!');
+        onBack?.();
+      }
+    } catch (err) {
+      console.error('Error submitting answers:', err);
+      setError('Failed to submit answers. Please try again.');
     }
-  };
-
-  const renderSummaryReport = () => {
-    const categoryCounts = responses.reduce((acc, response) => {
-      const category = response.category;
-      acc[category] = acc[category] || { total: 0, yes: 0, no: 0, dontKnow: 0 };
-      acc[category].total++;
-      if (response.answer === 'Yes') acc[category].yes++;
-      if (response.answer === 'No') acc[category].no++;
-      if (response.answer === "Don't Know") acc[category].dontKnow++;
-      return acc;
-    }, {} as Record<Category, { total: number; yes: number; no: number; dontKnow: number }>);
-
-    return (
-      <div className="summary-report">
-        <h2>Assessment Summary Report</h2>
-        <div className="category-summaries">
-          {Object.entries(categoryCounts).map(([category, counts]) => (
-            <div key={category} className="category-summary">
-              <h3>{category}</h3>
-              <div className="category-stats">
-                <p>Total Questions: {counts.total}</p>
-                <p>Yes Responses: {counts.yes} ({Math.round(counts.yes / counts.total * 100)}%)</p>
-                <p>No Responses: {counts.no} ({Math.round(counts.no / counts.total * 100)}%)</p>
-                <p>Don't Know: {counts.dontKnow} ({Math.round(counts.dontKnow / counts.total * 100)}%)</p>
-              </div>
-            </div>
-          ))}
-        </div>
-        
-        <div className="detailed-responses">
-          <h3>Detailed Responses</h3>
-          {responses.map((response, index) => (
-            <div key={index} className="response-item">
-              <p className="question-text">Q{index + 1}: {response.question}</p>
-              <p className="answer-text">Answer: <strong>{response.answer}</strong></p>
-              <p className="category-text">Category: {response.category}</p>
-            </div>
-          ))}
-        </div>
-      </div>
-    );
   };
 
   if (showHistory) {
@@ -142,83 +115,80 @@ export function QuestionnaireForm({ kidProfileId }: QuestionnaireFormProps) {
   }
 
   if (isLoading) {
-    return <div className="questionnaire-status">Loading questions...</div>;
+    return <div className="loading">Loading questions...</div>;
   }
 
   if (error) {
     return <div className="error">{error}</div>;
   }
 
-  if (!questions.length) {
-    return <div className="questionnaire-status">No questions available.</div>;
-  }
-
-  if (isCompleted) {
-    return (
-      <div>
-        {renderSummaryReport()}
-        <div className="button-container" style={{ marginTop: '2rem' }}>
-          <button 
-            onClick={() => setShowHistory(true)}
-            className="history-button"
-          >
-            View Past Assessments
-          </button>
-        </div>
-      </div>
-    );
-  }
-
-  const currentQuestion = questions[currentQuestionIndex];
-
-  if (!currentQuestion) {
-    return <div className="questionnaire-status">Error loading question.</div>;
-  }
+  const categoryQuestions = questions.filter(q => q.category === activeCategory);
+  const answeredInCategory = categoryQuestions.filter(q => answers[q.id]).length;
+  const progressPercent = (answeredInCategory / categoryQuestions.length) * 100;
 
   return (
-    <div className="questionnaire-form">
-      <div className="header">
-        <button 
-          onClick={() => setShowHistory(true)}
-          className="history-button"
-        >
-          View Past Assessments
-        </button>
+    <div className="questionnaire-container">
+      <div className="questionnaire-header">
+        <h2>Assessment Questions</h2>
+        {onBack && (
+          <button className="back-button" onClick={onBack}>
+            ← Back to Profile
+          </button>
+        )}
       </div>
 
-      <div className="progress-bar">
-        Question {currentQuestionIndex + 1} of {questions.length}
-        <div 
-          className="progress-fill"
-          style={{ width: `${((currentQuestionIndex + 1) / questions.length) * 100}%` }}
-        ></div>
+      <div className="tabs">
+        {categories.map(category => (
+          <button
+            key={category}
+            className={`tab-button ${category === activeCategory ? 'active' : ''}`}
+            onClick={() => setActiveCategory(category)}
+          >
+            {category.charAt(0) + category.slice(1).toLowerCase()}
+          </button>
+        ))}
       </div>
 
-      <div className="question-card">
-        <h3>{currentQuestion.question_text}</h3>
-        <div className="options">
-          {DEFAULT_OPTIONS.map((option, index) => (
-            <label key={`option-${index}`} className="option">
-              <input
-                type="radio"
-                name="answer"
-                value={option}
-                checked={selectedAnswer === option}
-                onChange={(e) => setSelectedAnswer(e.target.value)}
-              />
-              <span className="option-text">{option}</span>
-            </label>
-          ))}
+      <div className="category-progress">
+        <div className="progress-text">
+          Progress: {answeredInCategory} of {categoryQuestions.length} questions answered
+        </div>
+        <div className="progress-bar">
+          <div className="progress" style={{ width: `${progressPercent}%` }}></div>
         </div>
       </div>
 
-      <div className="button-container">
+      <div className="questions-section">
+        {categoryQuestions.map(question => (
+          <div key={question.id} className="question-card">
+            <p className="question-text">{question.question_text}</p>
+            <div className="options">
+              {question.options.map((option, index) => (
+                <label key={index} className="option-label">
+                  <input
+                    type="radio"
+                    name={question.id}
+                    value={option}
+                    checked={answers[question.id] === option}
+                    onChange={() => handleAnswerChange(question.id, option)}
+                  />
+                  <span className="option-text">{option}</span>
+                </label>
+              ))}
+            </div>
+          </div>
+        ))}
+      </div>
+
+      <div className="form-actions">
         <button 
-          onClick={handleNext}
-          disabled={!selectedAnswer}
-          className="next-button"
+          className="submit-button"
+          onClick={handleSubmitCategory}
+          disabled={categoryQuestions.some(q => !answers[q.id])}
         >
-          {currentQuestionIndex === questions.length - 1 ? 'Finish' : 'Next'}
+          {categories.indexOf(activeCategory) === categories.length - 1 
+            ? 'Complete Assessment'
+            : 'Save & Continue'}
         </button>
       </div>
     </div>
