@@ -20,9 +20,10 @@ const schema = a.schema({
     address: a.string(),
     dob: a.date(),
     role: a.enum(["PARENT", "CAREGIVER", "CLINICIAN", "ADMIN", "SME"]),
-    // ✅ Fix: Define relationship with KidProfile
     kidProfiles: a.hasMany("KidProfile", "parentId"),
+    teamMemberships: a.hasMany("TeamMember", "userId"),
     taskFeedbacks: a.hasMany("TaskFeedback", "userId"),
+    status: a.enum(["ACTIVE", "PENDING", "INACTIVE"]),
   })
   .authorization((allow) => [allow.owner(), allow.publicApiKey()]),
 
@@ -34,8 +35,47 @@ const schema = a.schema({
     dob: a.date(),
     parentId: a.id(), // Reference to User.id
     parent: a.belongsTo("User", "parentId"),
+    team: a.hasOne("Team", "kidProfileId"),
     milestones: a.hasMany("Milestone", "kidProfileId"),
     userResponses: a.hasMany("UserResponse", "kidProfileId"),
+  })
+  .authorization((allow) => [allow.owner(), allow.publicApiKey()]),
+
+  // Team
+  Team: a.model({
+    id: a.id(),
+    name: a.string(),
+    kidProfileId: a.id(),
+    kidProfile: a.belongsTo("KidProfile", "kidProfileId"),
+    members: a.hasMany("TeamMember", "teamId"),
+    adminId: a.id(), // Reference to the team admin (usually the parent)
+  })
+  .authorization((allow) => [allow.owner(), allow.publicApiKey()]),
+
+  // Team Member
+  TeamMember: a.model({
+    id: a.id(),
+    teamId: a.id(),
+    userId: a.id(),
+    team: a.belongsTo("Team", "teamId"),
+    user: a.belongsTo("User", "userId"),
+    role: a.enum(["ADMIN", "MEMBER"]),
+    status: a.enum(["ACTIVE", "PENDING", "INACTIVE"]),
+    invitedBy: a.string(), // Email of the person who sent the invite
+    invitedAt: a.datetime(),
+    joinedAt: a.datetime(),
+  })
+  .authorization((allow) => [allow.owner(), allow.publicApiKey()]),
+
+  // Team Invitation
+  TeamInvitation: a.model({
+    id: a.id(),
+    teamId: a.id(),
+    email: a.string(),
+    role: a.enum(["MEMBER"]),
+    status: a.enum(["PENDING", "ACCEPTED", "DECLINED", "EXPIRED"]),
+    expiresAt: a.datetime(),
+    token: a.string(),
   })
   .authorization((allow) => [allow.owner(), allow.publicApiKey()]),
 
