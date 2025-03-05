@@ -11,11 +11,13 @@
   font-size: 1.5rem;
   color: #1a73e8;
   margin: 0;
+  text-decoration: none;
+  font-weight: 500;
 }
 
 .header-right {
   display: flex;
-  gap: 1rem;
+  gap: 1.5rem;
   align-items: center;
 }
 
@@ -25,16 +27,53 @@
   padding: 0.5rem;
   cursor: pointer;
   color: #5f6368;
-  font-size: 1.25rem;
+  font-size: 1rem;
+  border-radius: 0.5rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  text-decoration: none;
+  transition: all 0.2s ease;
+}
+
+.icon-button:hover {
+  background-color: #f1f3f4;
+  color: #1a73e8;
+}
+
+.icon-button span {
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+.profile-button {
+  background-color: #6B46C1;
+  border: none;
+  width: 2.5rem;
+  height: 2.5rem;
   border-radius: 50%;
-  width: 40px;
-  height: 40px;
+  color: white;
+  cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
   transition: background-color 0.2s;
 }
 
-.icon-button:hover {
-  background-color: #f1f3f4;
+.profile-button:hover {
+  background-color: #553C9A;
+}
+
+@media (max-width: 768px) {
+  .app-header {
+    padding: 0.75rem 1rem;
+  }
+
+  .icon-button span {
+    display: none;
+  }
+
+  .header-right {
+    gap: 0.75rem;
+  }
 } 

@@ -131,7 +131,6 @@ export function KidProfileHome({ kidProfileId }: KidProfileHomeProps) {
 
   return (
     <div className="kid-profile-page">
-      <Header />
       <div className="content-wrapper">
         <div className="welcome-section">
           <div className="welcome-text">

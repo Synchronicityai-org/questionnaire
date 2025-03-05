@@ -38,6 +38,7 @@ const schema = a.schema({
     team: a.hasOne("Team", "kidProfileId"),
     milestones: a.hasMany("Milestone", "kidProfileId"),
     userResponses: a.hasMany("UserResponse", "kidProfileId"),
+    isDummy: a.boolean().required().default(false),
   })
   .authorization((allow) => [allow.owner(), allow.publicApiKey()]),
 
