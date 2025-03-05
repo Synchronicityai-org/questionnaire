@@ -6,16 +6,17 @@ import './RegistrationForm.css';
 type Step = 'userInfo' | 'roleSelection' | 'kidProfile' | 'teamSetup';
 type UserRole = 'PARENT' | 'CAREGIVER' | 'CLINICIAN' | 'ADMIN' | 'SME';
 
+interface RegistrationFormProps {
+  onSuccess: () => void;
+}
+
 interface UserInfo {
   username: string;
   email: string;
   password: string;
   fName: string;
   lName: string;
-  mName: string;
   phoneNumber: string;
-  address: string;
-  dob: string;
 }
 
 interface KidProfileInfo {
@@ -26,7 +27,7 @@ interface KidProfileInfo {
 
 const client = generateClient<Schema>();
 
-const RegistrationForm: React.FC = () => {
+const RegistrationForm: React.FC<RegistrationFormProps> = ({ onSuccess }) => {
   const [currentStep, setCurrentStep] = useState<Step>('userInfo');
   const [userInfo, setUserInfo] = useState<UserInfo>({
     username: '',
@@ -34,10 +35,7 @@ const RegistrationForm: React.FC = () => {
     password: '',
     fName: '',
     lName: '',
-    mName: '',
     phoneNumber: '',
-    address: '',
-    dob: '',
   });
   const [selectedRole, setSelectedRole] = useState<UserRole | ''>('');
   const [kidProfile, setKidProfile] = useState<KidProfileInfo>({
@@ -89,7 +87,9 @@ const RegistrationForm: React.FC = () => {
 
       if (selectedRole === 'PARENT' && currentStep === 'teamSetup' && userData) {
         const { data: kidProfileData } = await client.models.KidProfile.create({
-          ...kidProfile,
+          name: kidProfile.name,
+          age: kidProfile.age,
+          dob: kidProfile.dob,
           parentId: userData.id,
           isDummy: false
         });
@@ -103,8 +103,7 @@ const RegistrationForm: React.FC = () => {
         }
       }
 
-      // Redirect to login or dashboard
-      window.location.href = '/login';
+      onSuccess();
     } catch (err) {
       setError('Registration failed. Please try again.');
       console.error('Registration error:', err);

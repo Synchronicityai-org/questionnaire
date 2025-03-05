@@ -1,4 +1,4 @@
-import { BrowserRouter as Router, Routes, Route, Link, Navigate } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import type { Schema } from "../amplify/data/resource";
 import { generateClient } from "aws-amplify/data";
@@ -78,7 +78,7 @@ function App() {
           age: kid.age,
           dob: kid.dob,
           parentId: parentResponse.data.id,
-          isDummy: true // Add this flag to mark test profiles
+          isDummy: true as boolean, // Explicitly type as boolean
         });
 
         if (kidResponse.data?.id) {
@@ -154,7 +154,10 @@ function App() {
     }
 
     // Filter to show only dummy profiles in demo mode
-    const dummyProfiles = kidProfiles.filter(profile => profile.isDummy);
+    const dummyProfiles = kidProfiles.filter(profile => {
+      const profileData = profile as unknown as { isDummy?: boolean };
+      return profileData.isDummy === true;
+    });
 
     return (
       <div className="profiles-container">

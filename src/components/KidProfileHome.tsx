@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react';
 import { generateClient } from 'aws-amplify/data';
 import type { Schema } from '../../amplify/data/resource';
-import { Header } from './Header';
 import './KidProfileHome.css';
 import { QuestionnaireForm } from './QuestionnaireForm';
 import { AssessmentHistory } from './AssessmentHistory';
@@ -10,7 +9,7 @@ const client = generateClient<Schema>();
 
 interface KidProfileHomeProps {
   kidProfileId: string;
-  onBack?: () => void;
+  onBack: () => void;
 }
 
 interface KidProfile {
