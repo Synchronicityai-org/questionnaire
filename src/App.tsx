@@ -36,8 +36,25 @@ function App() {
     try {
       console.log('Fetching profiles...');
       const response = await client.models.KidProfile.list();
-      console.log('Raw response from server:', JSON.stringify(response, null, 2));
-      setKidProfiles(response.data);
+      
+      if (!response || !response.data) {
+        console.error('No response data received');
+        setError('Failed to load profiles: No data received');
+        setIsLoading(false);
+        return;
+      }
+
+      // Filter out any null entries and ensure required fields exist
+      const validProfiles = response.data.filter(profile => {
+        if (!profile || !profile.id) {
+          console.log('Skipping invalid profile:', profile);
+          return false;
+        }
+        return true;
+      });
+
+      console.log('Valid profiles:', validProfiles);
+      setKidProfiles(validProfiles);
       setIsLoading(false);
     } catch (err) {
       console.error('Error fetching profiles:', err);
@@ -48,23 +65,27 @@ function App() {
 
   const createTestProfile = async () => {
     try {
+      console.log('Starting test profile creation...');
+      
       // Create parent user first
       const parentResponse = await client.models.User.create({
-        username: 'sarah_johnson',
+        username: `sarah_johnson_${Date.now()}`, // Make username unique
         fName: 'Sarah',
         mName: '',
         lName: 'Johnson',
         phoneNumber: '(555) 123-4567',
-        email: 'sarah.johnson@example.com',
+        email: `sarah.johnson.${Date.now()}@example.com`, // Make email unique
         password: 'password123',
         address: '789 Maple Avenue, Springfield, IL',
         dob: '1985-06-15',
         role: 'PARENT'
       });
 
-      if (!parentResponse.data?.id) {
-        throw new Error('No parent ID returned');
+      if (!parentResponse || !parentResponse.data || !parentResponse.data.id) {
+        throw new Error('Failed to create parent user');
       }
+
+      console.log('Parent user created:', parentResponse.data);
 
       // Create three kid profiles with different ages and needs
       const kids = [
@@ -86,72 +107,89 @@ function App() {
       ];
 
       for (const kid of kids) {
-        console.log('Creating kid profile with isDummy:', true);
-        const kidResponse = await client.models.KidProfile.create({
-          name: kid.name,
-          age: kid.age,
-          dob: kid.dob,
-          parentId: parentResponse.data.id,
-          isDummy: true
-        });
+        try {
+          console.log('Creating kid profile:', kid.name);
+          const kidResponse = await client.models.KidProfile.create({
+            name: kid.name,
+            age: kid.age,
+            dob: kid.dob,
+            parentId: parentResponse.data.id,
+            isDummy: true
+          });
 
-        console.log('Kid profile created:', kidResponse);
+          if (!kidResponse || !kidResponse.data || !kidResponse.data.id) {
+            console.error('Failed to create kid profile:', kid.name);
+            continue;
+          }
 
-        if (kidResponse.data?.id) {
-          // Create a team for each kid
+          console.log('Kid profile created:', kidResponse.data);
+
+          // Create a team for the kid
           const team = await client.models.Team.create({
             name: `${kid.name}'s Care Team`,
             kidProfileId: kidResponse.data.id,
             adminId: parentResponse.data.id
           });
 
-          if (team.data?.id) {
-            // Create team members (professionals) for each kid
-            const teamMembers = [
-              {
-                name: 'Dr. Michael Chen',
-                role: 'CLINICIAN',
-                email: 'dr.chen@example.com'
-              },
-              {
-                name: 'Emily Parker',
-                role: 'CAREGIVER',
-                email: 'emily.p@example.com'
-              }
-            ];
+          if (!team || !team.data || !team.data.id) {
+            console.error('Failed to create team for:', kid.name);
+            continue;
+          }
 
-            for (const member of teamMembers) {
-              // Format date as YYYY-MM-DD
-              const today = new Date();
-              const formattedDate = today.toISOString().split('T')[0];
+          console.log('Team created for:', kid.name);
 
+          // Create team members with unique usernames and emails
+          const timestamp = Date.now();
+          const teamMembers = [
+            {
+              name: 'Dr. Michael Chen',
+              role: 'CLINICIAN',
+              email: `dr.chen.${timestamp}@example.com`,
+              username: `dr_chen_${timestamp}`
+            },
+            {
+              name: 'Emily Parker',
+              role: 'CAREGIVER',
+              email: `emily.p.${timestamp}@example.com`,
+              username: `emily_p_${timestamp}`
+            }
+          ];
+
+          for (const member of teamMembers) {
+            try {
               const userResponse = await client.models.User.create({
-                username: member.email.split('@')[0],
+                username: member.username,
                 fName: member.name.split(' ')[0],
                 lName: member.name.split(' ')[1],
                 email: member.email,
                 phoneNumber: '(555) 000-0000',
                 password: 'password123',
-                dob: formattedDate,
+                dob: new Date().toISOString().split('T')[0],
                 role: member.role as 'CLINICIAN' | 'CAREGIVER'
               });
 
-              if (userResponse.data?.id) {
+              if (userResponse?.data?.id) {
                 await client.models.TeamMember.create({
                   teamId: team.data.id,
                   userId: userResponse.data.id,
                   role: 'MEMBER',
                   status: 'ACTIVE',
-                  invitedBy: 'sarah.johnson@example.com',
+                  invitedBy: parentResponse.data.email,
                   invitedAt: new Date().toISOString(),
                   joinedAt: new Date().toISOString()
                 });
+                console.log('Team member created:', member.name);
               }
+            } catch (memberErr) {
+              console.error('Error creating team member:', member.name, memberErr);
             }
           }
+        } catch (kidErr) {
+          console.error('Error processing kid:', kid.name, kidErr);
         }
       }
 
+      console.log('Fetching updated profiles...');
       await fetchProfiles();
       setIsRegistered(true);
     } catch (err) {
