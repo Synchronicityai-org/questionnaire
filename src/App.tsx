@@ -144,6 +144,39 @@ function App() {
     setIsRegistered(true);
   };
 
+  const updateProfilesDummyFlag = async () => {
+    try {
+      const response = await client.models.KidProfile.list();
+      const profiles = response.data;
+      console.log('Found profiles:', profiles);
+      
+      for (const profile of profiles) {
+        try {
+          if (profile.name !== 'Arnav' && profile.id) {
+            console.log(`Updating profile: ${profile.name} (${profile.id})`);
+            const updateResponse = await client.models.KidProfile.update({
+              id: profile.id,
+              isDummy: true,
+              name: profile.name, // Include existing values
+              age: profile.age,
+              dob: profile.dob,
+              parentId: profile.parentId
+            });
+            console.log(`Update response for ${profile.name}:`, updateResponse);
+          }
+        } catch (profileErr) {
+          console.error(`Error updating profile ${profile.name}:`, profileErr);
+        }
+      }
+      
+      await fetchProfiles(); // Refresh the profiles after update
+      console.log('Finished updating profiles');
+    } catch (err) {
+      console.error('Error in updateProfilesDummyFlag:', err);
+      setError('Failed to update profiles. Check console for details.');
+    }
+  };
+
   const KidProfilesScreen = () => {
     if (isLoading) {
       return <div>Loading profiles...</div>;
@@ -196,6 +229,9 @@ function App() {
       <div className="app">
         <Header />
         <main className="app-main">
+          <button onClick={updateProfilesDummyFlag} style={{position: 'fixed', bottom: '20px', right: '20px', zIndex: 1000}}>
+            Update Dummy Flags
+          </button>
           <Routes>
             <Route path="/" element={
               isRegistered ? (
