@@ -10,8 +10,19 @@ import './App.css';
 
 const client = generateClient<Schema>();
 
+interface KidProfileType {
+  id: string | null;
+  name: string | null;
+  age: number | null;
+  dob: string | null;
+  parentId: string | null;
+  isDummy: boolean | null;
+  createdAt: string | null;
+  updatedAt: string | null;
+}
+
 function App() {
-  const [kidProfiles, setKidProfiles] = useState<Schema["KidProfile"]["type"][]>([]);
+  const [kidProfiles, setKidProfiles] = useState<KidProfileType[]>([]);
   const [selectedKidId, setSelectedKidId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -23,7 +34,9 @@ function App() {
 
   const fetchProfiles = async () => {
     try {
+      console.log('Fetching profiles...');
       const response = await client.models.KidProfile.list();
+      console.log('Raw response from server:', JSON.stringify(response, null, 2));
       setKidProfiles(response.data);
       setIsLoading(false);
     } catch (err) {
@@ -73,13 +86,16 @@ function App() {
       ];
 
       for (const kid of kids) {
+        console.log('Creating kid profile with isDummy:', true);
         const kidResponse = await client.models.KidProfile.create({
           name: kid.name,
           age: kid.age,
           dob: kid.dob,
           parentId: parentResponse.data.id,
-          isDummy: true as boolean, // Explicitly type as boolean
+          isDummy: true
         });
+
+        console.log('Kid profile created:', kidResponse);
 
         if (kidResponse.data?.id) {
           // Create a team for each kid
@@ -105,6 +121,10 @@ function App() {
             ];
 
             for (const member of teamMembers) {
+              // Format date as YYYY-MM-DD
+              const today = new Date();
+              const formattedDate = today.toISOString().split('T')[0];
+
               const userResponse = await client.models.User.create({
                 username: member.email.split('@')[0],
                 fName: member.name.split(' ')[0],
@@ -112,7 +132,7 @@ function App() {
                 email: member.email,
                 phoneNumber: '(555) 000-0000',
                 password: 'password123',
-                dob: new Date().toISOString(),
+                dob: formattedDate,
                 role: member.role as 'CLINICIAN' | 'CAREGIVER'
               });
 
@@ -144,39 +164,6 @@ function App() {
     setIsRegistered(true);
   };
 
-  const updateProfilesDummyFlag = async () => {
-    try {
-      const response = await client.models.KidProfile.list();
-      const profiles = response.data;
-      console.log('Found profiles:', profiles);
-      
-      for (const profile of profiles) {
-        try {
-          if (profile.name !== 'Arnav' && profile.id) {
-            console.log(`Updating profile: ${profile.name} (${profile.id})`);
-            const updateResponse = await client.models.KidProfile.update({
-              id: profile.id,
-              isDummy: true,
-              name: profile.name, // Include existing values
-              age: profile.age,
-              dob: profile.dob,
-              parentId: profile.parentId
-            });
-            console.log(`Update response for ${profile.name}:`, updateResponse);
-          }
-        } catch (profileErr) {
-          console.error(`Error updating profile ${profile.name}:`, profileErr);
-        }
-      }
-      
-      await fetchProfiles(); // Refresh the profiles after update
-      console.log('Finished updating profiles');
-    } catch (err) {
-      console.error('Error in updateProfilesDummyFlag:', err);
-      setError('Failed to update profiles. Check console for details.');
-    }
-  };
-
   const KidProfilesScreen = () => {
     if (isLoading) {
       return <div>Loading profiles...</div>;
@@ -186,11 +173,15 @@ function App() {
       return <div className="error">{error}</div>;
     }
 
+    console.log('All profiles:', kidProfiles);
+
     // Filter to show only dummy profiles in demo mode
     const dummyProfiles = kidProfiles.filter(profile => {
-      const profileData = profile as unknown as { isDummy?: boolean };
-      return profileData.isDummy === true;
+      console.log('Checking profile:', profile);
+      return profile.isDummy === true;
     });
+
+    console.log('Filtered dummy profiles:', dummyProfiles);
 
     return (
       <div className="profiles-container">
@@ -229,9 +220,6 @@ function App() {
       <div className="app">
         <Header />
         <main className="app-main">
-          <button onClick={updateProfilesDummyFlag} style={{position: 'fixed', bottom: '20px', right: '20px', zIndex: 1000}}>
-            Update Dummy Flags
-          </button>
           <Routes>
             <Route path="/" element={
               isRegistered ? (
