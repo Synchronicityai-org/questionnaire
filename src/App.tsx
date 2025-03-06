@@ -36,6 +36,7 @@ function App() {
     try {
       console.log('Fetching profiles...');
       const response = await client.models.KidProfile.list();
+      console.log('Raw response:', response);
       
       if (!response || !response.data) {
         console.error('No response data received');
@@ -44,17 +45,31 @@ function App() {
         return;
       }
 
-      // Filter out any null entries and ensure required fields exist
-      const validProfiles = response.data.filter(profile => {
-        if (!profile || !profile.id) {
-          console.log('Skipping invalid profile:', profile);
-          return false;
-        }
-        return true;
+      // Log each profile for debugging
+      response.data.forEach((profile, index) => {
+        console.log(`Profile ${index}:`, {
+          id: profile.id,
+          name: profile.name,
+          isDummy: profile.isDummy,
+          fullProfile: profile
+        });
       });
 
-      console.log('Valid profiles:', validProfiles);
-      setKidProfiles(validProfiles);
+      // Try filtering on the client side
+      const dummyProfiles = response.data.filter(profile => {
+        console.log('Checking profile for isDummy:', profile.name, profile.isDummy);
+        return Boolean(profile.isDummy);
+      });
+
+      console.log('Dummy profiles found:', dummyProfiles.length);
+      console.log('Dummy profiles:', dummyProfiles);
+
+      if (response.data.length > 0) {
+        setKidProfiles(response.data);
+      } else {
+        console.log('No profiles found in response');
+      }
+
       setIsLoading(false);
     } catch (err) {
       console.error('Error fetching profiles:', err);
@@ -198,9 +213,28 @@ function App() {
     }
   };
 
-  const handleRegistrationSuccess = () => {
-    setIsRegistered(true);
+  const handleRegistrationSuccess = async (data: { userId: string; kidProfileId: string; teamId: string }) => {
+    console.log('Registration successful, navigating to dashboard...', data);
+    
+    try {
+      // First fetch the profiles
+      await fetchProfiles();
+      console.log('Profiles fetched successfully after registration');
+      
+      // Then set the states that trigger navigation
+      setSelectedKidId(data.kidProfileId);
+      setIsRegistered(true);
+    } catch (err) {
+      console.error('Error fetching profiles after registration:', err);
+    }
   };
+
+  // Add useEffect to handle navigation when selectedKidId changes
+  useEffect(() => {
+    if (selectedKidId) {
+      console.log('Selected kid ID changed, navigating to dashboard:', selectedKidId);
+    }
+  }, [selectedKidId]);
 
   const KidProfilesScreen = () => {
     if (isLoading) {
@@ -211,19 +245,24 @@ function App() {
       return <div className="error">{error}</div>;
     }
 
-    console.log('All profiles:', kidProfiles);
+    console.log('Rendering KidProfilesScreen with profiles:', kidProfiles);
 
     // Filter to show only dummy profiles in demo mode
     const dummyProfiles = kidProfiles.filter(profile => {
-      console.log('Checking profile:', profile);
-      return profile.isDummy === true;
+      console.log('Filtering profile:', profile.name, 'isDummy:', profile.isDummy);
+      return Boolean(profile.isDummy);
     });
 
-    console.log('Filtered dummy profiles:', dummyProfiles);
+    console.log('Filtered dummy profiles for display:', dummyProfiles);
 
     return (
       <div className="profiles-container">
         <h2>Kid Profiles</h2>
+        {/* Debug info */}
+        <div style={{ display: 'none' }}>
+          <p>Total profiles: {kidProfiles.length}</p>
+          <p>Dummy profiles: {dummyProfiles.length}</p>
+        </div>
         {dummyProfiles.length === 0 ? (
           <div className="empty-state">
             <p>No profiles found. Click the button below to create test profiles.</p>
@@ -245,6 +284,8 @@ function App() {
                 <h3>{profile.name || 'Unnamed Child'}</h3>
                 <p>{profile.age} years old</p>
                 <p className="dob">Born: {new Date(profile.dob || '').toLocaleDateString()}</p>
+                {/* Debug info */}
+                <p style={{ display: 'none' }}>isDummy: {String(profile.isDummy)}</p>
               </div>
             ))}
           </div>
@@ -261,13 +302,17 @@ function App() {
           <Routes>
             <Route path="/" element={
               isRegistered ? (
-                <Navigate to="/dashboard" />
+                <Navigate to="/dashboard" replace={true} />
               ) : (
                 <LandingPage onDemoClick={createTestProfile} />
               )
             } />
             <Route path="/register" element={
-              <RegistrationForm onSuccess={handleRegistrationSuccess} />
+              isRegistered ? (
+                <Navigate to="/dashboard" replace={true} />
+              ) : (
+                <RegistrationForm onSuccess={handleRegistrationSuccess} />
+              )
             } />
             <Route path="/dashboard" element={
               selectedKidId ? (
