@@ -16,7 +16,7 @@ interface KidProfileType {
   age: number | null;
   dob: string | null;
   parentId: string | null;
-  isDummy: boolean | null;
+  isDummy: boolean;
   createdAt: string | null;
   updatedAt: string | null;
 }
@@ -35,7 +35,14 @@ function App() {
   const fetchProfiles = async () => {
     try {
       console.log('Fetching profiles...');
-      const response = await client.models.KidProfile.list();
+      const response = await client.models.KidProfile.list({
+        selectionSet: ['id', 'name', 'age', 'dob', 'parentId', 'isDummy', 'createdAt', 'updatedAt'],
+        filter: {
+          isDummy: {
+            eq: true
+          }
+        }
+      });
       console.log('Raw response:', response);
       
       if (!response || !response.data) {
@@ -45,31 +52,7 @@ function App() {
         return;
       }
 
-      // Log each profile for debugging
-      response.data.forEach((profile, index) => {
-        console.log(`Profile ${index}:`, {
-          id: profile.id,
-          name: profile.name,
-          isDummy: profile.isDummy,
-          fullProfile: profile
-        });
-      });
-
-      // Try filtering on the client side
-      const dummyProfiles = response.data.filter(profile => {
-        console.log('Checking profile for isDummy:', profile.name, profile.isDummy);
-        return Boolean(profile.isDummy);
-      });
-
-      console.log('Dummy profiles found:', dummyProfiles.length);
-      console.log('Dummy profiles:', dummyProfiles);
-
-      if (response.data.length > 0) {
-        setKidProfiles(response.data);
-      } else {
-        console.log('No profiles found in response');
-      }
-
+      setKidProfiles(response.data);
       setIsLoading(false);
     } catch (err) {
       console.error('Error fetching profiles:', err);
@@ -80,136 +63,27 @@ function App() {
 
   const createTestProfile = async () => {
     try {
-      console.log('Starting test profile creation...');
-      
-      // Create parent user first
-      const parentResponse = await client.models.User.create({
-        username: `sarah_johnson_${Date.now()}`, // Make username unique
-        fName: 'Sarah',
-        mName: '',
-        lName: 'Johnson',
-        phoneNumber: '(555) 123-4567',
-        email: `sarah.johnson.${Date.now()}@example.com`, // Make email unique
-        password: 'password123',
-        address: '789 Maple Avenue, Springfield, IL',
-        dob: '1985-06-15',
-        role: 'PARENT'
+      console.log('Checking for existing dummy profiles...');
+      const existingProfiles = await client.models.KidProfile.list({
+        selectionSet: ['id', 'name', 'age', 'dob', 'parentId', 'isDummy', 'createdAt', 'updatedAt'],
+        filter: {
+          isDummy: {
+            eq: true
+          }
+        }
       });
-
-      if (!parentResponse || !parentResponse.data || !parentResponse.data.id) {
-        throw new Error('Failed to create parent user');
+      
+      if (existingProfiles?.data && existingProfiles.data.length > 0) {
+        console.log('Found dummy profiles:', existingProfiles.data);
+        setKidProfiles(existingProfiles.data);
+        setIsRegistered(true);
+        return;
       }
 
-      console.log('Parent user created:', parentResponse.data);
-
-      // Create three kid profiles with different ages and needs
-      const kids = [
-        {
-          name: 'Emma Johnson',
-          age: 4,
-          dob: '2020-03-12'
-        },
-        {
-          name: 'Lucas Johnson',
-          age: 6,
-          dob: '2018-07-25'
-        },
-        {
-          name: 'Sophie Johnson',
-          age: 3,
-          dob: '2021-01-08'
-        }
-      ];
-
-      for (const kid of kids) {
-        try {
-          console.log('Creating kid profile:', kid.name);
-          const kidResponse = await client.models.KidProfile.create({
-            name: kid.name,
-            age: kid.age,
-            dob: kid.dob,
-            parentId: parentResponse.data.id,
-            isDummy: true
-          });
-
-          if (!kidResponse || !kidResponse.data || !kidResponse.data.id) {
-            console.error('Failed to create kid profile:', kid.name);
-            continue;
-          }
-
-          console.log('Kid profile created:', kidResponse.data);
-
-          // Create a team for the kid
-          const team = await client.models.Team.create({
-            name: `${kid.name}'s Care Team`,
-            kidProfileId: kidResponse.data.id,
-            adminId: parentResponse.data.id
-          });
-
-          if (!team || !team.data || !team.data.id) {
-            console.error('Failed to create team for:', kid.name);
-            continue;
-          }
-
-          console.log('Team created for:', kid.name);
-
-          // Create team members with unique usernames and emails
-          const timestamp = Date.now();
-          const teamMembers = [
-            {
-              name: 'Dr. Michael Chen',
-              role: 'CLINICIAN',
-              email: `dr.chen.${timestamp}@example.com`,
-              username: `dr_chen_${timestamp}`
-            },
-            {
-              name: 'Emily Parker',
-              role: 'CAREGIVER',
-              email: `emily.p.${timestamp}@example.com`,
-              username: `emily_p_${timestamp}`
-            }
-          ];
-
-          for (const member of teamMembers) {
-            try {
-              const userResponse = await client.models.User.create({
-                username: member.username,
-                fName: member.name.split(' ')[0],
-                lName: member.name.split(' ')[1],
-                email: member.email,
-                phoneNumber: '(555) 000-0000',
-                password: 'password123',
-                dob: new Date().toISOString().split('T')[0],
-                role: member.role as 'CLINICIAN' | 'CAREGIVER'
-              });
-
-              if (userResponse?.data?.id) {
-                await client.models.TeamMember.create({
-                  teamId: team.data.id,
-                  userId: userResponse.data.id,
-                  role: 'MEMBER',
-                  status: 'ACTIVE',
-                  invitedBy: parentResponse.data.email,
-                  invitedAt: new Date().toISOString(),
-                  joinedAt: new Date().toISOString()
-                });
-                console.log('Team member created:', member.name);
-              }
-            } catch (memberErr) {
-              console.error('Error creating team member:', member.name, memberErr);
-            }
-          }
-        } catch (kidErr) {
-          console.error('Error processing kid:', kid.name, kidErr);
-        }
-      }
-
-      console.log('Fetching updated profiles...');
-      await fetchProfiles();
-      setIsRegistered(true);
+      setError('No demo profiles available. Please contact the administrator.');
     } catch (err) {
-      console.error('Error creating test profiles:', err);
-      setError('Failed to create test profiles.');
+      console.error('Error checking for demo profiles:', err);
+      setError('Failed to load demo profiles. Please try again later.');
     }
   };
 
@@ -245,34 +119,19 @@ function App() {
       return <div className="error">{error}</div>;
     }
 
-    console.log('Rendering KidProfilesScreen with profiles:', kidProfiles);
-
-    // Filter to show only dummy profiles in demo mode
-    const dummyProfiles = kidProfiles.filter(profile => {
-      console.log('Filtering profile:', profile.name, 'isDummy:', profile.isDummy);
-      return Boolean(profile.isDummy);
-    });
-
-    console.log('Filtered dummy profiles for display:', dummyProfiles);
-
     return (
       <div className="profiles-container">
-        <h2>Kid Profiles</h2>
-        {/* Debug info */}
-        <div style={{ display: 'none' }}>
-          <p>Total profiles: {kidProfiles.length}</p>
-          <p>Dummy profiles: {dummyProfiles.length}</p>
-        </div>
-        {dummyProfiles.length === 0 ? (
+        <h2>Demo Profiles</h2>
+        {kidProfiles.length === 0 ? (
           <div className="empty-state">
-            <p>No profiles found. Click the button below to create test profiles.</p>
-            <button onClick={createTestProfile} className="create-profile-btn">
-              Create Test Profiles
+            <p>No demo profiles available.</p>
+            <button onClick={fetchProfiles} className="create-profile-btn">
+              Refresh Profiles
             </button>
           </div>
         ) : (
           <div className="profiles-grid">
-            {dummyProfiles.map(profile => (
+            {kidProfiles.map(profile => (
               <div 
                 key={profile.id} 
                 className="profile-card"
@@ -284,8 +143,6 @@ function App() {
                 <h3>{profile.name || 'Unnamed Child'}</h3>
                 <p>{profile.age} years old</p>
                 <p className="dob">Born: {new Date(profile.dob || '').toLocaleDateString()}</p>
-                {/* Debug info */}
-                <p style={{ display: 'none' }}>isDummy: {String(profile.isDummy)}</p>
               </div>
             ))}
           </div>
