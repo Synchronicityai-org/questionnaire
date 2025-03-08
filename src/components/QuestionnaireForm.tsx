@@ -27,6 +27,8 @@ export function QuestionnaireForm({ kidProfileId, onBack }: QuestionnaireFormPro
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showHistory, setShowHistory] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   const categories: QuestionCategory[] = ['COGNITION', 'LANGUAGE', 'MOTOR', 'SOCIAL', 'EMOTIONAL'];
 
@@ -73,41 +75,102 @@ export function QuestionnaireForm({ kidProfileId, onBack }: QuestionnaireFormPro
     const allCategoryQuestionsAnswered = categoryQuestions.every(q => answers[q.id]);
     
     if (!allCategoryQuestionsAnswered) {
-      alert('Please answer all questions in this category before submitting.');
+      alert('Please answer all questions in this category before continuing.');
       return;
     }
 
+    // Move to next category if available
+    const currentIndex = categories.indexOf(activeCategory);
+    if (currentIndex < categories.length - 1) {
+      setActiveCategory(categories[currentIndex + 1]);
+    } else {
+      // Check if all categories have answers
+      const allAnswered = categories.every(category => {
+        const categoryQuestions = questions.filter(q => q.category === category);
+        return categoryQuestions.every(q => answers[q.id]);
+      });
+
+      if (!allAnswered) {
+        alert('Please complete all questions in all categories before submitting.');
+        return;
+      }
+
+      // All categories completed, submit all answers
+      await handleFinalSubmit();
+    }
+  };
+
+  const handleFinalSubmit = async () => {
     try {
-      // Submit answers for the current category
+      setIsSubmitting(true);
+      
+      // Get all questions that should be answered
+      const allQuestions = questions;
+      
+      if (allQuestions.length === 0) {
+        alert('No questions available to submit.');
+        return;
+      }
+
+      // Check if we have all answers
+      const missingAnswers = allQuestions.filter(q => !answers[q.id]);
+      if (missingAnswers.length > 0) {
+        const missingCategories = new Set(missingAnswers.map(q => q.category));
+        alert(`Please complete all questions in the following categories: ${Array.from(missingCategories).join(', ')}`);
+        return;
+      }
+
+      // Use the same timestamp for all responses
+      const submissionTimestamp = new Date().toISOString();
+      console.log('Submitting all answers with timestamp:', submissionTimestamp);
+      console.log('Total questions:', allQuestions.length);
+      console.log('Total answers:', Object.keys(answers).length);
+
+      // Submit all answers together
       await Promise.all(
-        categoryQuestions.map(question => 
-          client.models.UserResponse.create({
+        allQuestions.map(question => {
+          console.log('Submitting answer:', {
+            questionId: question.id,
+            category: question.category,
+            answer: answers[question.id]
+          });
+          return client.models.UserResponse.create({
             kidProfileId,
             questionId: question.id,
             answer: answers[question.id],
-            timestamp: new Date().toISOString()
-          })
-        )
+            timestamp: submissionTimestamp
+          });
+        })
       );
 
-      // Clear answers for this category
-      const newAnswers = { ...answers };
-      categoryQuestions.forEach(q => delete newAnswers[q.id]);
-      setAnswers(newAnswers);
-
-      // Move to next category if available
-      const currentIndex = categories.indexOf(activeCategory);
-      if (currentIndex < categories.length - 1) {
-        setActiveCategory(categories[currentIndex + 1]);
-      } else {
-        // All categories completed
-        alert('Assessment completed successfully!');
-        onBack?.();
-      }
+      console.log('Successfully submitted all answers');
+      
+      // Clear the form
+      setAnswers({});
+      setActiveCategory('COGNITION');
+      
+      alert('Assessment completed successfully!');
+      onBack?.();
     } catch (err) {
       console.error('Error submitting answers:', err);
       setError('Failed to submit answers. Please try again.');
+    } finally {
+      setIsSubmitting(false);
     }
+  };
+
+  const toggleMobileMenu = () => {
+    setIsMobileMenuOpen(!isMobileMenuOpen);
+  };
+
+  const handleCategoryClick = (category: QuestionCategory) => {
+    setActiveCategory(category);
+    setIsMobileMenuOpen(false);
+  };
+
+  const handleBackClick = () => {
+    setIsMobileMenuOpen(false);
+    onBack?.();
   };
 
   if (showHistory) {
@@ -130,10 +193,39 @@ export function QuestionnaireForm({ kidProfileId, onBack }: QuestionnaireFormPro
     <div className="questionnaire-container">
       <div className="questionnaire-header">
         <h2>Assessment Questions</h2>
-        {onBack && (
-          <button className="back-button" onClick={onBack}>
-            ← Back to Profile
-          </button>
+        <div className="header-actions">
+          {onBack && (
+            <button className="back-button" onClick={handleBackClick}>
+              ← Back to Profile
+            </button>
+          )}
+        </div>
+        <button 
+          className={`burger-menu ${isMobileMenuOpen ? 'active' : ''}`}
+          onClick={toggleMobileMenu}
+          aria-label="Toggle menu"
+        >
+          <span></span>
+          <span></span>
+          <span></span>
+        </button>
+        {isMobileMenuOpen && (
+          <div className="mobile-menu active">
+            {onBack && (
+              <button onClick={handleBackClick}>
+                ← Back to Profile
+              </button>
+            )}
+            {categories.map(category => (
+              <button
+                key={category}
+                onClick={() => handleCategoryClick(category)}
+                className={category === activeCategory ? 'active' : ''}
+              >
+                {category.charAt(0) + category.slice(1).toLowerCase()}
+              </button>
+            ))}
+          </div>
         )}
       </div>
 
@@ -142,7 +234,7 @@ export function QuestionnaireForm({ kidProfileId, onBack }: QuestionnaireFormPro
           <button
             key={category}
             className={`tab-button ${category === activeCategory ? 'active' : ''}`}
-            onClick={() => setActiveCategory(category)}
+            onClick={() => handleCategoryClick(category)}
           >
             {category.charAt(0) + category.slice(1).toLowerCase()}
           </button>
@@ -184,11 +276,12 @@ export function QuestionnaireForm({ kidProfileId, onBack }: QuestionnaireFormPro
         <button 
           className="submit-button"
           onClick={handleSubmitCategory}
-          disabled={categoryQuestions.some(q => !answers[q.id])}
+          disabled={categoryQuestions.some(q => !answers[q.id]) || isSubmitting}
         >
-          {categories.indexOf(activeCategory) === categories.length - 1 
-            ? 'Complete Assessment'
-            : 'Save & Continue'}
+          {isSubmitting ? 'Submitting...' : 
+            categories.indexOf(activeCategory) === categories.length - 1 
+              ? 'Complete Assessment'
+              : 'Save & Continue'}
         </button>
       </div>
     </div>

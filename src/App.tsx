@@ -6,6 +6,7 @@ import { KidProfileHome } from "./components/KidProfileHome";
 import RegistrationForm from "./components/auth/RegistrationForm";
 import { LandingPage } from "./components/LandingPage";
 import { Header } from './components/Header';
+import { TeamManagement } from './components/TeamManagement';
 import './App.css';
 
 const client = generateClient<Schema>();
@@ -181,6 +182,10 @@ function App() {
                 <KidProfilesScreen />
               )
             } />
+            <Route 
+              path="/team-management/:kidProfileId" 
+              element={<TeamManagement />} 
+            />
           </Routes>
         </main>
       </div>

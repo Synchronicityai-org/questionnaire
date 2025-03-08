@@ -1,7 +1,6 @@
 #root {
-  max-width: 1280px;
-  margin: 0 auto;
-  padding: 2rem;
+  width: 100%;
+  margin: 0;
   text-align: center;
 }
 
@@ -63,211 +62,46 @@
 }
 
 .profile-button {
-  width: 100%;
+  width: auto;
   padding: 1rem;
-  background-color: #7551c2;
+  background-color: #1a73e8;
   color: white;
   border: none;
   border-radius: 8px;
   font-size: 1rem;
   cursor: pointer;
   transition: background-color 0.2s ease;
+  outline: #1a73e8;
 }
 
 .profile-button:hover {
-  background-color: #5f3da8;
-}
-
-main {
-  width: 100%;
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 1rem;
-}
-
-.app-container {
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 2rem;
-}
-
-.app-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 2rem;
-}
-
-.app-header h1 {
-  margin: 0;
-  color: #2d3748;
-  font-size: 2rem;
-}
-
-.create-profile-btn {
-  background-color: #4299e1;
-  color: white;
-  border: none;
-  padding: 0.75rem 1.5rem;
-  border-radius: 0.5rem;
-  font-weight: 500;
-  cursor: pointer;
-  transition: background-color 0.2s;
-}
-
-.create-profile-btn:hover {
-  background-color: #3182ce;
-}
-
-.empty-state {
-  text-align: center;
-  padding: 3rem;
-  background-color: #f7fafc;
-  border-radius: 0.5rem;
-  color: #718096;
-}
-
-.profiles-grid {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 2rem;
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 1rem;
-}
-
-.profile-card {
-  background-color: white;
-  border-radius: 1rem;
-  padding: 1.5rem;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-  cursor: pointer;
-  transition: transform 0.2s, box-shadow 0.2s;
-  text-align: center;
-}
-
-.profile-card:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 6px 8px rgba(0, 0, 0, 0.15);
-}
-
-.profile-avatar {
-  width: 80px;
-  height: 80px;
-  background-color: #4299e1;
-  color: white;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 2rem;
-  font-weight: 600;
-  margin: 0 auto 1rem;
-}
-
-.profile-card h2 {
-  margin: 0 0 0.5rem;
-  color: #2d3748;
-  font-size: 1.25rem;
-}
-
-.profile-card p {
-  margin: 0.25rem 0;
-  color: #718096;
-}
-
-.profile-card .dob {
-  font-size: 0.875rem;
-  color: #a0aec0;
-  margin-top: 0.5rem;
-}
-
-@media (max-width: 1024px) {
-  .profiles-grid {
-    grid-template-columns: repeat(2, 1fr);
-  }
-}
-
-@media (max-width: 640px) {
-  .profiles-grid {
-    grid-template-columns: 1fr;
-  }
-}
-
-.header-actions {
-  display: flex;
-  gap: 1rem;
-  align-items: center;
-}
-
-.register-btn {
-  background-color: #34d399;
-  color: white;
-  text-decoration: none;
-  padding: 0.75rem 1.5rem;
-  border-radius: 0.5rem;
-  font-weight: 500;
-  transition: background-color 0.2s;
-}
-
-.register-btn:hover {
-  background-color: #059669;
-}
-
-.app {
-  min-height: 100vh;
-  display: flex;
-  flex-direction: column;
+  background-color: #1a73e8;
 }
 
 .app-main {
   flex: 1;
-  padding: 2rem;
   max-width: 1200px;
   margin: 0 auto;
   width: 100%;
+  padding: 0;
 }
 
 .profiles-container {
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 2rem;
+  padding: 1rem;
 }
 
 .profiles-container h2 {
   color: #2d3748;
   margin-bottom: 2rem;
   font-size: 1.875rem;
-}
-
-.empty-state {
   text-align: center;
-  padding: 3rem;
-  background-color: #f7fafc;
-  border-radius: 0.5rem;
-  color: #718096;
-}
-
-.create-profile-btn {
-  background-color: #4299e1;
-  color: white;
-  border: none;
-  padding: 0.75rem 1.5rem;
-  border-radius: 0.5rem;
-  font-weight: 500;
-  cursor: pointer;
-  transition: background-color 0.2s;
-  margin-top: 1.5rem;
-}
-
-.create-profile-btn:hover {
-  background-color: #3182ce;
 }
 
 .profiles-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  grid-template-columns: repeat(4, 1fr);
   gap: 2rem;
+  width: 100%;
 }
 
 .profile-card {
@@ -278,11 +112,7 @@ main {
   cursor: pointer;
   transition: transform 0.2s, box-shadow 0.2s;
   text-align: center;
-}
-
-.profile-card:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 6px 8px rgba(0, 0, 0, 0.15);
+  min-width: 0;
 }
 
 .profile-avatar {
@@ -316,6 +146,117 @@ main {
   margin-top: 0.5rem;
 }
 
+@media (max-width: 1200px) {
+  .profiles-grid {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1.5rem;
+  }
+}
+
+@media (max-width: 768px) {
+
+  .profiles-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1rem;
+  }
+
+  .profile-card {
+    padding: 1.25rem;
+  }
+
+  .profile-avatar {
+    width: 60px;
+    height: 60px;
+    font-size: 1.5rem;
+  }
+
+  .profile-card h3 {
+    font-size: 1.1rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .profiles-container {
+    padding: 0.5rem;
+  }
+
+  .profiles-grid {
+    grid-template-columns: 1fr;
+    max-width: 400px;
+    margin: 0 auto;
+    gap: 1rem;
+    padding: 0;
+  }
+
+  .profile-card {
+    padding: 1rem;
+  }
+
+  .profile-avatar {
+    width: 50px;
+    height: 50px;
+    font-size: 1.25rem;
+  }
+
+  .profile-card h3 {
+    font-size: 1rem;
+  }
+
+  .profile-card p {
+    font-size: 0.9rem;
+  }
+}
+
+.header-actions {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+}
+
+.register-btn {
+  background-color: #34d399;
+  color: white;
+  text-decoration: none;
+  padding: 0.75rem 1.5rem;
+  border-radius: 0.5rem;
+  font-weight: 500;
+  transition: background-color 0.2s;
+}
+
+.register-btn:hover {
+  background-color: #059669;
+}
+
+.app {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.empty-state {
+  text-align: center;
+  padding: 3rem;
+  background-color: #f7fafc;
+  border-radius: 0.5rem;
+  color: #718096;
+}
+
+.create-profile-btn {
+  background-color: #4299e1;
+  color: white;
+  border: none;
+  padding: 0.75rem 1.5rem;
+  border-radius: 0.5rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  margin-top: 1.5rem;
+}
+
+.create-profile-btn:hover {
+  background-color: #3182ce;
+}
+
 .error {
   text-align: center;
   color: #e53e3e;
@@ -323,15 +264,4 @@ main {
   background-color: #fff5f5;
   border-radius: 0.5rem;
   margin: 2rem 0;
-}
-
-@media (max-width: 768px) {
-  .profiles-container {
-    padding: 1rem;
-  }
-
-  .profiles-grid {
-    grid-template-columns: 1fr;
-    gap: 1rem;
-  }
 }

@@ -2,9 +2,10 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 1rem 2rem;
+  padding: 0.75rem 1.5rem;
   background-color: #ffffff;
   border-bottom: 1px solid #eaeaea;
+  width: 100%;
 }
 
 .app-title {
@@ -12,13 +13,24 @@
   color: #1a73e8;
   margin: 0;
   text-decoration: none;
-  font-weight: 500;
+  font-weight: 700;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.header-left {
+  width: 40%;
+  text-align: start;
 }
 
 .header-right {
+  width: 60%;
   display: flex;
+  justify-content: flex-end;
   gap: 1.5rem;
   align-items: center;
+  margin-right: 3rem;
 }
 
 .icon-button {
@@ -47,9 +59,9 @@
 }
 
 .profile-button {
-  background-color: #6B46C1;
+  background-color: #1a73e8 !important;
   border: none;
-  width: 2.5rem;
+  width: auto;
   height: 2.5rem;
   border-radius: 50%;
   color: white;
@@ -60,20 +72,197 @@
   transition: background-color 0.2s;
 }
 
-.profile-button:hover {
-  background-color: #553C9A;
+
+
+.burger-menu {
+  display: none;
+  background-color: #1a73e8;
+  border: none;
+  cursor: pointer;
+  padding: 0.75rem;
+  z-index: 100;
+  border-radius: 8px;
+  width: 45px;
+  height: 45px;
+  position: relative;
+  transition: background-color 0.3s ease;
+  margin-right: 1rem;
+  outline: #1a73e8 !important;
+}
+
+.burger-menu:hover {
+  background-color: #1557b0;
+}
+
+.burger-menu span {
+  display: block;
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 24px;
+  height: 2px;
+  background-color: white;
+  transition: all 0.3s ease;
+  border-radius: 2px;
+}
+
+.burger-menu span:nth-child(1) {
+  top: 14px;
+}
+
+.burger-menu span:nth-child(2) {
+  top: 22px;
+}
+
+.burger-menu span:nth-child(3) {
+  top: 30px;
+}
+
+.burger-menu.active span:nth-child(1) {
+  transform: translateX(-50%) rotate(45deg);
+  top: 22px;
+}
+
+.burger-menu.active span:nth-child(2) {
+  opacity: 0;
+}
+
+.burger-menu.active span:nth-child(3) {
+  transform: translateX(-50%) rotate(-45deg);
+  top: 22px;
 }
 
 @media (max-width: 768px) {
-  .app-header {
-    padding: 0.75rem 1rem;
+  .burger-menu {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-left: 1rem;
+    margin-right: 1rem;
   }
 
-  .icon-button span {
-    display: none;
+  .app-header {
+    padding: 0.75rem 1rem;
+    position: relative;
   }
 
   .header-right {
+    position: fixed;
+    top: 0;
+    right: -100%;
+    height: auto;
+    min-height: fit-content;
+    width: 280px;
+    background-color: white;
+    flex-direction: column;
+    justify-content: flex-start;
+    align-items: center;
+    padding: 1rem;
+    margin-top: 4rem;
+    transition: right 0.3s ease;
+    box-shadow: -2px 0 5px rgba(0, 0, 0, 0.1);
+    z-index: 99;
+    border-radius: 12px;
+    border: 2px solid #1a73e8;
+  }
+
+  .header-right.active {
+    right: 1rem;
+  }
+
+  .header-right .icon-button {
+    width: 100%;
+    padding: 0.75rem;
+    justify-content: center;
     gap: 0.75rem;
+    color: #1a73e8;
+    border-radius: 8px;
+    transition: background-color 0.3s ease;
+    margin-bottom: 0.5rem;
+  }
+
+  .header-right .icon-button:last-child {
+    margin-bottom: 0;
+  }
+
+  .header-right .profile-button {
+    width: 100%;
+    height: auto;
+    padding: 0.75rem;
+    border-radius: 8px;
+    background-color: #1a73e8;
+    margin-top: 0.5rem;
+    color: white;
+  }
+
+  .header-right .icon-button span {
+    display: inline-block;
+    color: #1a73e8;
+  }
+
+  .app-title {
+    font-size: 1.25rem;
+    font-weight: 700;
+  }
+
+  .header-left {
+    width: auto;
+    flex: 1;
+    margin-right: 0;
+  }
+
+  .overlay {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+    z-index: 98;
+  }
+
+  .overlay.active {
+    display: block;
+  }
+}
+
+@media (max-width: 480px) {
+  .burger-menu {
+    width: 40px;
+    height: 40px;
+  }
+
+  .burger-menu span {
+    width: 20px;
+  }
+
+  .burger-menu span:nth-child(1) {
+    top: 12px;
+  }
+
+  .burger-menu span:nth-child(2) {
+    top: 19px;
+  }
+
+  .burger-menu span:nth-child(3) {
+    top: 26px;
+  }
+
+  .burger-menu.active span:nth-child(1),
+  .burger-menu.active span:nth-child(3) {
+    top: 19px;
+  }
+
+  .app-header {
+    padding: 0.5rem;
+  }
+
+  .app-title {
+    font-size: 1.1rem;
+  }
+
+  .header-left {
+    margin-right: 0;
   }
 } 

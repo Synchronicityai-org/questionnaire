@@ -13,14 +13,15 @@ interface AssessmentHistoryProps {
 
 type Category = "COGNITION" | "LANGUAGE" | "MOTOR" | "SOCIAL" | "EMOTIONAL";
 
-interface GroupedResponse {
+type GroupedResponse = {
   timestamp: string;
   responses: {
     question: string;
     answer: string;
     category: Category;
+    questionId: string;
   }[];
-}
+};
 
 export function AssessmentHistory({ kidProfileId, onClose, displayFormat = 'summary' }: AssessmentHistoryProps) {
   const [isLoading, setIsLoading] = useState(true);
@@ -34,6 +35,11 @@ export function AssessmentHistory({ kidProfileId, onClose, displayFormat = 'summ
   const fetchAssessmentHistory = async () => {
     try {
       setIsLoading(true);
+      setError(null);
+      
+      console.log('Starting to fetch assessment history');
+      console.log('KidProfileId:', kidProfileId);
+      
       // Fetch all responses for this kid
       const responses = await client.models.UserResponse.list({
         filter: {
@@ -41,90 +47,157 @@ export function AssessmentHistory({ kidProfileId, onClose, displayFormat = 'summ
         }
       });
 
+      console.log('Raw UserResponse data:', responses);
+      console.log('Total responses:', responses.data?.length || 0);
+
+      if (!responses.data || responses.data.length === 0) {
+        console.log('No responses found for kidProfileId:', kidProfileId);
+        setAssessments([]);
+        setIsLoading(false);
+        return;
+      }
+
       // Fetch all questions to get their text and category
+      console.log('Fetching questions from QuestionBank');
       const questions = await client.models.QuestionBank.list();
+      
+      if (!questions.data || questions.data.length === 0) {
+        console.error('No questions found in QuestionBank');
+        setError('Failed to load questions data');
+        setIsLoading(false);
+        return;
+      }
+
+      // Create a map of all questions
       const questionsMap = new Map(questions.data.map(q => [q.id, q]));
+      console.log('Total questions in QuestionBank:', questions.data.length);
 
-      // Group responses by timestamp (treating same-day responses as one assessment)
-      const groupedResponses = responses.data.reduce((acc, response) => {
-        if (!response.timestamp) return acc;
-        
-        const date = new Date(response.timestamp).toLocaleDateString();
-        const question = questionsMap.get(response.questionId);
-        
-        if (!question || !question.question_text || !question.category) return acc;
+      // Group responses by exact timestamp
+      const responsesByTimestamp = new Map<string, {
+        timestamp: string;
+        responses: Map<string, {
+          question: string;
+          answer: string;
+          category: Category;
+          questionId: string;
+        }>;
+      }>();
 
-        const existingGroup = acc.find(group => 
-          new Date(group.timestamp).toLocaleDateString() === date
-        );
+      // Process each response and group by timestamp
+      responses.data.forEach(response => {
+        if (!response || !response.timestamp || !response.questionId) {
+          console.warn('Invalid response found:', response);
+          return;
+        }
 
-        const newResponse = {
-          question: question.question_text,
-          answer: response.answer || '',
-          category: question.category as Category
-        };
-
-        if (existingGroup) {
-          existingGroup.responses.push(newResponse);
-        } else {
-          acc.push({
-            timestamp: response.timestamp,
-            responses: [newResponse]
+        const timestamp = response.timestamp;
+        if (!responsesByTimestamp.has(timestamp)) {
+          responsesByTimestamp.set(timestamp, {
+            timestamp,
+            responses: new Map()
           });
         }
 
-        return acc;
-      }, [] as GroupedResponse[]);
+        const question = questionsMap.get(response.questionId);
+        if (!question || !question.question_text || !question.category) {
+          console.warn('Question not found or invalid:', {
+            questionId: response.questionId,
+            question: question
+          });
+          return;
+        }
 
-      // Sort by most recent first
-      groupedResponses.sort((a, b) => 
-        new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
-      );
+        // Store response in the map using questionId as key to prevent duplicates
+        responsesByTimestamp.get(timestamp)?.responses.set(response.questionId, {
+          question: question.question_text,
+          answer: response.answer || '',
+          category: question.category as Category,
+          questionId: response.questionId
+        });
+      });
+
+      // Convert map to array and transform the responses
+      const groupedResponses = Array.from(responsesByTimestamp.values())
+        .map(session => ({
+          timestamp: session.timestamp,
+          responses: Array.from(session.responses.values())
+        }))
+        .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+
+      console.log('Grouped responses:', {
+        totalSessions: groupedResponses.length,
+        sessionsDetails: groupedResponses.map(session => ({
+          timestamp: session.timestamp,
+          totalResponses: session.responses.length,
+          categories: new Set(session.responses.map(r => r.category)).size
+        }))
+      });
 
       setAssessments(groupedResponses);
       setIsLoading(false);
     } catch (err) {
-      console.error('Error fetching assessment history:', err);
+      console.error('Error in fetchAssessmentHistory:', err);
       setError('Failed to load assessment history. Please try again later.');
       setIsLoading(false);
     }
   };
 
   const renderAssessmentSummary = (assessment: GroupedResponse) => {
-    const categoryCounts = assessment.responses.reduce((acc, response) => {
-      const category = response.category;
-      acc[category] = acc[category] || { total: 0, yes: 0, no: 0, dontKnow: 0 };
-      acc[category].total++;
-      if (response.answer === 'Yes') acc[category].yes++;
-      if (response.answer === 'No') acc[category].no++;
-      if (response.answer === "Don't Know") acc[category].dontKnow++;
+    // Sort responses by category
+    const responsesByCategory = assessment.responses.reduce((acc, response) => {
+      if (!acc[response.category]) {
+        acc[response.category] = [];
+      }
+      acc[response.category].push(response);
       return acc;
-    }, {} as Record<Category, { total: number; yes: number; no: number; dontKnow: number }>);
+    }, {} as Record<Category, typeof assessment.responses>);
+
+    const timestamp = new Date(assessment.timestamp);
+    const formattedDate = timestamp.toLocaleDateString();
+    const formattedTime = timestamp.toLocaleTimeString();
 
     return (
       <div className="summary-report">
-        <h2>Assessment from {new Date(assessment.timestamp).toLocaleDateString()}</h2>
+        <h2>Assessment from {formattedDate} at {formattedTime}</h2>
+        <p className="response-count">
+          Total Responses: {assessment.responses.length} 
+          {assessment.responses.length < 63 && " (Incomplete Assessment)"}
+        </p>
         <div className="category-summaries">
-          {Object.entries(categoryCounts).map(([category, counts]) => (
-            <div key={category} className="category-summary">
-              <h3>{category}</h3>
-              <div className="category-stats">
-                <p>Total Questions: {counts.total}</p>
-                <p>Yes Responses: {counts.yes} ({Math.round(counts.yes / counts.total * 100)}%)</p>
-                <p>No Responses: {counts.no} ({Math.round(counts.no / counts.total * 100)}%)</p>
-                <p>Don't Know: {counts.dontKnow} ({Math.round(counts.dontKnow / counts.total * 100)}%)</p>
+          {Object.entries(responsesByCategory).map(([category, responses]) => {
+            const counts = responses.reduce((acc, r) => {
+              acc.total++;
+              if (r.answer === 'Yes') acc.yes++;
+              if (r.answer === 'No') acc.no++;
+              if (r.answer === "Don't Know") acc.dontKnow++;
+              return acc;
+            }, { total: 0, yes: 0, no: 0, dontKnow: 0 });
+
+            return (
+              <div key={category} className="category-summary">
+                <h3>{category}</h3>
+                <div className="category-stats">
+                  <p>Total Questions: {counts.total}</p>
+                  <p>Yes Responses: {counts.yes} ({Math.round(counts.yes / counts.total * 100)}%)</p>
+                  <p>No Responses: {counts.no} ({Math.round(counts.no / counts.total * 100)}%)</p>
+                  <p>Don't Know: {counts.dontKnow} ({Math.round(counts.dontKnow / counts.total * 100)}%)</p>
+                </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
         
         <div className="detailed-responses">
           <h3>Detailed Responses</h3>
-          {assessment.responses.map((response, index) => (
-            <div key={index} className="response-item">
-              <p className="question-text">Q{index + 1}: {response.question}</p>
-              <p className="answer-text">Answer: <strong>{response.answer}</strong></p>
-              <p className="category-text">Category: {response.category}</p>
+          {Object.entries(responsesByCategory).map(([category, responses]) => (
+            <div key={category} className="category-responses">
+              <h4>{category} ({responses.length} questions)</h4>
+              {responses.map((response, index) => (
+                <div key={`${response.questionId}`} className="response-item">
+                  <p className="question-text">Q{index + 1}: {response.question}</p>
+                  <p className="answer-text">Answer: <strong>{response.answer}</strong></p>
+                </div>
+              ))}
             </div>
           ))}
         </div>
@@ -133,24 +206,37 @@ export function AssessmentHistory({ kidProfileId, onClose, displayFormat = 'summ
   };
 
   const renderQAFormat = (assessment: GroupedResponse) => {
+    // Sort responses by category
+    const responsesByCategory = assessment.responses.reduce((acc, response) => {
+      if (!acc[response.category]) {
+        acc[response.category] = [];
+      }
+      acc[response.category].push(response);
+      return acc;
+    }, {} as Record<Category, typeof assessment.responses>);
+
     return (
       <div className="qa-format">
-        <h2>Assessment from {new Date(assessment.timestamp).toLocaleDateString()}</h2>
-        <div className="qa-list">
-          {assessment.responses.map((response, index) => (
-            <div key={index} className="qa-item">
-              <div className="qa-category">{response.category}</div>
-              <div className="qa-question">
-                <span className="q-label">Q:</span>
-                <span className="q-text">{response.question}</span>
-              </div>
-              <div className="qa-answer">
-                <span className="a-label">A:</span>
-                <span className="a-text">{response.answer}</span>
-              </div>
+        <h2>Assessment from {new Date(assessment.timestamp).toLocaleString()}</h2>
+        {Object.entries(responsesByCategory).map(([category, responses]) => (
+          <div key={category} className="category-section">
+            <h3>{category}</h3>
+            <div className="qa-list">
+              {responses.map((response, index) => (
+                <div key={index} className="qa-item">
+                  <div className="qa-question">
+                    <span className="q-label">Q{index + 1}:</span>
+                    <span className="q-text">{response.question}</span>
+                  </div>
+                  <div className="qa-answer">
+                    <span className="a-label">A:</span>
+                    <span className="a-text">{response.answer}</span>
+                  </div>
+                </div>
+              ))}
             </div>
-          ))}
-        </div>
+          </div>
+        ))}
       </div>
     );
   };

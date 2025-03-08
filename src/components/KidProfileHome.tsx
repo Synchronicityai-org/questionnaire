@@ -4,6 +4,7 @@ import type { Schema } from '../../amplify/data/resource';
 import './KidProfileHome.css';
 import { QuestionnaireForm } from './QuestionnaireForm';
 import { AssessmentHistory } from './AssessmentHistory';
+import { useNavigate } from 'react-router-dom';
 
 const client = generateClient<Schema>();
 
@@ -39,6 +40,7 @@ interface TeamMember {
   name: string;
   role: string;
   imageUrl?: string;
+  status: 'ACTIVE' | 'PENDING' | 'INACTIVE';
 }
 
 export function KidProfileHome({ kidProfileId }: KidProfileHomeProps) {
@@ -49,6 +51,7 @@ export function KidProfileHome({ kidProfileId }: KidProfileHomeProps) {
   const [error, setError] = useState<string | null>(null);
   const [showQuestionnaire, setShowQuestionnaire] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
+  const navigate = useNavigate();
 
   useEffect(() => {
     fetchKidProfile();
@@ -77,12 +80,81 @@ export function KidProfileHome({ kidProfileId }: KidProfileHomeProps) {
   };
 
   const fetchTeamMembers = async () => {
-    // TODO: Implement team members fetching
-    setTeamMembers([
-      { id: '1', name: 'Dr. Sarah Johnson', role: 'Developmental Pediatrician' },
-      { id: '2', name: 'Emily Parker', role: 'Speech-Language Pathologist' },
-      { id: '3', name: 'Michael Chen', role: 'Occupational Therapist' }
-    ]);
+    try {
+      console.log('Fetching team for kidProfileId:', kidProfileId);
+      
+      // First get the team for this kid profile
+      const teamsResponse = await client.models.Team.list({
+        filter: {
+          kidProfileId: {
+            eq: kidProfileId
+          }
+        }
+      });
+
+      console.log('Teams response:', teamsResponse);
+
+      const team = teamsResponse?.data?.[0];
+      if (!team?.id) {
+        console.log('No team found for this kid profile');
+        return;
+      }
+
+      // Then get all team members for this team
+      console.log('Fetching team members for teamId:', team.id);
+      const teamMembersResponse = await client.models.TeamMember.list({
+        filter: {
+          teamId: {
+            eq: team.id
+          }
+        }
+      });
+
+      console.log('Team members response:', teamMembersResponse);
+
+      if (teamMembersResponse?.data) {
+        const members = await Promise.all(
+          teamMembersResponse.data.map(async (member) => {
+            if (!member.id || !member.userId || !member.teamId || !member.status) {
+              console.log('Invalid member data:', member);
+              return null;
+            }
+
+            // Fetch the associated user details
+            const userResponse = await client.models.User.get({
+              id: member.userId
+            });
+
+            console.log('User details for member:', userResponse);
+
+            if (!userResponse?.data?.fName) {
+              console.log('Invalid user data:', userResponse);
+              return null;
+            }
+
+            const status = member.status as 'ACTIVE' | 'PENDING' | 'INACTIVE';
+            if (status !== 'ACTIVE' && status !== 'PENDING' && status !== 'INACTIVE') {
+              console.log('Invalid status:', status);
+              return null;
+            }
+            
+            return {
+              id: member.id,
+              name: `${userResponse.data.fName} ${userResponse.data.lName || ''}`,
+              role: userResponse.data.role || 'MEMBER',
+              status: status,
+              imageUrl: undefined // Optional profile image
+            } as TeamMember;
+          })
+        );
+
+        // Filter out any null values and set the team members
+        setTeamMembers(members.filter((member): member is TeamMember => member !== null));
+      }
+    } catch (err) {
+      console.error('Error fetching team members:', err);
+      setError('Failed to load team members');
+    }
   };
 
   const fetchCurrentMilestone = async () => {
@@ -106,6 +178,10 @@ export function KidProfileHome({ kidProfileId }: KidProfileHomeProps) {
         }
       ]
     });
+  };
+
+  const handleManageTeam = () => {
+    navigate(`/team-management/${kidProfileId}`);
   };
 
   if (isLoading) {
@@ -204,7 +280,9 @@ export function KidProfileHome({ kidProfileId }: KidProfileHomeProps) {
                   </div>
                 ))}
               </div>
-              <button className="manage-team-button">Manage Team</button>
+              <button className="manage-team-button" onClick={handleManageTeam}>
+                Manage Team
+              </button>
             </div>
 
             <div className="community-section">
