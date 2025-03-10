@@ -26,7 +26,9 @@ interface Assessment {
     questionId: string;
     answer: string;
     category: QuestionCategory;
+    question_text?: string;
   }>;
+  parentConcerns?: string;
 }
 
 interface QuestionnaireFormProps {
@@ -46,12 +48,14 @@ export function QuestionnaireForm({ kidProfileId, onBack }: QuestionnaireFormPro
   const [assessmentId, setAssessmentId] = useState('');
   const [expandedAssessments, setExpandedAssessments] = useState<string[]>([]);
   const [assessments, setAssessments] = useState<Assessment[]>([]);
+  const [parentConcernsText, setParentConcernsText] = useState<string>('');
 
   const categories: QuestionCategory[] = ['COGNITION', 'LANGUAGE', 'MOTOR', 'SOCIAL', 'EMOTIONAL'];
 
   useEffect(() => {
     fetchQuestions();
     fetchAssessments();
+    fetchParentConcerns();
     setAssessmentId(new Date().toISOString());
   }, []);
 
@@ -124,6 +128,22 @@ export function QuestionnaireForm({ kidProfileId, onBack }: QuestionnaireFormPro
     }
   };
 
+  const fetchParentConcerns = async () => {
+    try {
+      const concerns = await client.models.ParentConcerns.list({
+        filter: {
+          kidProfileId: { eq: kidProfileId },
+          assessmentId: { eq: assessmentId }
+        }
+      });
+      if (concerns.data[0]?.concernText) {
+        setParentConcernsText(concerns.data[0].concernText);
+      }
+    } catch (err) {
+      console.error('Error fetching parent concerns:', err);
+    }
+  };
+
   const handleAnswerChange = (questionId: string, answer: string) => {
     setAnswers(prev => ({
       ...prev,
@@ -140,6 +160,7 @@ export function QuestionnaireForm({ kidProfileId, onBack }: QuestionnaireFormPro
           timestamp: new Date().toISOString(),
           assessmentId
         });
+        setParentConcernsText(concerns);
       } catch (err) {
         console.error('Error saving parent concerns:', err);
       }
@@ -239,39 +260,66 @@ export function QuestionnaireForm({ kidProfileId, onBack }: QuestionnaireFormPro
     return (
       <div className="assessment-history">
         <div className="header">
-          <h2>Assessment History</h2>
+          <h2>Assessment Summary</h2>
           <button className="close-button" onClick={() => setShowHistory(false)}>Close</button>
         </div>
-        
-        {assessments.map(assessment => (
-          <div key={assessment.id} className="assessment-section">
-            <div 
-              className="assessment-header"
-              onClick={() => toggleAssessment(assessment.id)}
-            >
-              <span className="assessment-date">{assessment.date}</span>
-              <button className="assessment-toggle">
-                {expandedAssessments.includes(assessment.id) ? '−' : '+'}
-              </button>
+
+        <div className="summary-report">
+          {parentConcernsText && (
+            <div className="parent-concerns-section">
+              <h3>Parent Concerns</h3>
+              <p className="concerns-text">{parentConcernsText}</p>
             </div>
-            
-            <div className={`assessment-content ${expandedAssessments.includes(assessment.id) ? '' : 'collapsed'}`}>
-              {categories.map(category => {
-                const categoryResponses = assessment.responses.filter(r => r.category === category);
-                if (categoryResponses.length === 0) return null;
-                
-                return (
-                  <div key={category} className="category-summary">
-                    <h3>{category}</h3>
-                    <div className="category-stats">
-                      <p>Questions Answered: {categoryResponses.length}</p>
-                    </div>
+          )}
+
+          <div className="category-summaries">
+            {categories.map(category => {
+              const categoryResponses = questions.filter(q => 
+                q.category === category && answers[q.id]
+              );
+              if (categoryResponses.length === 0) return null;
+
+              return (
+                <div key={category} className="category-summary">
+                  <h3>{category}</h3>
+                  <div className="category-stats">
+                    <p>Questions Answered: {categoryResponses.length}</p>
                   </div>
-                );
-              })}
-            </div>
+                </div>
+              );
+            })}
           </div>
-        ))}
+
+          <div className="detailed-responses">
+            <h3>Detailed Responses</h3>
+            {categories.map(category => {
+              const categoryQuestions = questions.filter(q => 
+                q.category === category && answers[q.id]
+              );
+              if (categoryQuestions.length === 0) return null;
+
+              return (
+                <div key={category} className="category-section">
+                  <h3>{category}</h3>
+                  <div className="qa-list">
+                    {categoryQuestions.map(question => (
+                      <div key={question.id} className="qa-item">
+                        <div className="qa-question">
+                          <span className="q-label">Q:</span>
+                          <span className="q-text">{question.question_text}</span>
+                        </div>
+                        <div className="qa-answer">
+                          <span className="a-label">A:</span>
+                          <span className="a-text">{answers[question.id]}</span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
       </div>
     );
   }
@@ -390,30 +438,23 @@ export function QuestionnaireForm({ kidProfileId, onBack }: QuestionnaireFormPro
       </div>
 
       <div className="assessment-buttons">
-        {categories.indexOf(activePage as QuestionCategory) < categories.length - 1 ? (
+        <button
+          className="assessment-button"
+          onClick={handleCompleteAssessment}
+          disabled={isSubmitting}
+        >
+          {isSubmitting ? 'Submitting...' : 'Complete Assessment'}
+        </button>
+        
+        {categories.indexOf(activePage as QuestionCategory) < categories.length - 1 && (
           <button
-            className="assessment-button"
+            className="assessment-button secondary"
             onClick={handleSubmitCategory}
             disabled={isSubmitting}
           >
             Next Section
           </button>
-        ) : (
-          <button
-            className="assessment-button"
-            onClick={handleCompleteAssessment}
-            disabled={isSubmitting}
-          >
-            {isSubmitting ? 'Submitting...' : 'Complete Assessment'}
-          </button>
         )}
-        
-        <button
-          className="assessment-button"
-          onClick={() => setShowHistory(true)}
-        >
-          View History
-        </button>
       </div>
     </div>
   );

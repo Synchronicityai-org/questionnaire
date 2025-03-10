@@ -970,4 +970,124 @@ html {
 .assessment-date {
   font-weight: 500;
   color: #333;
+}
+
+.assessment-button.secondary {
+  background-color: #f8f9fa;
+  color: #7551c2;
+  border: 2px solid #7551c2;
+}
+
+.assessment-button.secondary:hover:not(:disabled) {
+  background-color: #e9ecef;
+}
+
+.summary-report {
+  max-width: 800px;
+  margin: 2rem auto;
+  padding: 2rem;
+  background-color: #ffffff;
+  border-radius: 12px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.parent-concerns-section {
+  background: #f8f9fa;
+  padding: 1.5rem;
+  border-radius: 8px;
+  margin-bottom: 2rem;
+  border-left: 4px solid #7551c2;
+}
+
+.parent-concerns-section h3 {
+  color: #7551c2;
+  margin-bottom: 1rem;
+  font-size: 1.2rem;
+}
+
+.concerns-text {
+  color: #333;
+  line-height: 1.6;
+  white-space: pre-wrap;
+  font-style: italic;
+  background: white;
+  padding: 1rem;
+  border-radius: 4px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.qa-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.qa-item {
+  background: #f8f9fa;
+  padding: 1.5rem;
+  border-radius: 8px;
+  margin-bottom: 1rem;
+  border-left: 4px solid #7551c2;
+}
+
+.qa-question {
+  margin-bottom: 1rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.q-label, .a-label {
+  display: inline-block;
+  width: 2rem;
+  font-weight: 600;
+  color: #7551c2;
+  margin-right: 0.5rem;
+}
+
+.q-text {
+  color: #333;
+  font-weight: 500;
+}
+
+.a-text {
+  color: #555;
+}
+
+.category-section {
+  margin-bottom: 2rem;
+  padding: 1rem;
+  background-color: white;
+  border-radius: 8px;
+}
+
+.category-section h3 {
+  color: #7551c2;
+  margin-bottom: 1.5rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 2px solid #e0e0e0;
+}
+
+.detailed-responses {
+  margin-top: 3rem;
+}
+
+.detailed-responses h3 {
+  color: #333;
+  text-align: center;
+  margin-bottom: 2rem;
+  font-size: 1.5rem;
+}
+
+@media (max-width: 768px) {
+  .assessment-buttons {
+    flex-direction: column;
+  }
+
+  .assessment-button {
+    width: 100%;
+  }
+
+  .qa-item {
+    padding: 1rem;
+  }
 } 
