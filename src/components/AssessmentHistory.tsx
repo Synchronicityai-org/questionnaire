@@ -21,6 +21,7 @@ type GroupedResponse = {
     category: Category;
     questionId: string;
   }[];
+  parentConcerns?: string;
 };
 
 export function AssessmentHistory({ kidProfileId, onClose, displayFormat = 'summary' }: AssessmentHistoryProps) {
@@ -45,7 +46,7 @@ export function AssessmentHistory({ kidProfileId, onClose, displayFormat = 'summ
         filter: {
           kidProfileId: { eq: kidProfileId }
         },
-        limit: 1000 // Increase limit to ensure we get all responses
+        limit: 1000
       });
 
       // Sort responses by timestamp in memory
@@ -57,39 +58,41 @@ export function AssessmentHistory({ kidProfileId, onClose, displayFormat = 'summ
         });
       }
 
-      console.log('Raw UserResponse data:', responses);
-      console.log('Total responses:', responses.data?.length || 0);
-
-      if (!responses.data || responses.data.length === 0) {
-        console.log('No responses found for kidProfileId:', kidProfileId);
-        setAssessments([]);
-        setIsLoading(false);
-        return;
-      }
-
-      // Group responses by timestamp to identify complete questionnaires
-      const responsesByTimestamp = responses.data.reduce((acc, response) => {
+      // Group responses by timestamp
+      const responsesByTimestamp = responses.data?.reduce((acc, response) => {
         const timestamp = response.timestamp || '';
         if (!acc[timestamp]) {
           acc[timestamp] = [];
         }
         acc[timestamp].push(response);
         return acc;
-      }, {} as Record<string, any[]>);
+      }, {} as Record<string, any[]>) || {};
 
-      console.log('Responses grouped by timestamp:', responsesByTimestamp);
+      // Fetch parent concerns
+      const parentConcerns = await client.models.ParentConcerns.list({
+        filter: {
+          kidProfileId: { eq: kidProfileId }
+        }
+      });
 
-      // Fetch all questions to get their text and category
+      // Create a map of timestamp to parent concerns
+      const concernsByTimestamp = parentConcerns.data?.reduce((acc, concern) => {
+        if (concern.timestamp) {
+          acc[concern.timestamp] = concern.concernText || '';
+        }
+        return acc;
+      }, {} as Record<string, string>) || {};
+
+      // Fetch all questions
       const questions = await client.models.QuestionBank.list();
-      console.log('Questions fetched:', questions.data?.length || 0);
-
+      
       if (!questions.data) {
         setError('Failed to load questions');
         setIsLoading(false);
         return;
       }
 
-      // Create a map of question details for quick lookup
+      // Create a map of question details
       const questionMap = questions.data.reduce((acc, q) => {
         if (q.id) acc[q.id] = q;
         return acc;
@@ -107,13 +110,11 @@ export function AssessmentHistory({ kidProfileId, onClose, displayFormat = 'summ
 
           return {
             timestamp,
-            responses: processedResponses
+            responses: processedResponses,
+            parentConcerns: concernsByTimestamp[timestamp] || ''
           };
         })
         .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
-
-      console.log('Processed assessments:', groupedAssessments.length);
-      console.log('First assessment responses:', groupedAssessments[0]?.responses.length || 0);
 
       setAssessments(groupedAssessments);
       setIsLoading(false);
@@ -141,10 +142,21 @@ export function AssessmentHistory({ kidProfileId, onClose, displayFormat = 'summ
     return (
       <div className="summary-report">
         <h2>Assessment from {formattedDate} at {formattedTime}</h2>
+        
+        {assessment.parentConcerns && (
+          <div className="parent-concerns-section">
+            <h3>Parent Concerns</h3>
+            <div className="concerns-text">
+              {assessment.parentConcerns || 'No concerns noted'}
+            </div>
+          </div>
+        )}
+
         <p className="response-count">
           Total Responses: {assessment.responses.length} 
           {assessment.responses.length < 63 && " (Incomplete Assessment)"}
         </p>
+
         <div className="category-summaries">
           {Object.entries(responsesByCategory).map(([category, responses]) => {
             const counts = responses.reduce((acc, r) => {

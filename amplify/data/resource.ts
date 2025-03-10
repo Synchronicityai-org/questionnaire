@@ -136,6 +136,17 @@ const schema = a.schema({
     timestamp: a.datetime(),
   })
   .authorization((allow) => [allow.owner(), allow.publicApiKey()]),
+
+  // Parent Concerns
+  ParentConcerns: a.model({
+    id: a.id(),
+    kidProfileId: a.id(),
+    kidProfile: a.belongsTo("KidProfile", "kidProfileId"),
+    concernText: a.string(),
+    timestamp: a.datetime(),
+    assessmentId: a.string(), // To link with the questionnaire responses
+  })
+  .authorization((allow) => [allow.owner(), allow.publicApiKey()]),
 });
 
 // == STEP 2: Define Authorization Modes ==

@@ -3,10 +3,15 @@ import { generateClient } from 'aws-amplify/data';
 import type { Schema } from '../../amplify/data/resource';
 import './QuestionnaireForm.css';
 import { AssessmentHistory } from './AssessmentHistory';
+import { ParentConcernsForm } from './ParentConcernsForm';
 
 const client = generateClient<Schema>();
 
 type QuestionCategory = 'COGNITION' | 'LANGUAGE' | 'MOTOR' | 'SOCIAL' | 'EMOTIONAL';
+type PageType = 'CONCERNS' | QuestionCategory;
+
+const isConcernsPage = (page: PageType): page is 'CONCERNS' => page === 'CONCERNS';
+const isQuestionCategory = (page: PageType): page is QuestionCategory => !isConcernsPage(page);
 
 interface Question {
   id: string;
@@ -23,17 +28,20 @@ interface QuestionnaireFormProps {
 export function QuestionnaireForm({ kidProfileId, onBack }: QuestionnaireFormProps) {
   const [questions, setQuestions] = useState<Question[]>([]);
   const [answers, setAnswers] = useState<Record<string, string>>({});
-  const [activeCategory, setActiveCategory] = useState<QuestionCategory>('COGNITION');
+  const [activePage, setActivePage] = useState<PageType>('CONCERNS');
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showHistory, setShowHistory] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [assessmentId, setAssessmentId] = useState('');
 
   const categories: QuestionCategory[] = ['COGNITION', 'LANGUAGE', 'MOTOR', 'SOCIAL', 'EMOTIONAL'];
 
   useEffect(() => {
     fetchQuestions();
+    // Generate a unique assessment ID when the form is first loaded
+    setAssessmentId(new Date().toISOString());
   }, []);
 
   const fetchQuestions = async () => {
@@ -70,61 +78,46 @@ export function QuestionnaireForm({ kidProfileId, onBack }: QuestionnaireFormPro
     }));
   };
 
-  const handleSubmitCategory = async () => {
-    const categoryQuestions = questions.filter(q => q.category === activeCategory);
-    const allCategoryQuestionsAnswered = categoryQuestions.every(q => answers[q.id]);
-    
-    if (!allCategoryQuestionsAnswered) {
-      alert('Please answer all questions in this category before continuing.');
-      return;
-    }
-
-    // Move to next category if available
-    const currentIndex = categories.indexOf(activeCategory);
-    if (currentIndex < categories.length - 1) {
-      setActiveCategory(categories[currentIndex + 1]);
-    } else {
-      // Check if all categories have answers
-      const allAnswered = categories.every(category => {
-        const categoryQuestions = questions.filter(q => q.category === category);
-        return categoryQuestions.every(q => answers[q.id]);
-      });
-
-      if (!allAnswered) {
-        alert('Please complete all questions in all categories before submitting.');
-        return;
+  const handleParentConcerns = async (concerns: string) => {
+    if (concerns.trim()) {
+      try {
+        await client.models.ParentConcerns.create({
+          kidProfileId,
+          concernText: concerns,
+          timestamp: new Date().toISOString(),
+          assessmentId
+        });
+      } catch (err) {
+        console.error('Error saving parent concerns:', err);
       }
+    }
+    setActivePage('COGNITION');
+  };
 
-      // All categories completed, submit all answers
-      await handleFinalSubmit();
+  const handleSubmitCategory = async () => {
+    // Move to next category if not submitting the entire assessment
+    const currentIndex = categories.indexOf(activePage as QuestionCategory);
+    if (currentIndex < categories.length - 1) {
+      setActivePage(categories[currentIndex + 1]);
     }
   };
 
-  const handleFinalSubmit = async () => {
+  const handleCompleteAssessment = async () => {
     try {
       setIsSubmitting(true);
+      setError(null);
       
-      // Get all questions that should be answered
-      const allQuestions = questions;
+      // Get all questions that have been answered
+      const answeredQuestions = questions.filter(q => answers[q.id]);
       
-      if (allQuestions.length === 0) {
-        alert('No questions available to submit.');
+      if (answeredQuestions.length === 0) {
+        alert('Please answer at least one question before submitting.');
         return;
       }
 
-      // Check if we have all answers
-      const missingAnswers = allQuestions.filter(q => !answers[q.id]);
-      if (missingAnswers.length > 0) {
-        const missingCategories = new Set(missingAnswers.map(q => q.category));
-        alert(`Please complete all questions in the following categories: ${Array.from(missingCategories).join(', ')}`);
-        return;
-      }
-
-      // Use the same timestamp for all responses
       const submissionTimestamp = new Date().toISOString();
-      console.log('Submitting all answers with timestamp:', submissionTimestamp);
-      console.log('Total questions:', allQuestions.length);
-      console.log('Total answers:', Object.keys(answers).length);
+      console.log('Submitting answers with timestamp:', submissionTimestamp);
+      console.log('Total answered questions:', answeredQuestions.length);
 
       // Track successful and failed submissions
       const results = {
@@ -132,30 +125,21 @@ export function QuestionnaireForm({ kidProfileId, onBack }: QuestionnaireFormPro
         failed: [] as { questionId: string; error: any }[]
       };
 
-      // Submit all answers with individual error handling
-      for (const question of allQuestions) {
+      // Submit all answered questions
+      for (const question of answeredQuestions) {
         try {
-          console.log('Submitting answer:', {
-            questionId: question.id,
-            category: question.category,
-            answer: answers[question.id]
-          });
-          
           await client.models.UserResponse.create({
             kidProfileId,
             questionId: question.id,
             answer: answers[question.id],
             timestamp: submissionTimestamp
           });
-          
           results.successful++;
         } catch (error) {
-          console.error('Failed to submit answer for question:', question.id, error);
+          console.error('Failed to submit answer:', error);
           results.failed.push({ questionId: question.id, error });
         }
       }
-
-      console.log('Submission results:', results);
 
       if (results.failed.length > 0) {
         console.error('Some answers failed to submit:', results.failed);
@@ -163,26 +147,14 @@ export function QuestionnaireForm({ kidProfileId, onBack }: QuestionnaireFormPro
         return;
       }
 
-      if (results.successful !== allQuestions.length) {
-        console.error('Not all answers were saved:', {
-          saved: results.successful,
-          total: allQuestions.length
-        });
-        setError(`Only ${results.successful} out of ${allQuestions.length} answers were saved. Please try again.`);
-        return;
-      }
-
-      console.log('Successfully submitted all answers');
-      
-      // Clear the form
+      console.log('Successfully submitted assessment');
       setAnswers({});
-      setActiveCategory('COGNITION');
+      setActivePage('CONCERNS');
+      setShowHistory(true);
       
-      alert('Assessment completed successfully!');
-      onBack?.();
     } catch (err) {
-      console.error('Error submitting answers:', err);
-      setError('Failed to submit answers. Please try again.');
+      console.error('Error submitting assessment:', err);
+      setError('Failed to submit assessment. Please try again.');
     } finally {
       setIsSubmitting(false);
     }
@@ -192,8 +164,8 @@ export function QuestionnaireForm({ kidProfileId, onBack }: QuestionnaireFormPro
     setIsMobileMenuOpen(!isMobileMenuOpen);
   };
 
-  const handleCategoryClick = (category: QuestionCategory) => {
-    setActiveCategory(category);
+  const handleCategoryClick = (page: PageType) => {
+    setActivePage(page);
     setIsMobileMenuOpen(false);
   };
 
@@ -214,14 +186,25 @@ export function QuestionnaireForm({ kidProfileId, onBack }: QuestionnaireFormPro
     return <div className="error">{error}</div>;
   }
 
-  const categoryQuestions = questions.filter(q => q.category === activeCategory);
+  if (isConcernsPage(activePage)) {
+    return (
+      <ParentConcernsForm
+        onSubmit={handleParentConcerns}
+        onNext={() => setActivePage('COGNITION')}
+      />
+    );
+  }
+
+  const categoryQuestions = questions.filter(q => 
+    isQuestionCategory(activePage) && q.category === activePage
+  );
   const answeredInCategory = categoryQuestions.filter(q => answers[q.id]).length;
   const progressPercent = (answeredInCategory / categoryQuestions.length) * 100;
 
   return (
     <div className="questionnaire-container">
       <div className="questionnaire-header">
-        <h2>Assessment Questions</h2>
+        <h2>Assessment Questions - {activePage}</h2>
         <div className="header-actions">
           {onBack && (
             <button className="back-button" onClick={handleBackClick}>
@@ -245,11 +228,12 @@ export function QuestionnaireForm({ kidProfileId, onBack }: QuestionnaireFormPro
                 ← Back to Profile
               </button>
             )}
+            <button onClick={() => handleCategoryClick('CONCERNS')}>Parent Concerns</button>
             {categories.map(category => (
               <button
                 key={category}
-                onClick={() => handleCategoryClick(category)}
-                className={category === activeCategory ? 'active' : ''}
+                onClick={() => handleCategoryClick(category as PageType)}
+                className={category === activePage ? 'active' : ''}
               >
                 {category.charAt(0) + category.slice(1).toLowerCase()}
               </button>
@@ -259,10 +243,16 @@ export function QuestionnaireForm({ kidProfileId, onBack }: QuestionnaireFormPro
       </div>
 
       <div className="tabs">
+        <button
+          className={`tab-button ${isConcernsPage(activePage) ? 'active' : ''}`}
+          onClick={() => handleCategoryClick('CONCERNS')}
+        >
+          Parent Concerns
+        </button>
         {categories.map(category => (
           <button
             key={category}
-            className={`tab-button ${category === activeCategory ? 'active' : ''}`}
+            className={`tab-button ${activePage === category ? 'active' : ''}`}
             onClick={() => handleCategoryClick(category)}
           >
             {category.charAt(0) + category.slice(1).toLowerCase()}
@@ -304,14 +294,20 @@ export function QuestionnaireForm({ kidProfileId, onBack }: QuestionnaireFormPro
       <div className="form-actions">
         <button 
           className="submit-button"
-          onClick={handleSubmitCategory}
-          disabled={categoryQuestions.some(q => !answers[q.id]) || isSubmitting}
+          onClick={handleCompleteAssessment}
+          disabled={isSubmitting}
         >
-          {isSubmitting ? 'Submitting...' : 
-            categories.indexOf(activeCategory) === categories.length - 1 
-              ? 'Complete Assessment'
-              : 'Save & Continue'}
+          {isSubmitting ? 'Submitting...' : 'Complete Assessment'}
         </button>
+        {categories.indexOf(activePage as QuestionCategory) < categories.length - 1 && (
+          <button 
+            className="next-button"
+            onClick={handleSubmitCategory}
+            disabled={isSubmitting}
+          >
+            Continue to Next Section
+          </button>
+        )}
       </div>
     </div>
   );
