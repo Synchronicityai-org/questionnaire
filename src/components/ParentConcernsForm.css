@@ -1,0 +1,109 @@
+.parent-concerns-form {
+  max-width: 800px;
+  margin: 2rem auto;
+  padding: 2rem;
+  background-color: #ffffff;
+  border-radius: 12px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.assessment-info {
+  margin-bottom: 2rem;
+}
+
+.assessment-info h2 {
+  color: #333;
+  text-align: center;
+  margin-bottom: 2rem;
+  font-size: 1.8rem;
+}
+
+.info-section {
+  margin-bottom: 2rem;
+  padding: 1.5rem;
+  background-color: #f8f9fa;
+  border-radius: 8px;
+}
+
+.info-section h3 {
+  color: #7551c2;
+  margin-bottom: 1rem;
+  font-size: 1.3rem;
+}
+
+.info-section p {
+  color: #555;
+  line-height: 1.6;
+  margin-bottom: 1rem;
+}
+
+.info-section ul {
+  list-style-type: none;
+  padding: 0;
+  margin: 1rem 0;
+}
+
+.info-section li {
+  padding: 0.5rem 0;
+  color: #555;
+}
+
+.info-section li strong {
+  color: #7551c2;
+  margin-right: 0.5rem;
+}
+
+.info-section textarea {
+  width: 100%;
+  padding: 1rem;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  font-size: 1rem;
+  line-height: 1.5;
+  resize: vertical;
+  margin-top: 1rem;
+}
+
+.info-section textarea:focus {
+  outline: none;
+  border-color: #7551c2;
+  box-shadow: 0 0 0 2px rgba(117, 81, 194, 0.1);
+}
+
+.assessment-buttons {
+  display: flex;
+  justify-content: center;
+  gap: 1rem;
+  margin-top: 2rem;
+}
+
+.assessment-button {
+  padding: 1rem 2rem;
+  background-color: #7551c2;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+  min-width: 200px;
+}
+
+.assessment-button:hover {
+  background-color: #5f3da8;
+}
+
+@media (max-width: 768px) {
+  .parent-concerns-form {
+    margin: 1rem;
+    padding: 1rem;
+  }
+
+  .assessment-buttons {
+    flex-direction: column;
+  }
+
+  .assessment-button {
+    width: 100%;
+  }
+} 
