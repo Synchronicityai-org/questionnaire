@@ -24,6 +24,12 @@ interface QuestionnaireFormProps {
   onBack?: () => void;
 }
 
+interface Assessment {
+  date: string;
+  parentConcerns: string | null;
+  responses: Record<string, string>;
+}
+
 export function QuestionnaireForm({ kidProfileId, onBack }: QuestionnaireFormProps) {
   const [questions, setQuestions] = useState<Question[]>([]);
   const [answers, setAnswers] = useState<Record<string, string>>({});
@@ -35,12 +41,14 @@ export function QuestionnaireForm({ kidProfileId, onBack }: QuestionnaireFormPro
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [assessmentId, setAssessmentId] = useState('');
   const [parentConcernsText, setParentConcernsText] = useState<string>('');
+  const [assessmentHistory, setAssessmentHistory] = useState<Assessment[]>([]);
 
   const categories: QuestionCategory[] = ['COGNITION', 'LANGUAGE', 'MOTOR', 'SOCIAL', 'EMOTIONAL'];
 
   useEffect(() => {
     fetchQuestions();
     fetchParentConcerns();
+    fetchAssessmentHistory();
     setAssessmentId(new Date().toISOString());
   }, []);
 
@@ -84,6 +92,58 @@ export function QuestionnaireForm({ kidProfileId, onBack }: QuestionnaireFormPro
       }
     } catch (err) {
       console.error('Error fetching parent concerns:', err);
+    }
+  };
+
+  const fetchAssessmentHistory = async () => {
+    try {
+      // Fetch responses
+      const responses = await client.models.UserResponse.list({
+        filter: { kidProfileId: { eq: kidProfileId } }
+      });
+
+      // Fetch parent concerns
+      const concerns = await client.models.ParentConcerns.list({
+        filter: { kidProfileId: { eq: kidProfileId } }
+      });
+
+      // Group by date
+      const assessmentMap = new Map<string, Assessment>();
+
+      // Group responses by date
+      responses.data.forEach(response => {
+        if (!response?.timestamp || !response.questionId || !response.answer) return;
+        
+        const date = new Date(response.timestamp).toISOString().split('T')[0];
+        if (!assessmentMap.has(date)) {
+          assessmentMap.set(date, {
+            date,
+            parentConcerns: null,
+            responses: {}
+          });
+        }
+        
+        const assessment = assessmentMap.get(date)!;
+        assessment.responses[response.questionId] = response.answer;
+      });
+
+      // Add parent concerns to matching dates
+      concerns.data.forEach(concern => {
+        if (!concern?.timestamp || !concern.concernText) return;
+        
+        const date = new Date(concern.timestamp).toISOString().split('T')[0];
+        if (assessmentMap.has(date)) {
+          assessmentMap.get(date)!.parentConcerns = concern.concernText;
+        }
+      });
+
+      // Sort by date (newest first)
+      setAssessmentHistory(
+        Array.from(assessmentMap.values())
+          .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+      );
+    } catch (err) {
+      console.error('Error fetching assessment history:', err);
     }
   };
 
@@ -195,66 +255,89 @@ export function QuestionnaireForm({ kidProfileId, onBack }: QuestionnaireFormPro
     return (
       <div className="assessment-history">
         <div className="header">
-          <h2>Assessment Summary</h2>
+          <h2>Assessment History</h2>
           <button className="close-button" onClick={() => setShowHistory(false)}>Close</button>
         </div>
 
-        <div className="summary-report">
-          {parentConcernsText && (
-            <div className="parent-concerns-section">
-              <h3>Parent Concerns</h3>
-              <p className="concerns-text">{parentConcernsText}</p>
+        {/* Display current assessment's parent concerns if any */}
+        {parentConcernsText && (
+          <div className="assessment-entry current">
+            <div className="assessment-date">
+              <h3>Current Assessment</h3>
             </div>
-          )}
-
-          <div className="category-summaries">
-            {categories.map(category => {
-              const categoryResponses = questions.filter(q => 
-                q.category === category && answers[q.id]
-              );
-              if (categoryResponses.length === 0) return null;
-
-              return (
-                <div key={category} className="category-summary">
-                  <h3>{category}</h3>
-                  <div className="category-stats">
-                    <p>Questions Answered: {categoryResponses.length}</p>
-                  </div>
-                </div>
-              );
-            })}
+            <div className="summary-report">
+              <div className="parent-concerns-section">
+                <h3>Parent Concerns</h3>
+                <p className="concerns-text">{parentConcernsText}</p>
+              </div>
+            </div>
           </div>
+        )}
 
-          <div className="detailed-responses">
-            <h3>Detailed Responses</h3>
-            {categories.map(category => {
-              const categoryQuestions = questions.filter(q => 
-                q.category === category && answers[q.id]
-              );
-              if (categoryQuestions.length === 0) return null;
+        {assessmentHistory.map(assessment => (
+          <div key={assessment.date} className="assessment-entry">
+            <div className="assessment-date">
+              <h3>{new Date(assessment.date).toLocaleDateString()}</h3>
+            </div>
 
-              return (
-                <div key={category} className="category-section">
-                  <h3>{category}</h3>
-                  <div className="qa-list">
-                    {categoryQuestions.map(question => (
-                      <div key={question.id} className="qa-item">
-                        <div className="qa-question">
-                          <span className="q-label">Q:</span>
-                          <span className="q-text">{question.question_text}</span>
-                        </div>
-                        <div className="qa-answer">
-                          <span className="a-label">A:</span>
-                          <span className="a-text">{answers[question.id]}</span>
-                        </div>
+            <div className="summary-report">
+              {assessment.parentConcerns && (
+                <div className="parent-concerns-section">
+                  <h3>Parent Concerns</h3>
+                  <p className="concerns-text">{assessment.parentConcerns}</p>
+                </div>
+              )}
+
+              <div className="category-summaries">
+                {categories.map(category => {
+                  const categoryQuestions = questions.filter(q => 
+                    q.category === category && assessment.responses[q.id]
+                  );
+                  if (categoryQuestions.length === 0) return null;
+
+                  return (
+                    <div key={category} className="category-summary">
+                      <h3>{category}</h3>
+                      <div className="category-stats">
+                        <p>Questions Answered: {categoryQuestions.length}</p>
                       </div>
-                    ))}
-                  </div>
-                </div>
-              );
-            })}
+                    </div>
+                  );
+                })}
+              </div>
+
+              <div className="detailed-responses">
+                <h3>Detailed Responses</h3>
+                {categories.map(category => {
+                  const categoryQuestions = questions.filter(q => 
+                    q.category === category && assessment.responses[q.id]
+                  );
+                  if (categoryQuestions.length === 0) return null;
+
+                  return (
+                    <div key={category} className="category-section">
+                      <h3>{category}</h3>
+                      <div className="qa-list">
+                        {categoryQuestions.map(question => (
+                          <div key={question.id} className="qa-item">
+                            <div className="qa-question">
+                              <span className="q-label">Q:</span>
+                              <span className="q-text">{question.question_text}</span>
+                            </div>
+                            <div className="qa-answer">
+                              <span className="a-label">A:</span>
+                              <span className="a-text">{assessment.responses[question.id]}</span>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
           </div>
-        </div>
+        ))}
       </div>
     );
   }
