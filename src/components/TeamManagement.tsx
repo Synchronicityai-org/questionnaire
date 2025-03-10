@@ -4,7 +4,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import type { Schema } from '../../amplify/data/resource';
 import './TeamManagement.css';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faArrowLeft, faUserPlus, faTrash, faCheck } from '@fortawesome/free-solid-svg-icons';
+import { faArrowLeft, faUserPlus, faTrash, faCheck, faSearch } from '@fortawesome/free-solid-svg-icons';
 
 const client = generateClient<Schema>();
 
@@ -15,6 +15,7 @@ interface TeamMember {
   status: 'ACTIVE' | 'PENDING' | 'INACTIVE';
   userId: string;
   teamId: string;
+  email: string | null;
 }
 
 // Available healthcare professionals that can be added to the team
@@ -35,11 +36,27 @@ export function TeamManagement() {
   const [showAvailableMembers, setShowAvailableMembers] = useState(false);
   const [teamId, setTeamId] = useState<string | null>(null);
   const navigate = useNavigate();
+  const [searchQuery, setSearchQuery] = useState('');
+  const [filteredTeamMembers, setFilteredTeamMembers] = useState<TeamMember[]>([]);
 
   useEffect(() => {
     if (!kidProfileId) return;
     fetchTeamAndMembers();
   }, [kidProfileId]);
+
+  useEffect(() => {
+    if (!searchQuery.trim()) {
+      setFilteredTeamMembers(teamMembers);
+    } else {
+      const query = searchQuery.toLowerCase();
+      const filtered = teamMembers.filter(member => 
+        member.name.toLowerCase().includes(query) ||
+        (member.email?.toLowerCase() || '').includes(query) ||
+        member.role.toLowerCase().includes(query)
+      );
+      setFilteredTeamMembers(filtered);
+    }
+  }, [searchQuery, teamMembers]);
 
   const fetchTeamAndMembers = async () => {
     try {
@@ -115,7 +132,8 @@ export function TeamManagement() {
               role: userResponse.data.role || 'MEMBER',
               status: member.status as 'ACTIVE' | 'PENDING' | 'INACTIVE',
               userId: member.userId,
-              teamId: member.teamId
+              teamId: member.teamId,
+              email: userResponse.data.email
             };
           })
         );
@@ -123,6 +141,7 @@ export function TeamManagement() {
         const validMembers = members.filter((member): member is TeamMember => member !== null);
         console.log('Valid team members:', validMembers);
         setTeamMembers(validMembers);
+        setFilteredTeamMembers(validMembers);
       }
     } catch (err) {
       console.error('Error fetching team members:', err);
@@ -201,11 +220,13 @@ export function TeamManagement() {
         role: newMember.role,
         status: 'ACTIVE',
         userId: userResponse.data.id,
-        teamId: teamId
+        teamId: teamId,
+        email: userResponse.data.email
       };
 
       console.log('Adding new team member to state:', newTeamMember);
       setTeamMembers([...teamMembers, newTeamMember]);
+      setFilteredTeamMembers([...filteredTeamMembers, newTeamMember]);
       setShowAvailableMembers(false);
 
       // Refresh the team members list to ensure we have the latest data
@@ -229,6 +250,7 @@ export function TeamManagement() {
       });
       
       setTeamMembers(teamMembers.filter(member => member.id !== memberId));
+      setFilteredTeamMembers(filteredTeamMembers.filter(member => member.id !== memberId));
     } catch (err) {
       console.error('Error removing team member:', err);
       setError('Failed to remove team member');
@@ -266,22 +288,62 @@ export function TeamManagement() {
         </button>
         
         {showAvailableMembers && (
-          <div className="available-members-grid">
-            {getAvailableMembersToAdd().map((member) => (
-              <div key={member.id} className="available-member-card">
-                <div className="member-info">
-                  <div className="member-name">{member.name}</div>
-                  <div className="member-role">{member.role}</div>
-                </div>
-                <button
-                  className="add-member-button"
-                  onClick={() => handleAddMember(member)}
-                >
-                  <FontAwesomeIcon icon={faCheck} />
-                </button>
+          <>
+            <div style={{ marginBottom: '15px', marginTop: '15px' }}>
+              <div className="search-bar" style={{
+                position: 'relative',
+                width: '100%',
+                maxWidth: '500px'
+              }}>
+                <FontAwesomeIcon 
+                  icon={faSearch} 
+                  style={{
+                    position: 'absolute',
+                    left: '12px',
+                    top: '50%',
+                    transform: 'translateY(-50%)',
+                    color: '#666'
+                  }}
+                />
+                <input
+                  type="text"
+                  placeholder="Search available members..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  style={{
+                    width: '100%',
+                    padding: '12px 12px 12px 40px',
+                    borderRadius: '6px',
+                    border: '2px solid #ddd',
+                    fontSize: '14px',
+                    transition: 'border-color 0.2s'
+                  }}
+                />
               </div>
-            ))}
-          </div>
+            </div>
+            <div className="available-members-grid">
+              {getAvailableMembersToAdd()
+                .filter(member => 
+                  !searchQuery.trim() || 
+                  member.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                  member.role.toLowerCase().includes(searchQuery.toLowerCase())
+                )
+                .map((member) => (
+                  <div key={member.id} className="available-member-card">
+                    <div className="member-info">
+                      <div className="member-name">{member.name}</div>
+                      <div className="member-role">{member.role}</div>
+                    </div>
+                    <button
+                      className="add-member-button"
+                      onClick={() => handleAddMember(member)}
+                    >
+                      <FontAwesomeIcon icon={faCheck} />
+                    </button>
+                  </div>
+                ))}
+            </div>
+          </>
         )}
       </div>
 
