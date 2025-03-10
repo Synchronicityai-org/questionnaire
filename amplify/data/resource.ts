@@ -140,11 +140,11 @@ const schema = a.schema({
   // Parent Concerns
   ParentConcerns: a.model({
     id: a.id(),
-    kidProfileId: a.id(),
+    kidProfileId: a.id().required(),  // Make required since it's a foreign key
     kidProfile: a.belongsTo("KidProfile", "kidProfileId"),
-    concernText: a.string(),
-    timestamp: a.datetime(),
-    assessmentId: a.string(), // To link with the questionnaire responses
+    concernText: a.string().required(),  // Make required since it's the main data
+    timestamp: a.datetime().required(),  // Make required for proper ordering
+    assessmentId: a.string().required(), // Make required to ensure proper linking
   })
   .authorization((allow) => [allow.owner(), allow.publicApiKey()]),
 });
