@@ -44,8 +44,18 @@ export function AssessmentHistory({ kidProfileId, onClose, displayFormat = 'summ
       const responses = await client.models.UserResponse.list({
         filter: {
           kidProfileId: { eq: kidProfileId }
-        }
+        },
+        limit: 1000 // Increase limit to ensure we get all responses
       });
+
+      // Sort responses by timestamp in memory
+      if (responses.data) {
+        responses.data.sort((a, b) => {
+          const timeA = new Date(a.timestamp || '').getTime();
+          const timeB = new Date(b.timestamp || '').getTime();
+          return timeB - timeA; // descending order
+        });
+      }
 
       console.log('Raw UserResponse data:', responses);
       console.log('Total responses:', responses.data?.length || 0);
@@ -57,83 +67,55 @@ export function AssessmentHistory({ kidProfileId, onClose, displayFormat = 'summ
         return;
       }
 
+      // Group responses by timestamp to identify complete questionnaires
+      const responsesByTimestamp = responses.data.reduce((acc, response) => {
+        const timestamp = response.timestamp || '';
+        if (!acc[timestamp]) {
+          acc[timestamp] = [];
+        }
+        acc[timestamp].push(response);
+        return acc;
+      }, {} as Record<string, any[]>);
+
+      console.log('Responses grouped by timestamp:', responsesByTimestamp);
+
       // Fetch all questions to get their text and category
-      console.log('Fetching questions from QuestionBank');
       const questions = await client.models.QuestionBank.list();
-      
-      if (!questions.data || questions.data.length === 0) {
-        console.error('No questions found in QuestionBank');
-        setError('Failed to load questions data');
+      console.log('Questions fetched:', questions.data?.length || 0);
+
+      if (!questions.data) {
+        setError('Failed to load questions');
         setIsLoading(false);
         return;
       }
 
-      // Create a map of all questions
-      const questionsMap = new Map(questions.data.map(q => [q.id, q]));
-      console.log('Total questions in QuestionBank:', questions.data.length);
+      // Create a map of question details for quick lookup
+      const questionMap = questions.data.reduce((acc, q) => {
+        if (q.id) acc[q.id] = q;
+        return acc;
+      }, {} as Record<string, any>);
 
-      // Group responses by exact timestamp
-      const responsesByTimestamp = new Map<string, {
-        timestamp: string;
-        responses: Map<string, {
-          question: string;
-          answer: string;
-          category: Category;
-          questionId: string;
-        }>;
-      }>();
+      // Process each timestamp group
+      const groupedAssessments = Object.entries(responsesByTimestamp)
+        .map(([timestamp, responses]) => {
+          const processedResponses = responses.map(response => ({
+            question: questionMap[response.questionId]?.question_text || 'Unknown Question',
+            answer: response.answer || 'No Answer',
+            category: questionMap[response.questionId]?.category || 'Unknown',
+            questionId: response.questionId
+          }));
 
-      // Process each response and group by timestamp
-      responses.data.forEach(response => {
-        if (!response || !response.timestamp || !response.questionId) {
-          console.warn('Invalid response found:', response);
-          return;
-        }
-
-        const timestamp = response.timestamp;
-        if (!responsesByTimestamp.has(timestamp)) {
-          responsesByTimestamp.set(timestamp, {
+          return {
             timestamp,
-            responses: new Map()
-          });
-        }
-
-        const question = questionsMap.get(response.questionId);
-        if (!question || !question.question_text || !question.category) {
-          console.warn('Question not found or invalid:', {
-            questionId: response.questionId,
-            question: question
-          });
-          return;
-        }
-
-        // Store response in the map using questionId as key to prevent duplicates
-        responsesByTimestamp.get(timestamp)?.responses.set(response.questionId, {
-          question: question.question_text,
-          answer: response.answer || '',
-          category: question.category as Category,
-          questionId: response.questionId
-        });
-      });
-
-      // Convert map to array and transform the responses
-      const groupedResponses = Array.from(responsesByTimestamp.values())
-        .map(session => ({
-          timestamp: session.timestamp,
-          responses: Array.from(session.responses.values())
-        }))
+            responses: processedResponses
+          };
+        })
         .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
 
-      console.log('Grouped responses:', {
-        totalSessions: groupedResponses.length,
-        sessionsDetails: groupedResponses.map(session => ({
-          timestamp: session.timestamp,
-          totalResponses: session.responses.length,
-          categories: new Set(session.responses.map(r => r.category)).size
-        }))
-      });
+      console.log('Processed assessments:', groupedAssessments.length);
+      console.log('First assessment responses:', groupedAssessments[0]?.responses.length || 0);
 
-      setAssessments(groupedResponses);
+      setAssessments(groupedAssessments);
       setIsLoading(false);
     } catch (err) {
       console.error('Error in fetchAssessmentHistory:', err);

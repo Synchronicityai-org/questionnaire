@@ -126,22 +126,51 @@ export function QuestionnaireForm({ kidProfileId, onBack }: QuestionnaireFormPro
       console.log('Total questions:', allQuestions.length);
       console.log('Total answers:', Object.keys(answers).length);
 
-      // Submit all answers together
-      await Promise.all(
-        allQuestions.map(question => {
+      // Track successful and failed submissions
+      const results = {
+        successful: 0,
+        failed: [] as { questionId: string; error: any }[]
+      };
+
+      // Submit all answers with individual error handling
+      for (const question of allQuestions) {
+        try {
           console.log('Submitting answer:', {
             questionId: question.id,
             category: question.category,
             answer: answers[question.id]
           });
-          return client.models.UserResponse.create({
+          
+          await client.models.UserResponse.create({
             kidProfileId,
             questionId: question.id,
             answer: answers[question.id],
             timestamp: submissionTimestamp
           });
-        })
-      );
+          
+          results.successful++;
+        } catch (error) {
+          console.error('Failed to submit answer for question:', question.id, error);
+          results.failed.push({ questionId: question.id, error });
+        }
+      }
+
+      console.log('Submission results:', results);
+
+      if (results.failed.length > 0) {
+        console.error('Some answers failed to submit:', results.failed);
+        setError(`${results.successful} answers saved, but ${results.failed.length} failed. Please try again.`);
+        return;
+      }
+
+      if (results.successful !== allQuestions.length) {
+        console.error('Not all answers were saved:', {
+          saved: results.successful,
+          total: allQuestions.length
+        });
+        setError(`Only ${results.successful} out of ${allQuestions.length} answers were saved. Please try again.`);
+        return;
+      }
 
       console.log('Successfully submitted all answers');
       
