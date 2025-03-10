@@ -19,18 +19,6 @@ interface Question {
   options: string[];
 }
 
-interface Assessment {
-  id: string;
-  date: string;
-  responses: Array<{
-    questionId: string;
-    answer: string;
-    category: QuestionCategory;
-    question_text?: string;
-  }>;
-  parentConcerns?: string;
-}
-
 interface QuestionnaireFormProps {
   kidProfileId: string;
   onBack?: () => void;
@@ -46,60 +34,15 @@ export function QuestionnaireForm({ kidProfileId, onBack }: QuestionnaireFormPro
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [assessmentId, setAssessmentId] = useState('');
-  const [expandedAssessments, setExpandedAssessments] = useState<string[]>([]);
-  const [assessments, setAssessments] = useState<Assessment[]>([]);
   const [parentConcernsText, setParentConcernsText] = useState<string>('');
 
   const categories: QuestionCategory[] = ['COGNITION', 'LANGUAGE', 'MOTOR', 'SOCIAL', 'EMOTIONAL'];
 
   useEffect(() => {
     fetchQuestions();
-    fetchAssessments();
     fetchParentConcerns();
     setAssessmentId(new Date().toISOString());
   }, []);
-
-  const fetchAssessments = async () => {
-    try {
-      const responses = await client.models.UserResponse.list({
-        filter: {
-          kidProfileId: { eq: kidProfileId }
-        }
-      });
-
-      // Group responses by assessment (using timestamp)
-      const assessmentMap = new Map<string, Assessment>();
-      
-      responses.data.forEach(response => {
-        if (!response?.timestamp) return;
-        
-        const date = new Date(response.timestamp).toISOString().split('T')[0];
-        if (!assessmentMap.has(date)) {
-          assessmentMap.set(date, {
-            id: date,
-            date,
-            responses: []
-          });
-        }
-        
-        const assessment = assessmentMap.get(date)!;
-        if (response.questionId && response.answer) {
-          const question = questions.find(q => q.id === response.questionId);
-          assessment.responses.push({
-            questionId: response.questionId,
-            answer: response.answer,
-            category: question?.category || 'COGNITION'
-          });
-        }
-      });
-
-      setAssessments(Array.from(assessmentMap.values()).sort((a, b) => 
-        new Date(b.date).getTime() - new Date(a.date).getTime()
-      ));
-    } catch (err) {
-      console.error('Error fetching assessments:', err);
-    }
-  };
 
   const fetchQuestions = async () => {
     try {
@@ -246,14 +189,6 @@ export function QuestionnaireForm({ kidProfileId, onBack }: QuestionnaireFormPro
   const handleBackClick = () => {
     setIsMobileMenuOpen(false);
     onBack?.();
-  };
-
-  const toggleAssessment = (assessmentId: string) => {
-    setExpandedAssessments(prev => 
-      prev.includes(assessmentId)
-        ? prev.filter(id => id !== assessmentId)
-        : [...prev, assessmentId]
-    );
   };
 
   if (showHistory) {
