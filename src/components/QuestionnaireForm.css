@@ -899,4 +899,75 @@ html {
   padding: 1rem;
   border-radius: 4px;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.assessment-buttons {
+  display: flex;
+  justify-content: center;
+  gap: 1rem;
+  margin-top: 2rem;
+}
+
+.assessment-button {
+  padding: 1rem 2rem;
+  background-color: #7551c2;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+  min-width: 200px;
+}
+
+.assessment-button:hover:not(:disabled) {
+  background-color: #5f3da8;
+}
+
+.assessment-button:disabled {
+  background-color: #cccccc;
+  cursor: not-allowed;
+}
+
+.assessment-section {
+  margin-bottom: 2rem;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.assessment-header {
+  background-color: #f8f9fa;
+  padding: 1rem;
+  cursor: pointer;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.assessment-header:hover {
+  background-color: #e9ecef;
+}
+
+.assessment-content {
+  padding: 1rem;
+  background-color: white;
+}
+
+.assessment-content.collapsed {
+  display: none;
+}
+
+.assessment-toggle {
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  cursor: pointer;
+  padding: 0 0.5rem;
+  color: #7551c2;
+}
+
+.assessment-date {
+  font-weight: 500;
+  color: #333;
 } 

@@ -20,8 +20,17 @@ interface Question {
   options: string[];
 }
 
+interface Assessment {
+  id: string;
+  date: string;
+  responses: Array<{
+    questionId: string;
+    answer: string;
+    category: QuestionCategory;
+  }>;
+}
+
 interface QuestionnaireFormProps {
-  
   kidProfileId: string;
   onBack?: () => void;
 }
@@ -36,14 +45,58 @@ export function QuestionnaireForm({ kidProfileId, onBack }: QuestionnaireFormPro
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [assessmentId, setAssessmentId] = useState('');
+  const [expandedAssessments, setExpandedAssessments] = useState<string[]>([]);
+  const [assessments, setAssessments] = useState<Assessment[]>([]);
 
   const categories: QuestionCategory[] = ['COGNITION', 'LANGUAGE', 'MOTOR', 'SOCIAL', 'EMOTIONAL'];
 
   useEffect(() => {
     fetchQuestions();
-    // Generate a unique assessment ID when the form is first loaded
+    fetchAssessments();
     setAssessmentId(new Date().toISOString());
   }, []);
+
+  const fetchAssessments = async () => {
+    try {
+      const responses = await client.models.UserResponse.list({
+        filter: {
+          kidProfileId: { eq: kidProfileId }
+        }
+      });
+
+      // Group responses by assessment (using timestamp)
+      const assessmentMap = new Map<string, Assessment>();
+      
+      responses.data.forEach(response => {
+        if (!response?.timestamp) return;
+        
+        const date = new Date(response.timestamp).toISOString().split('T')[0];
+        if (!assessmentMap.has(date)) {
+          assessmentMap.set(date, {
+            id: date,
+            date,
+            responses: []
+          });
+        }
+        
+        const assessment = assessmentMap.get(date)!;
+        if (response.questionId && response.answer) {
+          const question = questions.find(q => q.id === response.questionId);
+          assessment.responses.push({
+            questionId: response.questionId,
+            answer: response.answer,
+            category: question?.category || 'COGNITION'
+          });
+        }
+      });
+
+      setAssessments(Array.from(assessmentMap.values()).sort((a, b) => 
+        new Date(b.date).getTime() - new Date(a.date).getTime()
+      ));
+    } catch (err) {
+      console.error('Error fetching assessments:', err);
+    }
+  };
 
   const fetchQuestions = async () => {
     try {
@@ -175,8 +228,53 @@ export function QuestionnaireForm({ kidProfileId, onBack }: QuestionnaireFormPro
     onBack?.();
   };
 
+  const toggleAssessment = (assessmentId: string) => {
+    setExpandedAssessments(prev => 
+      prev.includes(assessmentId)
+        ? prev.filter(id => id !== assessmentId)
+        : [...prev, assessmentId]
+    );
+  };
+
   if (showHistory) {
-    return <AssessmentHistory kidProfileId={kidProfileId} onClose={() => setShowHistory(false)} />;
+    return (
+      <div className="assessment-history">
+        <div className="header">
+          <h2>Assessment History</h2>
+          <button className="close-button" onClick={() => setShowHistory(false)}>Close</button>
+        </div>
+        
+        {assessments.map(assessment => (
+          <div key={assessment.id} className="assessment-section">
+            <div 
+              className="assessment-header"
+              onClick={() => toggleAssessment(assessment.id)}
+            >
+              <span className="assessment-date">{assessment.date}</span>
+              <button className="assessment-toggle">
+                {expandedAssessments.includes(assessment.id) ? '−' : '+'}
+              </button>
+            </div>
+            
+            <div className={`assessment-content ${expandedAssessments.includes(assessment.id) ? '' : 'collapsed'}`}>
+              {categories.map(category => {
+                const categoryResponses = assessment.responses.filter(r => r.category === category);
+                if (categoryResponses.length === 0) return null;
+                
+                return (
+                  <div key={category} className="category-summary">
+                    <h3>{category}</h3>
+                    <div className="category-stats">
+                      <p>Questions Answered: {categoryResponses.length}</p>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        ))}
+      </div>
+    );
   }
 
   if (isLoading) {
@@ -292,23 +390,31 @@ export function QuestionnaireForm({ kidProfileId, onBack }: QuestionnaireFormPro
         ))}
       </div>
 
-      <div className="form-actions">
-        <button 
-          className="submit-button"
-          onClick={handleCompleteAssessment}
-          disabled={isSubmitting}
-        >
-          {isSubmitting ? 'Submitting...' : 'Complete Assessment'}
-        </button>
-        {categories.indexOf(activePage as QuestionCategory) < categories.length - 1 && (
-          <button 
-            className="next-button"
+      <div className="assessment-buttons">
+        {categories.indexOf(activePage as QuestionCategory) < categories.length - 1 ? (
+          <button
+            className="assessment-button"
             onClick={handleSubmitCategory}
             disabled={isSubmitting}
           >
-            Continue to Next Section
+            Next Section
+          </button>
+        ) : (
+          <button
+            className="assessment-button"
+            onClick={handleCompleteAssessment}
+            disabled={isSubmitting}
+          >
+            {isSubmitting ? 'Submitting...' : 'Complete Assessment'}
           </button>
         )}
+        
+        <button
+          className="assessment-button"
+          onClick={() => setShowHistory(true)}
+        >
+          View History
+        </button>
       </div>
     </div>
   );

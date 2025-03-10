@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import './QuestionnaireForm.css';
+import './ParentConcernsForm.css';
 
 interface ParentConcernsFormProps {
   onSubmit: (concerns: string) => void;
@@ -9,35 +9,52 @@ interface ParentConcernsFormProps {
 export function ParentConcernsForm({ onSubmit, onNext }: ParentConcernsFormProps) {
   const [concerns, setConcerns] = useState('');
 
-  const handleSubmit = () => {
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
     onSubmit(concerns);
-    onNext();
   };
 
   return (
-    <div className="parent-concerns-container">
-      <h2>Parent Concerns</h2>
-      <p className="description">
-        Before we begin the detailed assessment, please share any specific concerns you have about your child's development.
-        This information will help us better understand your child's needs.
-      </p>
-      
-      <div className="concerns-form">
-        <textarea
-          value={concerns}
-          onChange={(e) => setConcerns(e.target.value)}
-          placeholder="Please describe any concerns you have about your child's development (optional)"
-          rows={6}
-          className="concerns-textarea"
-        />
+    <div className="parent-concerns-form">
+      <div className="assessment-info">
+        <h2>Child Development Assessment</h2>
+        <div className="info-section">
+          <h3>About This Assessment</h3>
+          <p>This assessment will help us understand your child's development across five key areas:</p>
+          <ul>
+            <li><strong>Cognition:</strong> Problem-solving and learning abilities</li>
+            <li><strong>Language:</strong> Communication and understanding</li>
+            <li><strong>Motor Skills:</strong> Physical movement and coordination</li>
+            <li><strong>Social Skills:</strong> Interaction with others</li>
+            <li><strong>Emotional Development:</strong> Understanding and expressing feelings</li>
+          </ul>
+          <p>The assessment typically takes 15-20 minutes to complete. You can save your progress and return later.</p>
+        </div>
+
+        <div className="info-section">
+          <h3>Parent Concerns</h3>
+          <p>Before we begin, please share any specific concerns you have about your child's development. This information helps us better understand your child's needs.</p>
+          <textarea
+            value={concerns}
+            onChange={(e) => setConcerns(e.target.value)}
+            placeholder="Example: I've noticed my child has difficulty following multi-step instructions..."
+            rows={6}
+          />
+        </div>
       </div>
 
-      <div className="form-actions">
-        <button 
-          className="submit-button"
+      <div className="assessment-buttons">
+        <button
+          className="assessment-button"
           onClick={handleSubmit}
         >
-          Continue to Assessment
+          Save Concerns & Continue
+        </button>
+        <button
+          className="assessment-button"
+          onClick={onNext}
+        >
+          Skip & Start Assessment
         </button>
       </div>
     </div>
