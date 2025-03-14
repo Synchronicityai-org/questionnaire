@@ -28,12 +28,29 @@ export function TeamList() {
 
   const fetchTeams = async () => {
     try {
-      const response = await client.models.Team.list({
-        selectionSet: ['id', 'name', 'kidProfileId', 'kidProfile { name age }']
-      });
+      const response = await client.models.Team.list();
 
       if (response?.data) {
-        setTeams(response.data);
+        const teamsWithProfiles = await Promise.all(
+          response.data.map(async (team) => {
+            if (!team.id || !team.name || !team.kidProfileId) {
+              return null;
+            }
+            const kidProfile = await client.models.KidProfile.get({
+              id: team.kidProfileId
+            });
+            return {
+              id: team.id,
+              name: team.name,
+              kidProfileId: team.kidProfileId,
+              kidProfile: {
+                name: kidProfile.data?.name || 'Unknown',
+                age: kidProfile.data?.age || 0
+              }
+            };
+          })
+        );
+        setTeams(teamsWithProfiles.filter((team): team is Team => team !== null));
       }
     } catch (err) {
       console.error('Error fetching teams:', err);

@@ -157,7 +157,7 @@ const schema = a.schema({
     userId: a.id().required(),
     team: a.belongsTo("Team", "teamId"),
     user: a.belongsTo("User", "userId"),
-    status: a.enum(["PENDING", "APPROVED", "REJECTED"]).required(),
+    status: a.enum(["PENDING", "APPROVED", "REJECTED"]),
     requestedAt: a.datetime().required(),
     respondedAt: a.datetime(),
     message: a.string(), // Optional message from requester

@@ -1,4 +1,4 @@
-import { BrowserRouter as Router, Routes, Route, Navigate, useNavigate, useParams } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, useNavigate, useParams } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import type { Schema } from "../amplify/data/resource";
 import { generateClient } from "aws-amplify/data";
@@ -36,12 +36,9 @@ function AppContent() {
   const [selectedKidId, setSelectedKidId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [isDemo, setIsDemo] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
-    const mode = sessionStorage.getItem('mode');
-    setIsDemo(mode === 'demo');
     fetchProfiles();
   }, []);
 
@@ -98,7 +95,6 @@ function AppContent() {
 
   const handleDemoClick = async () => {
     sessionStorage.setItem('mode', 'demo');
-    setIsDemo(true);
     await fetchProfiles();
     navigate('/dashboard');
   };
@@ -116,7 +112,6 @@ function AppContent() {
       sessionStorage.setItem('userId', data.userId);
       sessionStorage.setItem('userRole', data.role);
       sessionStorage.setItem('mode', 'real');
-      setIsDemo(false);
       
       // Navigate based on the selected next step
       if (data.nextStep === 'ASSESSMENT') {
@@ -130,13 +125,6 @@ function AppContent() {
       console.error('Navigation error:', error);
     }
   };
-
-  // Add useEffect to handle navigation when selectedKidId changes
-  useEffect(() => {
-    if (selectedKidId) {
-      console.log('Selected kid ID changed, navigating to dashboard:', selectedKidId);
-    }
-  }, [selectedKidId]);
 
   const KidProfilesScreen = () => {
     if (isLoading) {
