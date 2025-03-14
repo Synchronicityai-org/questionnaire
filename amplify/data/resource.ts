@@ -23,6 +23,7 @@ const schema = a.schema({
     kidProfiles: a.hasMany("KidProfile", "parentId"),
     teamMemberships: a.hasMany("TeamMember", "userId"),
     taskFeedbacks: a.hasMany("TaskFeedback", "userId"),
+    teamAccessRequests: a.hasMany("TeamAccessRequest", "userId"),
     status: a.enum(["ACTIVE", "PENDING", "INACTIVE"]),
   })
   .authorization((allow) => [allow.owner(), allow.publicApiKey()]),
@@ -51,6 +52,7 @@ const schema = a.schema({
     kidProfileId: a.id(),
     kidProfile: a.belongsTo("KidProfile", "kidProfileId"),
     members: a.hasMany("TeamMember", "teamId"),
+    accessRequests: a.hasMany("TeamAccessRequest", "teamId"),
     adminId: a.id(), // Reference to the team admin (usually the parent)
   })
   .authorization((allow) => [allow.owner(), allow.publicApiKey()]),
