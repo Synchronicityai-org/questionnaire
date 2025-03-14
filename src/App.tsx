@@ -1,4 +1,4 @@
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate, useNavigate, useParams } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import type { Schema } from "../amplify/data/resource";
 import { generateClient } from "aws-amplify/data";
@@ -7,6 +7,8 @@ import RegistrationForm from "./components/auth/RegistrationForm";
 import { LandingPage } from "./components/LandingPage";
 import { Header } from './components/Header';
 import { TeamManagement } from './components/TeamManagement';
+import { TeamList } from './components/TeamList';
+import { QuestionnaireForm } from './components/QuestionnaireForm';
 import './App.css';
 
 const client = generateClient<Schema>();
@@ -22,29 +24,61 @@ interface KidProfileType {
   updatedAt: string | null;
 }
 
-function App() {
+// Add this component before the AppContent function
+function QuestionnaireWrapper() {
+  const { kidProfileId } = useParams();
+  return <QuestionnaireForm kidProfileId={kidProfileId || ''} />;
+}
+
+// Separate component for the main app content
+function AppContent() {
   const [kidProfiles, setKidProfiles] = useState<KidProfileType[]>([]);
   const [selectedKidId, setSelectedKidId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [isRegistered, setIsRegistered] = useState(false);
+  const [isDemo, setIsDemo] = useState(false);
+  const navigate = useNavigate();
 
   useEffect(() => {
+    const mode = sessionStorage.getItem('mode');
+    setIsDemo(mode === 'demo');
     fetchProfiles();
   }, []);
 
   const fetchProfiles = async () => {
     try {
       console.log('Fetching profiles...');
-      const response = await client.models.KidProfile.list({
-        selectionSet: ['id', 'name', 'age', 'dob', 'parentId', 'isDummy', 'createdAt', 'updatedAt'],
-        filter: {
-          isDummy: {
-            eq: true
+      const userId = sessionStorage.getItem('userId');
+      const mode = sessionStorage.getItem('mode');
+      const isDemo = mode === 'demo';
+
+      if (!isDemo && !userId) {
+        setError('User not authenticated');
+        setIsLoading(false);
+        return;
+      }
+
+      let response;
+      if (isDemo) {
+        response = await client.models.KidProfile.list({
+          selectionSet: ['id', 'name', 'age', 'dob', 'parentId', 'isDummy', 'createdAt', 'updatedAt'],
+          filter: {
+            isDummy: { eq: true }
           }
-        }
-      });
-      console.log('Raw response:', response);
+        });
+      } else if (userId) {
+        response = await client.models.KidProfile.list({
+          selectionSet: ['id', 'name', 'age', 'dob', 'parentId', 'isDummy', 'createdAt', 'updatedAt'],
+          filter: {
+            parentId: { eq: userId },
+            isDummy: { eq: false }
+          }
+        });
+      } else {
+        setError('User not authenticated');
+        setIsLoading(false);
+        return;
+      }
       
       if (!response || !response.data) {
         console.error('No response data received');
@@ -62,45 +96,38 @@ function App() {
     }
   };
 
-  const createTestProfile = async () => {
-    try {
-      console.log('Checking for existing dummy profiles...');
-      const existingProfiles = await client.models.KidProfile.list({
-        selectionSet: ['id', 'name', 'age', 'dob', 'parentId', 'isDummy', 'createdAt', 'updatedAt'],
-        filter: {
-          isDummy: {
-            eq: true
-          }
-        }
-      });
-      
-      if (existingProfiles?.data && existingProfiles.data.length > 0) {
-        console.log('Found dummy profiles:', existingProfiles.data);
-        setKidProfiles(existingProfiles.data);
-        setIsRegistered(true);
-        return;
-      }
-
-      setError('No demo profiles available. Please contact the administrator.');
-    } catch (err) {
-      console.error('Error checking for demo profiles:', err);
-      setError('Failed to load demo profiles. Please try again later.');
-    }
+  const handleDemoClick = async () => {
+    sessionStorage.setItem('mode', 'demo');
+    setIsDemo(true);
+    await fetchProfiles();
+    navigate('/dashboard');
   };
 
-  const handleRegistrationSuccess = async (data: { userId: string; kidProfileId: string; teamId: string }) => {
-    console.log('Registration successful, navigating to dashboard...', data);
-    
+  const handleRegistrationSuccess = async (data: { 
+    userId: string; 
+    kidProfileId: string; 
+    teamId: string;
+    nextStep: 'DASHBOARD' | 'ASSESSMENT' | 'TEAM';
+    isNewRegistration?: boolean;
+    role: 'PARENT' | 'CAREGIVER' | 'CLINICIAN';
+  }) => {
     try {
-      // First fetch the profiles
-      await fetchProfiles();
-      console.log('Profiles fetched successfully after registration');
+      // Store the user ID, role, and set mode to real
+      sessionStorage.setItem('userId', data.userId);
+      sessionStorage.setItem('userRole', data.role);
+      sessionStorage.setItem('mode', 'real');
+      setIsDemo(false);
       
-      // Then set the states that trigger navigation
-      setSelectedKidId(data.kidProfileId);
-      setIsRegistered(true);
-    } catch (err) {
-      console.error('Error fetching profiles after registration:', err);
+      // Navigate based on the selected next step
+      if (data.nextStep === 'ASSESSMENT') {
+        navigate(`/questionnaire/${data.kidProfileId}`);
+      } else if (data.nextStep === 'TEAM') {
+        navigate(`/team/${data.teamId}`);
+      } else {
+        navigate('/dashboard');
+      }
+    } catch (error) {
+      console.error('Navigation error:', error);
     }
   };
 
@@ -120,12 +147,33 @@ function App() {
       return <div className="error">{error}</div>;
     }
 
+    const userRole = sessionStorage.getItem('userRole');
+    const isParent = userRole === 'PARENT';
+
+    if (!isParent) {
+      return (
+        <div className="profiles-container">
+          <h2>Welcome!</h2>
+          <div className="options-container">
+            <div className="option-card" onClick={() => navigate('/register?step=kidProfile')}>
+              <h3>Create New Kid Profile</h3>
+              <p>Create a new profile for a child you'll be working with</p>
+            </div>
+            <div className="option-card" onClick={() => navigate('/team-management')}>
+              <h3>Join Existing Team</h3>
+              <p>Join a team for a child already registered in the system</p>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
     return (
       <div className="profiles-container">
-        <h2>Demo Profiles</h2>
+        <h2>Kid Profiles</h2>
         {kidProfiles.length === 0 ? (
           <div className="empty-state">
-            <p>No demo profiles available.</p>
+            <p>No profiles available.</p>
             <button onClick={fetchProfiles} className="create-profile-btn">
               Refresh Profiles
             </button>
@@ -153,42 +201,45 @@ function App() {
   };
 
   return (
+    <div className="app">
+      <Header />
+      <main className="app-main">
+        <Routes>
+          <Route path="/" element={<LandingPage onDemoClick={handleDemoClick} />} />
+          <Route path="/register" element={<RegistrationForm onSuccess={handleRegistrationSuccess} />} />
+          <Route path="/dashboard" element={
+            selectedKidId ? (
+              <KidProfileHome 
+                kidProfileId={selectedKidId} 
+                onBack={() => setSelectedKidId(null)}
+              />
+            ) : (
+              <KidProfilesScreen />
+            )
+          } />
+          <Route 
+            path="/team-management" 
+            element={<TeamList />} 
+          />
+          <Route 
+            path="/team-management/:kidProfileId" 
+            element={<TeamManagement />} 
+          />
+          <Route 
+            path="/questionnaire/:kidProfileId" 
+            element={<QuestionnaireWrapper />} 
+          />
+        </Routes>
+      </main>
+    </div>
+  );
+}
+
+// Main App component that provides the Router context
+function App() {
+  return (
     <Router>
-      <div className="app">
-        <Header />
-        <main className="app-main">
-          <Routes>
-            <Route path="/" element={
-              isRegistered ? (
-                <Navigate to="/dashboard" replace={true} />
-              ) : (
-                <LandingPage onDemoClick={createTestProfile} />
-              )
-            } />
-            <Route path="/register" element={
-              isRegistered ? (
-                <Navigate to="/dashboard" replace={true} />
-              ) : (
-                <RegistrationForm onSuccess={handleRegistrationSuccess} />
-              )
-            } />
-            <Route path="/dashboard" element={
-              selectedKidId ? (
-                <KidProfileHome 
-                  kidProfileId={selectedKidId} 
-                  onBack={() => setSelectedKidId(null)}
-                />
-              ) : (
-                <KidProfilesScreen />
-              )
-            } />
-            <Route 
-              path="/team-management/:kidProfileId" 
-              element={<TeamManagement />} 
-            />
-          </Routes>
-        </main>
-      </div>
+      <AppContent />
     </Router>
   );
 }

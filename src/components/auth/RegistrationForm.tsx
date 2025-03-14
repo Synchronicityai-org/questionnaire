@@ -7,7 +7,14 @@ type Step = 'userInfo' | 'roleSelection' | 'kidProfile' | 'teamSetup';
 type UserRole = 'PARENT' | 'CAREGIVER' | 'CLINICIAN' | 'ADMIN' | 'SME';
 
 interface RegistrationFormProps {
-  onSuccess: (data: { userId: string; kidProfileId: string; teamId: string }) => void;
+  onSuccess: (data: { 
+    userId: string; 
+    kidProfileId: string; 
+    teamId: string;
+    nextStep: 'DASHBOARD' | 'ASSESSMENT' | 'TEAM';
+    isNewRegistration?: boolean;
+    role: 'PARENT' | 'CAREGIVER' | 'CLINICIAN';
+  }) => void;
 }
 
 interface UserInfo {
@@ -57,12 +64,13 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ onSuccess }) => {
     setCurrentStep('roleSelection');
   };
 
-  const handleRoleSelection = (role: UserRole) => {
+  const handleRoleSelection = async (role: UserRole) => {
     setSelectedRole(role);
+    
     if (role === 'PARENT') {
       setCurrentStep('kidProfile');
     } else {
-      handleRegistration();
+      await handleRegistration('DASHBOARD');
     }
   };
 
@@ -139,11 +147,41 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ onSuccess }) => {
   const renderRoleSelection = () => (
     <div className="role-selection">
       <h2>Select Your Role</h2>
+      <p className="role-description">Choose your role in the child's care journey</p>
       <div className="role-buttons">
-        <button onClick={() => handleRoleSelection('PARENT')}>Parent</button>
-        <button onClick={() => handleRoleSelection('CAREGIVER')}>Caregiver</button>
-        <button onClick={() => handleRoleSelection('CLINICIAN')}>Clinician</button>
+        <button 
+          onClick={() => handleRoleSelection('PARENT')}
+          className={`role-button ${selectedRole === 'PARENT' ? 'active' : ''} ${isSubmitting ? 'disabled' : ''}`}
+          disabled={isSubmitting}
+        >
+          <span className="icon">👨‍👩‍👧‍👦</span>
+          <h3>Parent</h3>
+          <p>I am the child's parent or primary caregiver</p>
+        </button>
+        <button 
+          onClick={() => handleRoleSelection('CAREGIVER')}
+          className={`role-button ${selectedRole === 'CAREGIVER' ? 'active' : ''} ${isSubmitting ? 'disabled' : ''}`}
+          disabled={isSubmitting}
+        >
+          <span className="icon">👥</span>
+          <h3>Caregiver</h3>
+          <p>I provide care or support for the child</p>
+        </button>
+        <button 
+          onClick={() => handleRoleSelection('CLINICIAN')}
+          className={`role-button ${selectedRole === 'CLINICIAN' ? 'active' : ''} ${isSubmitting ? 'disabled' : ''}`}
+          disabled={isSubmitting}
+        >
+          <span className="icon">👨‍⚕️</span>
+          <h3>Clinician</h3>
+          <p>I am a healthcare professional</p>
+        </button>
       </div>
+      {isSubmitting && (
+        <div className="loading-message">
+          Setting up your account...
+        </div>
+      )}
     </div>
   );
 
@@ -303,7 +341,9 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ onSuccess }) => {
           userId: userResponse.data.id,
           kidProfileId: kidResponse.data.id,
           teamId: teamResponse.data.id,
-          nextStep
+          nextStep,
+          isNewRegistration: true,
+          role: selectedRole as 'PARENT' | 'CAREGIVER' | 'CLINICIAN'
         };
 
         console.log('Registration completed successfully. Calling onSuccess with data:', registrationData);
@@ -313,7 +353,9 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ onSuccess }) => {
           userId: userResponse.data.id,
           kidProfileId: '',
           teamId: '',
-          nextStep: 'DASHBOARD'
+          nextStep: 'DASHBOARD' as const,
+          isNewRegistration: true,
+          role: selectedRole as 'PARENT' | 'CAREGIVER' | 'CLINICIAN'
         };
         console.log('Registration completed successfully for non-parent role. Calling onSuccess with data:', registrationData);
         await Promise.resolve(onSuccess(registrationData));

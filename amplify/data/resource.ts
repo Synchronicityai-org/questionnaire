@@ -149,6 +149,21 @@ const schema = a.schema({
     assessmentId: a.string().required(), // Make required to ensure proper linking
   })
   .authorization((allow) => [allow.owner(), allow.publicApiKey()]),
+
+  // Team Access Request
+  TeamAccessRequest: a.model({
+    id: a.id(),
+    teamId: a.id().required(),
+    userId: a.id().required(),
+    team: a.belongsTo("Team", "teamId"),
+    user: a.belongsTo("User", "userId"),
+    status: a.enum(["PENDING", "APPROVED", "REJECTED"]).required(),
+    requestedAt: a.datetime().required(),
+    respondedAt: a.datetime(),
+    message: a.string(), // Optional message from requester
+    responseMessage: a.string(), // Optional response message from admin
+  })
+  .authorization((allow) => [allow.owner(), allow.publicApiKey()]),
 });
 
 // == STEP 2: Define Authorization Modes ==

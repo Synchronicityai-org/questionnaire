@@ -1,0 +1,119 @@
+.teams-container {
+  padding: 2rem;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.teams-container h2 {
+  text-align: center;
+  color: #2d3748;
+  margin-bottom: 2rem;
+}
+
+.teams-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 2rem;
+}
+
+.team-card {
+  background: white;
+  border-radius: 8px;
+  padding: 1.5rem;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.team-card h3 {
+  margin: 0 0 1rem 0;
+  color: #2d3748;
+}
+
+.kid-info {
+  color: #4a5568;
+  margin-bottom: 1.5rem;
+}
+
+.join-team-btn {
+  width: 100%;
+  padding: 0.75rem;
+  background-color: #4299e1;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.join-team-btn:hover {
+  background-color: #3182ce;
+}
+
+.join-request-form {
+  margin-top: 1rem;
+}
+
+.join-request-form textarea {
+  width: 100%;
+  min-height: 100px;
+  padding: 0.5rem;
+  margin-bottom: 1rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 4px;
+  resize: vertical;
+}
+
+.button-group {
+  display: flex;
+  gap: 1rem;
+}
+
+.submit-request-btn,
+.cancel-btn {
+  flex: 1;
+  padding: 0.75rem;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.submit-request-btn {
+  background-color: #48bb78;
+  color: white;
+}
+
+.submit-request-btn:hover {
+  background-color: #38a169;
+}
+
+.cancel-btn {
+  background-color: #e2e8f0;
+  color: #4a5568;
+}
+
+.cancel-btn:hover {
+  background-color: #cbd5e0;
+}
+
+.loading {
+  text-align: center;
+  padding: 2rem;
+  color: #4a5568;
+}
+
+.error {
+  text-align: center;
+  padding: 2rem;
+  color: #e53e3e;
+  background-color: #fff5f5;
+  border-radius: 8px;
+  margin: 2rem 0;
+}
+
+.empty-state {
+  text-align: center;
+  padding: 3rem;
+  background-color: #f7fafc;
+  border-radius: 8px;
+  color: #4a5568;
+} 

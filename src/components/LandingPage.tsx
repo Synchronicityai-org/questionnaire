@@ -5,13 +5,12 @@ interface LandingPageProps {
   onDemoClick: () => void;
 }
 
-export const LandingPage = ({ onDemoClick }: LandingPageProps) => {
+export function LandingPage({ onDemoClick }: LandingPageProps) {
   return (
     <div className="landing-page">
-      <section className="hero">
+      <div className="hero-section">
         <h1>Welcome to Synchronicity AI</h1>
         <p className="subtitle">Empowering families through collaborative care and intelligent support</p>
-        
         <div className="cta-buttons">
           <Link to="/register" className="cta-button primary">
             Get Started
@@ -20,11 +19,10 @@ export const LandingPage = ({ onDemoClick }: LandingPageProps) => {
             Try Demo
           </button>
         </div>
-      </section>
-
-      <section className="features">
+      </div>
+      <div className="features-section">
         <h2>Why Choose Synchronicity AI?</h2>
-        <div className="feature-grid">
+        <div className="features-grid">
           <div className="feature-card">
             <h3>Collaborative Care</h3>
             <p>Connect with healthcare providers, caregivers, and specialists in one place</p>
@@ -38,7 +36,7 @@ export const LandingPage = ({ onDemoClick }: LandingPageProps) => {
             <p>Your family's data is protected with enterprise-grade security</p>
           </div>
         </div>
-      </section>
+      </div>
     </div>
   );
-}; 
+} 
