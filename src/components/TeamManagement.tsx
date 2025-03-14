@@ -5,6 +5,7 @@ import type { Schema } from '../../amplify/data/resource';
 import './TeamManagement.css';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faArrowLeft, faUserPlus, faTrash, faCheck, faSearch } from '@fortawesome/free-solid-svg-icons';
+import { TeamRequestsManagement } from './TeamRequestsManagement';
 
 const client = generateClient<Schema>();
 
@@ -38,10 +39,12 @@ export function TeamManagement() {
   const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState('');
   const [filteredTeamMembers, setFilteredTeamMembers] = useState<TeamMember[]>([]);
+  const [team, setTeam] = useState<{ id: string; name: string } | null>(null);
 
   useEffect(() => {
-    if (!kidProfileId) return;
-    fetchTeamAndMembers();
+    if (kidProfileId) {
+      fetchTeam();
+    }
   }, [kidProfileId]);
 
   useEffect(() => {
@@ -57,6 +60,35 @@ export function TeamManagement() {
       setFilteredTeamMembers(filtered);
     }
   }, [searchQuery, teamMembers]);
+
+  const fetchTeam = async () => {
+    try {
+      const response = await client.models.Team.list({
+        filter: {
+          kidProfileId: { eq: kidProfileId }
+        }
+      });
+
+      if (response?.data?.[0]) {
+        const teamData = response.data[0];
+        if (teamData.id && teamData.name) {
+          setTeam({
+            id: teamData.id,
+            name: teamData.name
+          });
+        } else {
+          setError('Invalid team data');
+        }
+      } else {
+        setError('Team not found');
+      }
+    } catch (err) {
+      console.error('Error fetching team:', err);
+      setError('Failed to load team information');
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const fetchTeamAndMembers = async () => {
     try {
@@ -267,114 +299,132 @@ export function TeamManagement() {
     );
   };
 
+  if (isLoading) {
+    return <div className="loading">Loading team information...</div>;
+  }
+
+  if (error || !team) {
+    return <div className="error">{error || 'Team not found'}</div>;
+  }
+
   return (
-    <div className="team-management-container">
-      <div className="team-management-header">
-        <button className="back-button" onClick={handleBack}>
-          <FontAwesomeIcon icon={faArrowLeft} /> Back
-        </button>
-        <h2>Manage Team Members</h2>
-      </div>
-
-      {error && <div className="error-message">{error}</div>}
-
-      <div className="add-member-section">
-        <h3>Add New Team Member</h3>
-        <button 
-          className="add-button"
-          onClick={() => setShowAvailableMembers(!showAvailableMembers)}
-        >
-          <FontAwesomeIcon icon={faUserPlus} /> Add Team Member
-        </button>
-        
-        {showAvailableMembers && (
-          <>
-            <div style={{ marginBottom: '15px', marginTop: '15px' }}>
-              <div className="search-bar" style={{
-                position: 'relative',
-                width: '100%',
-                maxWidth: '500px'
-              }}>
-                <FontAwesomeIcon 
-                  icon={faSearch} 
-                  style={{
-                    position: 'absolute',
-                    left: '12px',
-                    top: '50%',
-                    transform: 'translateY(-50%)',
-                    color: '#666'
-                  }}
-                />
-                <input
-                  type="text"
-                  placeholder="Search available members..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  style={{
-                    width: '100%',
-                    padding: '12px 12px 12px 40px',
-                    borderRadius: '6px',
-                    border: '2px solid #ddd',
-                    fontSize: '14px',
-                    transition: 'border-color 0.2s'
-                  }}
-                />
-              </div>
+    <div className="team-management">
+      <h1>{team.name}</h1>
+      <div className="team-sections">
+        <section className="team-requests-section">
+          <TeamRequestsManagement teamId={team.id} />
+        </section>
+        <section className="team-members-section">
+          <div className="team-management-container">
+            <div className="team-management-header">
+              <button className="back-button" onClick={handleBack}>
+                <FontAwesomeIcon icon={faArrowLeft} /> Back
+              </button>
+              <h2>Manage Team Members</h2>
             </div>
-            <div className="available-members-grid">
-              {getAvailableMembersToAdd()
-                .filter(member => 
-                  !searchQuery.trim() || 
-                  member.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                  member.role.toLowerCase().includes(searchQuery.toLowerCase())
-                )
-                .map((member) => (
-                  <div key={member.id} className="available-member-card">
-                    <div className="member-info">
-                      <div className="member-name">{member.name}</div>
-                      <div className="member-role">{member.role}</div>
+
+            {error && <div className="error-message">{error}</div>}
+
+            <div className="add-member-section">
+              <h3>Add New Team Member</h3>
+              <button 
+                className="add-button"
+                onClick={() => setShowAvailableMembers(!showAvailableMembers)}
+              >
+                <FontAwesomeIcon icon={faUserPlus} /> Add Team Member
+              </button>
+              
+              {showAvailableMembers && (
+                <>
+                  <div style={{ marginBottom: '15px', marginTop: '15px' }}>
+                    <div className="search-bar" style={{
+                      position: 'relative',
+                      width: '100%',
+                      maxWidth: '500px'
+                    }}>
+                      <FontAwesomeIcon 
+                        icon={faSearch} 
+                        style={{
+                          position: 'absolute',
+                          left: '12px',
+                          top: '50%',
+                          transform: 'translateY(-50%)',
+                          color: '#666'
+                        }}
+                      />
+                      <input
+                        type="text"
+                        placeholder="Search available members..."
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        style={{
+                          width: '100%',
+                          padding: '12px 12px 12px 40px',
+                          borderRadius: '6px',
+                          border: '2px solid #ddd',
+                          fontSize: '14px',
+                          transition: 'border-color 0.2s'
+                        }}
+                      />
                     </div>
-                    <button
-                      className="add-member-button"
-                      onClick={() => handleAddMember(member)}
-                    >
-                      <FontAwesomeIcon icon={faCheck} />
-                    </button>
                   </div>
-                ))}
+                  <div className="available-members-grid">
+                    {getAvailableMembersToAdd()
+                      .filter(member => 
+                        !searchQuery.trim() || 
+                        member.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                        member.role.toLowerCase().includes(searchQuery.toLowerCase())
+                      )
+                      .map((member) => (
+                        <div key={member.id} className="available-member-card">
+                          <div className="member-info">
+                            <div className="member-name">{member.name}</div>
+                            <div className="member-role">{member.role}</div>
+                          </div>
+                          <button
+                            className="add-member-button"
+                            onClick={() => handleAddMember(member)}
+                          >
+                            <FontAwesomeIcon icon={faCheck} />
+                          </button>
+                        </div>
+                      ))}
+                  </div>
+                </>
+              )}
             </div>
-          </>
-        )}
-      </div>
 
-      <div className="team-members-list">
-        <h3>Current Team Members</h3>
-        {isLoading ? (
-          <div className="loading">Loading team members...</div>
-        ) : (
-          <div className="members-grid">
-            {teamMembers.map((member) => (
-              <div key={member.id} className="member-card">
-                <div className="member-avatar">
-                  <div className="avatar-placeholder">{member.name[0]}</div>
+            <div className="team-members-list">
+              <h3>Current Team Members</h3>
+              {isLoading ? (
+                <div className="loading">Loading team members...</div>
+              ) : (
+                <div className="members-grid">
+                  {teamMembers.map((member) => (
+                    <div key={member.id} className="member-card">
+                      <div className="member-avatar">
+                        <div className="avatar-placeholder">{member.name[0]}</div>
+                      </div>
+                      <div className="member-info">
+                        <div className="member-name">{member.name}</div>
+                        <div className="member-role">{member.role}</div>
+                        <div className={`member-status ${member.status.toLowerCase()}`}>
+                          {member.status}
+                        </div>
+                      </div>
+                      <button
+                        className="remove-button"
+                        onClick={() => handleRemoveMember(member.id)}
+                      >
+                        <FontAwesomeIcon icon={faTrash} />
+                      </button>
+                    </div>
+                  ))}
                 </div>
-                <div className="member-info">
-                  <div className="member-name">{member.name}</div>
-                  <div className="member-role">{member.role}</div>
-                  <div className={`member-status ${member.status.toLowerCase()}`}>
-                    {member.status}
-                  </div>
-                </div>
-                <button
-                  className="remove-button"
-                  onClick={() => handleRemoveMember(member.id)}
-                >
-                  <FontAwesomeIcon icon={faTrash} />
-                </button>
-              </div>
-            ))}
+              )}
+            </div>
           </div>
-        )}
+        </section>
       </div>
     </div>
   );

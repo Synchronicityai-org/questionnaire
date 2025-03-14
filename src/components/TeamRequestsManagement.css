@@ -1,0 +1,143 @@
+.team-requests {
+  padding: 2rem;
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+.team-requests h2 {
+  color: #2d3748;
+  margin-bottom: 2rem;
+  text-align: center;
+}
+
+.requests-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.request-card {
+  background: white;
+  border-radius: 8px;
+  padding: 1.5rem;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.request-info h3 {
+  margin: 0 0 0.5rem 0;
+  color: #2d3748;
+}
+
+.request-info .role {
+  color: #4a5568;
+  font-size: 0.9rem;
+  margin: 0.25rem 0;
+}
+
+.request-info .timestamp {
+  color: #718096;
+  font-size: 0.9rem;
+  margin: 0.25rem 0;
+}
+
+.request-info .message {
+  margin: 1rem 0;
+  padding: 1rem;
+  background: #f7fafc;
+  border-radius: 4px;
+  font-style: italic;
+  color: #4a5568;
+}
+
+.response-actions {
+  margin-top: 1.5rem;
+  border-top: 1px solid #e2e8f0;
+  padding-top: 1.5rem;
+}
+
+.response-actions textarea {
+  width: 100%;
+  min-height: 80px;
+  padding: 0.75rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 4px;
+  margin-bottom: 1rem;
+  resize: vertical;
+}
+
+.button-group {
+  display: flex;
+  gap: 1rem;
+}
+
+.approve-btn,
+.reject-btn {
+  flex: 1;
+  padding: 0.75rem;
+  border: none;
+  border-radius: 4px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.approve-btn {
+  background-color: #48bb78;
+  color: white;
+}
+
+.approve-btn:hover {
+  background-color: #38a169;
+}
+
+.reject-btn {
+  background-color: #f56565;
+  color: white;
+}
+
+.reject-btn:hover {
+  background-color: #e53e3e;
+}
+
+.status {
+  display: inline-block;
+  padding: 0.5rem 1rem;
+  border-radius: 9999px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  text-transform: uppercase;
+  margin-top: 1rem;
+}
+
+.status.approved {
+  background-color: #c6f6d5;
+  color: #2f855a;
+}
+
+.status.rejected {
+  background-color: #fed7d7;
+  color: #c53030;
+}
+
+.empty-state {
+  text-align: center;
+  padding: 3rem;
+  background-color: #f7fafc;
+  border-radius: 8px;
+  color: #4a5568;
+}
+
+.loading {
+  text-align: center;
+  padding: 2rem;
+  color: #4a5568;
+}
+
+.error {
+  text-align: center;
+  padding: 2rem;
+  color: #e53e3e;
+  background-color: #fff5f5;
+  border-radius: 8px;
+  margin: 2rem 0;
+} 
