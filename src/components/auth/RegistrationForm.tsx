@@ -23,6 +23,7 @@ interface KidProfileInfo {
   name: string;
   dob: string;
   age: number;
+  isAutismDiagnosed: boolean;
 }
 
 const client = generateClient<Schema>();
@@ -42,6 +43,7 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ onSuccess }) => {
     name: '',
     dob: '',
     age: 0,
+    isAutismDiagnosed: false,
   });
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -108,7 +110,8 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ onSuccess }) => {
         age: kidProfile.age,
         dob: kidProfile.dob,
         parentId: userResponse.data.id,
-        isDummy: false
+        isDummy: false,
+        isAutismDiagnosed: kidProfile.isAutismDiagnosed
       });
 
       if (!kidResponse.data?.id) {
@@ -249,6 +252,16 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ onSuccess }) => {
           }}
           required
         />
+      </div>
+      <div className="form-group checkbox-group">
+        <label className="checkbox-label">
+          <input
+            type="checkbox"
+            checked={kidProfile.isAutismDiagnosed}
+            onChange={(e) => setKidProfile({ ...kidProfile, isAutismDiagnosed: e.target.checked })}
+          />
+          Has your child been diagnosed with autism?
+        </label>
       </div>
       <button type="submit">Next</button>
     </form>

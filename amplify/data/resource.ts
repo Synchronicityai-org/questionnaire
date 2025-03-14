@@ -40,6 +40,7 @@ const schema = a.schema({
     userResponses: a.hasMany("UserResponse", "kidProfileId"),
     parentConcerns: a.hasMany("ParentConcerns", "kidProfileId"),
     isDummy: a.boolean().required().default(false),
+    isAutismDiagnosed: a.boolean().required().default(false),
   })
   .authorization((allow) => [allow.owner(), allow.publicApiKey()]),
 
