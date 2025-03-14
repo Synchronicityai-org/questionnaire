@@ -75,82 +75,6 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ onSuccess }) => {
     setCurrentStep('teamSetup');
   };
 
-  const handleRegistration = async () => {
-    setIsSubmitting(true);
-    setError(null);
-
-    try {
-      if (!selectedRole) {
-        setError('Please select a role');
-        setIsSubmitting(false);
-        return;
-      }
-
-      console.log('Starting registration process...');
-      console.log('Creating user...');
-      const userResponse = await client.models.User.create({
-        username: userInfo.username,
-        email: userInfo.email,
-        password: userInfo.password,
-        fName: userInfo.fName,
-        lName: userInfo.lName,
-        phoneNumber: userInfo.phoneNumber,
-        role: selectedRole,
-        status: 'PENDING'
-      });
-
-      if (!userResponse.data?.id) {
-        throw new Error('Failed to create user');
-      }
-      console.log('User created successfully:', userResponse.data.id);
-
-      console.log('Creating kid profile...');
-      const kidResponse = await client.models.KidProfile.create({
-        name: kidProfile.name,
-        age: kidProfile.age,
-        dob: kidProfile.dob,
-        parentId: userResponse.data.id,
-        isDummy: false,
-        isAutismDiagnosed: kidProfile.isAutismDiagnosed
-      });
-
-      if (!kidResponse.data?.id) {
-        throw new Error('Failed to create kid profile');
-      }
-      console.log('Kid profile created successfully:', kidResponse.data.id);
-
-      console.log('Creating team...');
-      const teamResponse = await client.models.Team.create({
-        name: `${kidProfile.name}'s Team`,
-        kidProfileId: kidResponse.data.id,
-        adminId: userResponse.data.id
-      });
-
-      if (!teamResponse.data?.id) {
-        throw new Error('Failed to create team');
-      }
-      console.log('Team created successfully:', teamResponse.data.id);
-
-      const registrationData = {
-        userId: userResponse.data.id,
-        kidProfileId: kidResponse.data.id,
-        teamId: teamResponse.data.id
-      };
-
-      console.log('Registration completed successfully. Calling onSuccess with data:', registrationData);
-      
-      // Call onSuccess and wait for it to complete
-      await Promise.resolve(onSuccess(registrationData));
-      
-      console.log('Navigation callback completed');
-    } catch (err) {
-      console.error('Registration error:', err);
-      setError('Failed to complete registration. Please try again.');
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
   const renderUserInfoForm = () => (
     <form onSubmit={handleUserInfoSubmit} className="user-info-form">
       <h2>Create Your Account</h2>
@@ -269,16 +193,140 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ onSuccess }) => {
 
   const renderTeamSetup = () => (
     <div className="team-setup">
-      <h2>Team Setup</h2>
-      <p>A team will be created for your child. You can invite team members later.</p>
-      <button 
-        onClick={handleRegistration} 
-        disabled={isSubmitting}
-      >
-        {isSubmitting ? 'Creating Profile...' : 'Complete Registration'}
-      </button>
+      <h2>Profile Created Successfully!</h2>
+      <p>What would you like to do next?</p>
+      
+      <div className="next-steps-container">
+        <div className="next-step-option">
+          <button 
+            onClick={() => handleRegistration('DASHBOARD')}
+            disabled={isSubmitting}
+            className="next-step-button dashboard"
+          >
+            <span className="icon">📊</span>
+            <h3>Go to Dashboard</h3>
+            <p>View your child's profile and overall progress</p>
+          </button>
+        </div>
+
+        <div className="next-step-option">
+          <button 
+            onClick={() => handleRegistration('ASSESSMENT')}
+            disabled={isSubmitting}
+            className="next-step-button assessment"
+          >
+            <span className="icon">📝</span>
+            <h3>Start Assessment</h3>
+            <p>Begin the developmental assessment (takes approximately 20 minutes)</p>
+          </button>
+        </div>
+
+        <div className="next-step-option">
+          <button 
+            onClick={() => handleRegistration('TEAM')}
+            disabled={isSubmitting}
+            className="next-step-button team"
+          >
+            <span className="icon">👥</span>
+            <h3>Manage Team</h3>
+            <p>Invite caregivers, clinicians, or other team members</p>
+          </button>
+        </div>
+      </div>
+
+      {isSubmitting && (
+        <div className="loading-message">
+          Setting up your profile...
+        </div>
+      )}
     </div>
   );
+
+  const handleRegistration = async (nextStep: 'DASHBOARD' | 'ASSESSMENT' | 'TEAM' = 'DASHBOARD') => {
+    setIsSubmitting(true);
+    setError(null);
+
+    try {
+      if (!selectedRole) {
+        setError('Please select a role');
+        setIsSubmitting(false);
+        return;
+      }
+
+      console.log('Starting registration process...');
+      console.log('Creating user...');
+      const userResponse = await client.models.User.create({
+        username: userInfo.username,
+        email: userInfo.email,
+        password: userInfo.password,
+        fName: userInfo.fName,
+        lName: userInfo.lName,
+        phoneNumber: userInfo.phoneNumber,
+        role: selectedRole,
+        status: 'PENDING'
+      });
+
+      if (!userResponse.data?.id) {
+        throw new Error('Failed to create user');
+      }
+      console.log('User created successfully:', userResponse.data.id);
+
+      if (selectedRole === 'PARENT') {
+        console.log('Creating kid profile...');
+        const kidResponse = await client.models.KidProfile.create({
+          name: kidProfile.name,
+          age: kidProfile.age,
+          dob: kidProfile.dob,
+          parentId: userResponse.data.id,
+          isDummy: false,
+          isAutismDiagnosed: kidProfile.isAutismDiagnosed
+        });
+
+        if (!kidResponse.data?.id) {
+          throw new Error('Failed to create kid profile');
+        }
+        console.log('Kid profile created successfully:', kidResponse.data.id);
+
+        console.log('Creating team...');
+        const teamResponse = await client.models.Team.create({
+          name: `${kidProfile.name}'s Team`,
+          kidProfileId: kidResponse.data.id,
+          adminId: userResponse.data.id
+        });
+
+        if (!teamResponse.data?.id) {
+          throw new Error('Failed to create team');
+        }
+        console.log('Team created successfully:', teamResponse.data.id);
+
+        const registrationData = {
+          userId: userResponse.data.id,
+          kidProfileId: kidResponse.data.id,
+          teamId: teamResponse.data.id,
+          nextStep
+        };
+
+        console.log('Registration completed successfully. Calling onSuccess with data:', registrationData);
+        await Promise.resolve(onSuccess(registrationData));
+      } else {
+        const registrationData = {
+          userId: userResponse.data.id,
+          kidProfileId: '',
+          teamId: '',
+          nextStep: 'DASHBOARD'
+        };
+        console.log('Registration completed successfully for non-parent role. Calling onSuccess with data:', registrationData);
+        await Promise.resolve(onSuccess(registrationData));
+      }
+      
+      console.log('Navigation callback completed');
+    } catch (err) {
+      console.error('Registration error:', err);
+      setError('Failed to complete registration. Please try again.');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   return (
     <div className="registration-container">
