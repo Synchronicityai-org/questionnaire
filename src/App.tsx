@@ -113,6 +113,14 @@ function AppContent() {
       sessionStorage.setItem('userRole', data.role);
       sessionStorage.setItem('mode', 'real');
       
+      // Fetch profiles before navigation
+      await fetchProfiles();
+      
+      // For new parent registrations, set the selected kid profile
+      if (data.isNewRegistration && data.role === 'PARENT' && data.kidProfileId) {
+        setSelectedKidId(data.kidProfileId);
+      }
+      
       // Navigate based on the selected next step
       if (data.nextStep === 'ASSESSMENT') {
         navigate(`/questionnaire/${data.kidProfileId}`);
