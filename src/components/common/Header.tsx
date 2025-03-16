@@ -3,7 +3,11 @@ import { Link } from 'react-router-dom';
 import Auth from '../auth/Auth';
 import './Header.css';
 
-const Header: React.FC = () => {
+interface HeaderProps {
+  isAuthenticated: boolean;
+}
+
+const Header: React.FC<HeaderProps> = ({ isAuthenticated }) => {
   const [isAuthOpen, setIsAuthOpen] = useState(false);
 
   return (
@@ -25,25 +29,27 @@ const Header: React.FC = () => {
           <span className="logo-text">SynchronicityAI</span>
         </Link>
         <nav className="nav-links">
-          <button 
-            className="auth-button"
-            onClick={() => setIsAuthOpen(true)}
-            aria-label="Login"
-          >
-            <svg 
-              xmlns="http://www.w3.org/2000/svg" 
-              viewBox="0 0 24 24" 
-              fill="none" 
-              stroke="currentColor" 
-              strokeWidth="2" 
-              strokeLinecap="round" 
-              strokeLinejoin="round"
-              className="person-icon"
+          {!isAuthenticated && (
+            <button 
+              className="auth-button"
+              onClick={() => setIsAuthOpen(true)}
+              aria-label="Login"
             >
-              <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
-              <circle cx="12" cy="7" r="4"></circle>
-            </svg>
-          </button>
+              <svg 
+                xmlns="http://www.w3.org/2000/svg" 
+                viewBox="0 0 24 24" 
+                fill="none" 
+                stroke="currentColor" 
+                strokeWidth="2" 
+                strokeLinecap="round" 
+                strokeLinejoin="round"
+                className="person-icon"
+              >
+                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                <circle cx="12" cy="7" r="4"></circle>
+              </svg>
+            </button>
+          )}
         </nav>
       </div>
       <Auth isOpen={isAuthOpen} onClose={() => setIsAuthOpen(false)} />

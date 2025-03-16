@@ -5,7 +5,7 @@ import type { Schema } from '../../../amplify/data/resource';
 import './RegistrationForm.css';
 
 interface KidProfileFormProps {
-  onSubmit: (kidProfileId: string, teamId: string) => void;
+  onSubmit: (data: { kidProfileId: string; teamId: string }) => void;
 }
 
 interface KidProfileInfo {
@@ -39,6 +39,10 @@ const KidProfileForm: React.FC<KidProfileFormProps> = ({ onSubmit }) => {
       }
 
       const currentUser = await getCurrentUser();
+      if (!currentUser?.userId) {
+        throw new Error('User not authenticated');
+      }
+
       const client = generateClient<Schema>();
 
       // Create kid profile
@@ -55,21 +59,59 @@ const KidProfileForm: React.FC<KidProfileFormProps> = ({ onSubmit }) => {
         throw new Error('Failed to create kid profile');
       }
 
-      // Create team
-      const teamResponse = await client.models.Team.create({
-        name: `${kidProfile.name}'s Team`,
-        kidProfileId: kidResponse.data.id,
-        adminId: currentUser.userId
-      });
+      // Create team with retry logic
+      let teamResponse = null;
+      let retryCount = 0;
+      const maxRetries = 3;
 
-      if (!teamResponse.data?.id) {
+      while (retryCount < maxRetries && !teamResponse?.data?.id) {
+        try {
+          teamResponse = await client.models.Team.create({
+            name: `${kidProfile.name}'s Team`,
+            kidProfileId: kidResponse.data.id,
+            adminId: currentUser.userId
+          });
+          
+          if (!teamResponse.data?.id) {
+            throw new Error('Team creation response missing ID');
+          }
+        } catch (teamError) {
+          console.error(`Team creation attempt ${retryCount + 1} failed:`, teamError);
+          retryCount++;
+          if (retryCount === maxRetries) {
+            throw new Error('Failed to create team after multiple attempts');
+          }
+          // Wait before retrying
+          await new Promise(resolve => setTimeout(resolve, 1000 * retryCount));
+        }
+      }
+
+      // Verify team was created
+      if (!teamResponse?.data?.id) {
         throw new Error('Failed to create team');
       }
 
-      onSubmit(kidResponse.data.id, teamResponse.data.id);
+      // Wait for a moment to ensure team creation is complete
+      await new Promise(resolve => setTimeout(resolve, 1000));
+
+      // Verify team exists
+      try {
+        const teamVerification = await client.models.Team.get({ id: teamResponse.data.id });
+        if (!teamVerification.data) {
+          throw new Error('Team not found after creation');
+        }
+      } catch (verifyError) {
+        console.error('Team verification failed:', verifyError);
+        throw new Error('Team creation could not be verified');
+      }
+
+      onSubmit({
+        kidProfileId: kidResponse.data.id,
+        teamId: teamResponse.data.id
+      });
     } catch (err) {
-      console.error('Error creating kid profile:', err);
-      setError('Failed to create profile. Please try again.');
+      console.error('Error in profile/team creation:', err);
+      setError(err instanceof Error ? err.message : 'Failed to create profile and team. Please try again.');
     } finally {
       setIsSubmitting(false);
     }
@@ -126,7 +168,7 @@ const KidProfileForm: React.FC<KidProfileFormProps> = ({ onSubmit }) => {
         className="submit-button"
         disabled={isSubmitting}
       >
-        {isSubmitting ? 'Creating Profile...' : 'Create Profile'}
+        {isSubmitting ? 'Creating Profile and Team...' : 'Create Profile'}
       </button>
     </form>
   );
