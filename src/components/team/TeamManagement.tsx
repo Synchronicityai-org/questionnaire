@@ -44,6 +44,7 @@ interface TeamRequest {
   userName?: string;
   userEmail?: string;
   userRole?: string;
+  message?: string;
 }
 
 const TeamManagement: React.FC = () => {
@@ -178,7 +179,8 @@ const TeamManagement: React.FC = () => {
             // Use email as name if no first/last name available
             userName: userData.email || 'Unknown User',
             userEmail: userData.email || '',
-            userRole: userData.role || 'CAREGIVER'
+            userRole: userData.role || 'CAREGIVER',
+            message: specificRequest.message || undefined
           } as TeamRequest;
 
           console.log('Processing request into:', request);
@@ -208,7 +210,8 @@ const TeamManagement: React.FC = () => {
                 createdAt: request.requestedAt || new Date().toISOString(),
                 userName: userData.email || 'Unknown User',
                 userEmail: userData.email || '',
-                userRole: userData.role || 'CAREGIVER'
+                userRole: userData.role || 'CAREGIVER',
+                message: request.message || undefined
               } as TeamRequest;
             })
           );
@@ -397,6 +400,59 @@ const TeamManagement: React.FC = () => {
     }
   };
 
+  const cleanupTeamRequests = async (userId: string) => {
+    try {
+      const client = generateClient<Schema>();
+      console.log('Starting cleanup for user:', userId);
+      
+      // Find all requests for this user
+      const requestsResponse = await client.models.TeamAccessRequest.list({
+        filter: { userId: { eq: userId } }
+      });
+
+      console.log('Found requests:', requestsResponse.data);
+
+      if (requestsResponse.data) {
+        // Delete each request
+        await Promise.all(
+          requestsResponse.data.map(request => {
+            console.log('Deleting request:', request.id);
+            return client.models.TeamAccessRequest.delete({
+              id: request.id
+            });
+          })
+        );
+      }
+
+      // Also find and delete any team memberships
+      const teamMembersResponse = await client.models.TeamMember.list({
+        filter: { userId: { eq: userId } }
+      });
+
+      if (teamMembersResponse.data) {
+        await Promise.all(
+          teamMembersResponse.data.map(member => {
+            console.log('Deleting team member:', member.id);
+            return client.models.TeamMember.delete({
+              id: member.id
+            });
+          })
+        );
+      }
+
+      // Finally delete the user
+      console.log('Deleting user:', userId);
+      await client.models.User.delete({
+        id: userId
+      });
+
+      console.log('Cleanup completed successfully');
+    } catch (err) {
+      console.error('Error cleaning up team requests:', err);
+      throw err;
+    }
+  };
+
   if (loading) {
     return (
       <div className="team-management-container">
@@ -460,6 +516,9 @@ const TeamManagement: React.FC = () => {
                       <h4>{request.userName || 'Unknown User'}</h4>
                       <p className="request-email">{request.userEmail}</p>
                       <p className="request-role">{request.userRole}</p>
+                      {request.message && (
+                        <p className="request-message">"{request.message}"</p>
+                      )}
                       <p className="request-status">Status: {request.status}</p>
                       <p className="request-date">
                         Requested on {new Date(request.createdAt).toLocaleDateString()}

@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { generateClient } from 'aws-amplify/data';
-import { getCurrentUser } from 'aws-amplify/auth';
+import { getCurrentUser, fetchUserAttributes } from 'aws-amplify/auth';
 import type { Schema } from '../../../amplify/data/resource';
 import './ProfileSetup.css';
 
@@ -21,13 +21,23 @@ const ProfileSetup: React.FC = () => {
 
     try {
       const currentUser = await getCurrentUser();
+      const userAttributes = await fetchUserAttributes();
       const client = generateClient<Schema>();
 
-      // Create user profile with selected role
+      // Create user profile with selected role and Cognito attributes
       const profile = await client.models.User.create({
         id: currentUser.userId,
         role: role,
-        status: 'ACTIVE'
+        status: 'ACTIVE',
+        fName: userAttributes.given_name || '',
+        lName: userAttributes.family_name || '',
+        email: userAttributes.email || '',
+        phoneNumber: userAttributes.phone_number || '',
+        // Set required fields with default values
+        username: userAttributes.email?.split('@')[0] || '',
+        address: 'Not provided',
+        dob: new Date().toISOString().split('T')[0],
+        mName: '-'
       });
 
       if (!profile.data?.id) {
