@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { generateClient } from 'aws-amplify/api';
+import { generateClient } from 'aws-amplify/data';
 import { getCurrentUser } from 'aws-amplify/auth';
 import type { Schema } from '../../../amplify/data/resource';
 import './RegistrationForm.css';

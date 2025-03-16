@@ -1,46 +1,30 @@
-import React, { useState } from 'react';
-import Auth from '../auth/Auth';
+import React from 'react';
 import './LandingPage.css';
 
 const LandingPage: React.FC = () => {
-  const [isAuthOpen, setIsAuthOpen] = useState(false);
-
   return (
     <div className="landing-page">
-      <div className="hero-section">
-        <h1>Welcome to Questionnaire</h1>
-        <p className="hero-text">
-          Connect with your child's care team and track their progress together.
-        </p>
-        <button 
-          className="get-started-button"
-          onClick={() => setIsAuthOpen(true)}
-        >
-          Get Started
-        </button>
-      </div>
-
-      <div className="features-section">
-        <div className="feature-card">
-          <div className="feature-icon">👨‍👩‍👧‍👦</div>
-          <h3>Family-Centered Care</h3>
-          <p>Keep your entire care team connected and informed about your child's progress.</p>
+      <section className="hero">
+        <h1>Welcome to SynchronicityAI</h1>
+        <p>Empowering care teams through collaborative support</p>
+      </section>
+      <section className="features">
+        <h2>Our Features</h2>
+        <div className="feature-grid">
+          <div className="feature-card">
+            <h3>Team Collaboration</h3>
+            <p>Work together seamlessly with care providers and family members</p>
+          </div>
+          <div className="feature-card">
+            <h3>Progress Tracking</h3>
+            <p>Monitor and track development milestones effectively</p>
+          </div>
+          <div className="feature-card">
+            <h3>Secure Communication</h3>
+            <p>Share updates and information safely with team members</p>
+          </div>
         </div>
-
-        <div className="feature-card">
-          <div className="feature-icon">📊</div>
-          <h3>Track Progress</h3>
-          <p>Monitor development and celebrate milestones with easy-to-use tools.</p>
-        </div>
-
-        <div className="feature-card">
-          <div className="feature-icon">🤝</div>
-          <h3>Team Collaboration</h3>
-          <p>Seamlessly communicate with caregivers, therapists, and healthcare providers.</p>
-        </div>
-      </div>
-
-      <Auth isOpen={isAuthOpen} onClose={() => setIsAuthOpen(false)} />
+      </section>
     </div>
   );
 };

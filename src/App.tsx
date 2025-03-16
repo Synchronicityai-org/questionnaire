@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from 'react';
 import { BrowserRouter as Router, Routes, Route, useNavigate } from 'react-router-dom';
-import { Amplify } from 'aws-amplify';
 import { getCurrentUser, signOut } from 'aws-amplify/auth';
 import { Hub } from '@aws-amplify/core';
 import Header from './components/common/Header';
@@ -12,17 +11,6 @@ import TeamList from './components/team/TeamList';
 import TeamManagement from './components/team/TeamManagement';
 import ProtectedRoute from './components/common/ProtectedRoute';
 import './App.css';
-
-// Configure Amplify with environment variables
-Amplify.configure({
-  Auth: {
-    Cognito: {
-      userPoolId: process.env.REACT_APP_USER_POOL_ID || '',
-      userPoolClientId: process.env.REACT_APP_USER_POOL_CLIENT_ID || '',
-      signUpVerificationMethod: 'code'
-    }
-  }
-});
 
 interface HubPayload {
   event: string;

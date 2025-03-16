@@ -1,111 +1,77 @@
 .landing-page {
-  padding-top: 80px; /* Account for fixed header */
-  min-height: 100vh;
-  background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
-}
-
-.hero-section {
-  text-align: center;
-  padding: 4rem 2rem;
-  max-width: 800px;
-  margin: 0 auto;
-}
-
-.hero-section h1 {
-  font-size: 3rem;
-  color: #2d3748;
-  margin-bottom: 1.5rem;
-  line-height: 1.2;
-}
-
-.hero-text {
-  font-size: 1.25rem;
-  color: #4a5568;
-  margin-bottom: 2rem;
-  line-height: 1.6;
-}
-
-.get-started-button {
-  background-color: #007bff;
-  color: white;
-  border: none;
-  padding: 1rem 2rem;
-  font-size: 1.1rem;
-  border-radius: 8px;
-  cursor: pointer;
-  transition: transform 0.2s, background-color 0.3s;
-  font-weight: 500;
-}
-
-.get-started-button:hover {
-  background-color: #0056b3;
-  transform: translateY(-2px);
-}
-
-.features-section {
-  padding: 4rem 2rem;
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-  gap: 2rem;
+  padding: 2rem;
   max-width: 1200px;
   margin: 0 auto;
 }
 
-.feature-card {
-  background: white;
-  padding: 2rem;
-  border-radius: 12px;
+.hero {
   text-align: center;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-  transition: transform 0.3s;
+  padding: 4rem 0;
+}
+
+.hero h1 {
+  font-size: 3rem;
+  color: #333;
+  margin-bottom: 1rem;
+}
+
+.hero p {
+  font-size: 1.5rem;
+  color: #666;
+  max-width: 600px;
+  margin: 0 auto;
+}
+
+.features {
+  padding: 4rem 0;
+}
+
+.features h2 {
+  text-align: center;
+  font-size: 2rem;
+  color: #333;
+  margin-bottom: 3rem;
+}
+
+.feature-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 2rem;
+}
+
+.feature-card {
+  background: #fff;
+  padding: 2rem;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  transition: transform 0.2s ease;
 }
 
 .feature-card:hover {
   transform: translateY(-5px);
 }
 
-.feature-icon {
-  font-size: 2.5rem;
-  margin-bottom: 1rem;
-}
-
 .feature-card h3 {
-  color: #2d3748;
-  margin-bottom: 1rem;
   font-size: 1.5rem;
+  color: #333;
+  margin-bottom: 1rem;
 }
 
 .feature-card p {
-  color: #4a5568;
+  color: #666;
   line-height: 1.6;
 }
 
 @media (max-width: 768px) {
-  .hero-section {
-    padding: 3rem 1rem;
-  }
-
-  .hero-section h1 {
-    font-size: 2.5rem;
-  }
-
-  .hero-text {
-    font-size: 1.1rem;
-  }
-
-  .features-section {
-    padding: 3rem 1rem;
-    grid-template-columns: 1fr;
-  }
-}
-
-@media (max-width: 480px) {
-  .hero-section h1 {
+  .hero h1 {
     font-size: 2rem;
   }
 
-  .get-started-button {
-    padding: 0.8rem 1.5rem;
-    font-size: 1rem;
+  .hero p {
+    font-size: 1.2rem;
+  }
+
+  .feature-grid {
+    grid-template-columns: 1fr;
   }
 } 
