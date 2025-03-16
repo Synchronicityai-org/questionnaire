@@ -236,83 +236,84 @@ export function KidProfileHome() {
           </div>
         </div>
 
-        <div className="main-content">
-          <div className="left-column">
-            <div className="milestone-card">
-              <div className="card-header">
-                <h3>Current Milestone</h3>
-                <span className="trophy-icon">🏆</span>
-              </div>
-              {currentMilestone ? (
-                <>
-                  <h4>{currentMilestone.title}</h4>
-                  <p>{currentMilestone.description}</p>
-                  <div className="progress-bar">
-                    <div className="progress" style={{ width: '65%' }}></div>
-                  </div>
-                  <div className="tasks-section">
-                    <h4>Current Tasks</h4>
-                    {currentMilestone.tasks.map(task => (
-                      <div key={task.id} className="task-item">
-                        <h5>{task.title}</h5>
-                        <p>{task.description}</p>
-                        <span className={`status ${task.status}`}>{task.status}</span>
-                      </div>
-                    ))}
-                  </div>
-                </>
-              ) : (
-                <p>No milestone data available</p>
-              )}
-            </div>
-
-            <div className="progress-section">
-              <h3>Overall Progress</h3>
-              <div className="progress-bar">
-                <div className="progress" style={{ width: '45%' }}></div>
-              </div>
-            </div>
-          </div>
-
-          <div className="right-column">
-            <div className="team-section">
-              <h3>{profile.name}'s Support Team</h3>
-              <div className="team-members">
-                {teamMembers.map(member => (
-                  <div key={member.id} className="team-member">
-                    <div className="member-avatar">
-                      {member.imageUrl ? (
-                        <img src={member.imageUrl} alt={member.name} />
-                      ) : (
-                        <div className="avatar-placeholder">{member.name[0]}</div>
-                      )}
+        <table className="main-content">
+          <tr>
+            <td className="left-column">
+              <div className="milestone-card">
+                <div className="card-header">
+                  <h3>Current Milestone</h3>
+                  <span className="trophy-icon">🏆</span>
+                </div>
+                {currentMilestone ? (
+                  <>
+                    <h4>{currentMilestone.title}</h4>
+                    <p>{currentMilestone.description}</p>
+                    <div className="progress-bar">
+                      <div className="progress" style={{ width: '65%' }}></div>
                     </div>
-                    <div className="member-info">
-                      <h4>{member.name}</h4>
-                      <p>{member.role}</p>
+                    <div className="tasks-section">
+                      <h4>Current Tasks</h4>
+                      {currentMilestone.tasks.map(task => (
+                        <div key={task.id} className="task-item">
+                          <h5>{task.title}</h5>
+                          <p>{task.description}</p>
+                          <span className={`status ${task.status}`}>{task.status}</span>
+                        </div>
+                      ))}
                     </div>
-                  </div>
-                ))}
+                  </>
+                ) : (
+                  <p>No milestone data available</p>
+                )}
               </div>
-              <button className="manage-team-button" onClick={handleManageTeam}>
-                Manage Team
-              </button>
-            </div>
 
-            <div className="community-section">
-              <h3>Community Insights</h3>
-              <div className="insight-card">
-                <h4>Visual Schedule Success</h4>
-                <p>Using a visual schedule during morning routine helped reduce anxiety and improved transitions.</p>
-                <div className="insight-meta">
-                  <span>24 👍</span>
-                  <span>about 1 hour ago</span>
-                  <span>by Emily K.</span>
+              <div className="progress-section">
+                <h3>Overall Progress</h3>
+                <div className="progress-bar">
+                  <div className="progress" style={{ width: '45%' }}></div>
                 </div>
               </div>
-            </div>
-          </div>
-        </div>
+            </td>
+            <td className="right-column">
+              <div className="team-section">
+                <h3>{profile.name}'s Support Team</h3>
+                <div className="team-members">
+                  {teamMembers.map(member => (
+                    <div key={member.id} className="team-member">
+                      <div className="member-avatar">
+                        {member.imageUrl ? (
+                          <img src={member.imageUrl} alt={member.name} />
+                        ) : (
+                          <div className="avatar-placeholder">{member.name[0]}</div>
+                        )}
+                      </div>
+                      <div className="member-info">
+                        <h4>{member.name}</h4>
+                        <p>{member.role}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                <button className="manage-team-button" onClick={handleManageTeam}>
+                  Manage Team
+                </button>
+              </div>
+
+              <div className="community-section">
+                <h3>Community Insights</h3>
+                <div className="insight-card">
+                  <h4>Visual Schedule Success</h4>
+                  <p>Using a visual schedule during morning routine helped reduce anxiety and improved transitions.</p>
+                  <div className="insight-meta">
+                    <span>24 👍</span>
+                    <span>about 1 hour ago</span>
+                    <span>by Emily K.</span>
+                  </div>
+                </div>
+              </div>
+            </td>
+          </tr>
+        </table>
       </div>
     </div>
   );

@@ -71,22 +71,22 @@
 }
 
 .main-content {
-  display: flex;
-  flex-direction: row;
-  gap: 2rem;
   width: 100%;
-  box-sizing: border-box;
-  justify-content: space-between;
+  border-collapse: separate;
+  border-spacing: 2rem 0;
+  margin: 0;
 }
 
 .left-column {
-  flex: 0 0 70%;
-  max-width: 70%;
+  width: 70%;
+  padding: 0;
+  vertical-align: top;
 }
 
 .right-column {
-  flex: 0 0 30%;
-  max-width: 30%;
+  width: 30%;
+  padding: 0;
+  vertical-align: top;
 }
 
 .milestone-card,
@@ -271,12 +271,16 @@
     flex-direction: column;
   }
 
-  .main-content {
-    flex-direction: column;
+  .main-content,
+  .main-content tr,
+  .main-content td {
+    display: block;
+    width: 100%;
   }
 
   .left-column,
   .right-column {
     width: 100%;
+    margin-bottom: 2rem;
   }
 } 

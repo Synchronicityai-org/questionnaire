@@ -136,7 +136,7 @@ const AppContent: React.FC = () => {
             </ProtectedRoute>
           } />
           <Route path="/team-list" element={<ProtectedRoute isAuthenticated={isAuthenticated}><TeamList /></ProtectedRoute>} />
-          <Route path="/team-management" element={<ProtectedRoute isAuthenticated={isAuthenticated}><TeamManagement /></ProtectedRoute>} />
+          <Route path="/team-management/:kidProfileId" element={<ProtectedRoute isAuthenticated={isAuthenticated}><TeamManagement /></ProtectedRoute>} />
           <Route path="/team-request" element={<ProtectedRoute isAuthenticated={isAuthenticated}><TeamRequest /></ProtectedRoute>} />
           <Route path="/kid-profile/:kidProfileId" element={
             <ProtectedRoute isAuthenticated={isAuthenticated}>
