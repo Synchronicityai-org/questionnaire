@@ -1216,4 +1216,229 @@ html {
   .qa-item {
     padding: 1rem;
   }
+}
+
+.assessment-summary {
+  padding: 2rem;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.assessment-summary .header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2rem;
+}
+
+.assessment-summary .summary-content {
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  padding: 2rem;
+}
+
+.assessment-summary h2 {
+  color: #333;
+  margin-bottom: 1rem;
+}
+
+.assessment-summary h3 {
+  color: #444;
+  margin: 2rem 0 1rem;
+  border-bottom: 2px solid #eee;
+  padding-bottom: 0.5rem;
+}
+
+.assessment-summary h4 {
+  color: #555;
+  margin: 1.5rem 0 1rem;
+}
+
+.parent-concerns {
+  margin: 2rem 0;
+}
+
+.parent-concerns .summary-table {
+  background: #f8f9fa;
+}
+
+.parent-concerns .summary-table td {
+  padding: 1.5rem;
+}
+
+.parent-concerns .summary-table td:first-child {
+  width: 120px;
+  color: #555;
+}
+
+.summary-table, .responses-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 1rem 0;
+  background: white;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.summary-table th, .responses-table th,
+.summary-table td, .responses-table td {
+  padding: 1rem;
+  text-align: left;
+  border: 1px solid #eee;
+}
+
+.summary-table th, .responses-table th {
+  background: #f8f9fa;
+  font-weight: 600;
+  color: #444;
+}
+
+.summary-table tr:hover, .responses-table tr:hover {
+  background: #f8f9fa;
+}
+
+.category-section {
+  margin-bottom: 2rem;
+}
+
+.category-section h4 {
+  color: #444;
+  margin-bottom: 1rem;
+  padding: 0.5rem;
+  background: #f8f9fa;
+  border-radius: 4px;
+}
+
+.responses-table {
+  margin-bottom: 2rem;
+}
+
+.responses-table td:first-child {
+  width: 60%;
+}
+
+.assessment-buttons {
+  display: flex;
+  gap: 1rem;
+  justify-content: center;
+  margin-top: 3rem;
+  padding-top: 2rem;
+  border-top: 1px solid #eee;
+}
+
+.assessment-button {
+  padding: 0.75rem 1.5rem;
+  border: none;
+  border-radius: 4px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.assessment-button:not(:disabled):hover {
+  transform: translateY(-1px);
+}
+
+.assessment-button:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.assessment-button.primary {
+  background: #007bff;
+  color: white;
+}
+
+.assessment-button.secondary {
+  background: #6c757d;
+  color: white;
+}
+
+@media (max-width: 768px) {
+  .assessment-summary {
+    padding: 1rem;
+  }
+
+  .summary-table, .responses-table {
+    font-size: 0.9rem;
+  }
+
+  .summary-table th, .responses-table th,
+  .summary-table td, .responses-table td {
+    padding: 0.75rem;
+  }
+
+  .parent-concerns .summary-table td:first-child {
+    width: 100px;
+  }
+
+  .responses-table td:first-child {
+    width: 50%;
+  }
+
+  .assessment-buttons {
+    flex-direction: column;
+  }
+
+  .assessment-button {
+    width: 100%;
+  }
+}
+
+.past-assessment-section {
+  margin-bottom: 2rem;
+  border: 1px solid #eee;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.assessment-header {
+  padding: 1rem;
+  background: #f8f9fa;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.assessment-header:hover {
+  background: #e9ecef;
+}
+
+.assessment-header h3 {
+  margin: 0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  color: #444;
+}
+
+.expand-icon {
+  font-size: 0.8em;
+  color: #666;
+}
+
+.assessment-details {
+  padding: 1.5rem;
+  background: white;
+}
+
+.no-assessments {
+  text-align: center;
+  padding: 2rem;
+  color: #666;
+}
+
+.view-history-button {
+  padding: 0.5rem 1rem;
+  background: #6c757d;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  margin-right: 1rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.view-history-button:hover {
+  background: #5a6268;
+  transform: translateY(-1px);
 } 

@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { signIn, signUp, confirmSignUp, resendSignUpCode } from 'aws-amplify/auth';
-import RoleSelection from './RoleSelection';
 import './Auth.css';
 
 interface AuthProps {
@@ -10,7 +9,6 @@ interface AuthProps {
 
 const Auth: React.FC<AuthProps> = ({ isOpen, onClose }) => {
   const [authState, setAuthState] = useState<'signIn' | 'signUp' | 'confirmSignUp'>('signIn');
-  const [showRoleSelection, setShowRoleSelection] = useState(false);
   const [formData, setFormData] = useState({
     email: '',
     password: '',
@@ -64,7 +62,9 @@ const Auth: React.FC<AuthProps> = ({ isOpen, onClose }) => {
       }
 
       if (nextStep.signInStep === 'DONE') {
-        setShowRoleSelection(true);
+        onClose();
+        // Force a reload to ensure the auth state is properly updated
+        window.location.reload();
       }
     } catch (error: any) {
       console.error('Error signing in:', error);
@@ -149,48 +149,34 @@ const Auth: React.FC<AuthProps> = ({ isOpen, onClose }) => {
     setLoading(true);
 
     try {
-      const cleanCode = formData.code.trim();
-      const username = formData.email.toLowerCase().trim();
-      
-      if (!/^\d{6}$/.test(cleanCode)) {
-        throw new Error('Please enter a valid 6-digit verification code');
-      }
-
       await confirmSignUp({
-        username,
-        confirmationCode: cleanCode
+        username: formData.email.toLowerCase().trim(),
+        confirmationCode: formData.code
       });
 
-      try {
-        const { nextStep } = await signIn({
-          username,
-          password: formData.password,
-          options: {
-            authFlowType: "USER_SRP_AUTH"
-          }
-        });
-
-        if (nextStep.signInStep === 'DONE') {
-          setShowRoleSelection(true);
-        } else {
-          setError('Account verified! Please sign in with your credentials.');
-          setAuthState('signIn');
+      // After successful confirmation, sign in the user
+      const { nextStep } = await signIn({
+        username: formData.email.toLowerCase().trim(),
+        password: formData.password,
+        options: {
+          authFlowType: "USER_SRP_AUTH"
         }
-      } catch (signInError) {
-        console.error('Error signing in after confirmation:', signInError);
-        setError('Account verified! Please sign in with your credentials.');
-        setAuthState('signIn');
+      });
+
+      if (nextStep.signInStep === 'DONE') {
+        // Close the auth modal and let App.tsx handle navigation
+        onClose();
+        // Force a reload to ensure the auth state is properly updated
+        window.location.reload();
       }
     } catch (error: any) {
       console.error('Error confirming sign up:', error);
       if (error.name === 'CodeMismatchException') {
-        setError('Invalid verification code. Please check and try again.');
-      } else if (error.name === 'ExpiredCodeException') {
-        setError('Verification code has expired. Please request a new code.');
+        setError('Invalid verification code. Please try again.');
       } else if (error instanceof Error) {
         setError(error.message);
       } else {
-        setError('Error verifying account. Please try again.');
+        setError('Error confirming account. Please try again.');
       }
     } finally {
       setLoading(false);
@@ -443,14 +429,6 @@ const Auth: React.FC<AuthProps> = ({ isOpen, onClose }) => {
           )}
         </div>
       </div>
-      <RoleSelection 
-        isOpen={showRoleSelection} 
-        onClose={() => {
-          setShowRoleSelection(false);
-          onClose();
-        }}
-        isModal={true}
-      />
     </>
   );
 };

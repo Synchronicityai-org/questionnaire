@@ -1,24 +1,21 @@
 import { useEffect, useState } from 'react';
 import { generateClient } from 'aws-amplify/data';
+import { getCurrentUser } from 'aws-amplify/auth';
 import type { Schema } from '../../amplify/data/resource';
 import './KidProfileHome.css';
-import { QuestionnaireForm } from './QuestionnaireForm';
 import { AssessmentHistory } from './AssessmentHistory';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 
 const client = generateClient<Schema>();
 
-interface KidProfileHomeProps {
-  kidProfileId: string;
-  onBack: () => void;
-}
-
 interface KidProfile {
   id: string;
-  name: string | null;
+  name: string;
   age: number | null;
-  dob: string | null;
+  dob: string;
   parentId: string;
+  isAutismDiagnosed: boolean;
+  isDummy: boolean;
 }
 
 interface Milestone {
@@ -43,141 +40,156 @@ interface TeamMember {
   status: 'ACTIVE' | 'PENDING' | 'INACTIVE';
 }
 
-export function KidProfileHome({ kidProfileId }: KidProfileHomeProps) {
+export function KidProfileHome() {
+  const { kidProfileId } = useParams<{ kidProfileId?: string }>();
+  const navigate = useNavigate();
   const [profile, setProfile] = useState<KidProfile | null>(null);
   const [currentMilestone, setCurrentMilestone] = useState<Milestone | null>(null);
-  const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [showQuestionnaire, setShowQuestionnaire] = useState(false);
+  const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
   const [showHistory, setShowHistory] = useState(false);
-  const navigate = useNavigate();
 
   useEffect(() => {
-    fetchKidProfile();
-    fetchTeamMembers();
-    fetchCurrentMilestone();
+    if (kidProfileId) {
+      loadData();
+    } else {
+      loadFirstKidProfile();
+    }
   }, [kidProfileId]);
 
-  const fetchKidProfile = async () => {
+  const loadFirstKidProfile = async () => {
     try {
-      const response = await client.models.KidProfile.get({ id: kidProfileId });
-      if (response?.data) {
-        setProfile({
-          id: response.data.id || kidProfileId,
-          name: response.data.name,
-          age: response.data.age,
-          dob: response.data.dob,
-          parentId: response.data.parentId || ''
-        });
+      setIsLoading(true);
+      setError(null);
+
+      const currentUser = await getCurrentUser();
+      if (!currentUser?.userId) {
+        throw new Error('User not authenticated');
       }
-      setIsLoading(false);
+
+      const kidProfiles = await client.models.KidProfile.list({
+        filter: {
+          parentId: {
+            eq: currentUser.userId
+          }
+        }
+      });
+
+      if (kidProfiles.data && kidProfiles.data.length > 0 && kidProfiles.data[0].id) {
+        navigate(`/kid-profile/${kidProfiles.data[0].id}`);
+      } else {
+        navigate('/kid-profile-form');
+      }
     } catch (err) {
-      console.error('Error fetching kid profile:', err);
-      setError('Failed to load profile information.');
+      console.error('Error loading first kid profile:', err);
+      setError('Failed to load profile data. Please try again.');
       setIsLoading(false);
     }
   };
 
-  const fetchTeamMembers = async () => {
+  const loadData = async () => {
     try {
-      console.log('Fetching team for kidProfileId:', kidProfileId);
-      
-      // First get the team for this kid profile
-      const teamsResponse = await client.models.Team.list({
-        filter: {
-          kidProfileId: {
-            eq: kidProfileId
-          }
-        }
-      });
+      setIsLoading(true);
+      setError(null);
 
-      console.log('Teams response:', teamsResponse);
-
-      const team = teamsResponse?.data?.[0];
-      if (!team?.id) {
-        console.log('No team found for this kid profile');
-        return;
-      }
-
-      // Then get all team members for this team
-      console.log('Fetching team members for teamId:', team.id);
-      const teamMembersResponse = await client.models.TeamMember.list({
-        filter: {
-          teamId: {
-            eq: team.id
-          }
-        }
-      });
-
-      console.log('Team members response:', teamMembersResponse);
-
-      if (teamMembersResponse?.data) {
-        const members = await Promise.all(
-          teamMembersResponse.data.map(async (member) => {
-            if (!member.id || !member.userId || !member.teamId || !member.status) {
-              console.log('Invalid member data:', member);
-              return null;
-            }
-
-            // Fetch the associated user details
-            const userResponse = await client.models.User.get({
-              id: member.userId
-            });
-
-            console.log('User details for member:', userResponse);
-
-            if (!userResponse?.data?.fName) {
-              console.log('Invalid user data:', userResponse);
-              return null;
-            }
-
-            const status = member.status as 'ACTIVE' | 'PENDING' | 'INACTIVE';
-            if (status !== 'ACTIVE' && status !== 'PENDING' && status !== 'INACTIVE') {
-              console.log('Invalid status:', status);
-              return null;
-            }
-            
-            return {
-              id: member.id,
-              name: `${userResponse.data.fName} ${userResponse.data.lName || ''}`,
-              role: userResponse.data.role || 'MEMBER',
-              status: status,
-              imageUrl: undefined // Optional profile image
-            } as TeamMember;
-          })
-        );
-
-        // Filter out any null values and set the team members
-        setTeamMembers(members.filter((member): member is TeamMember => member !== null));
-      }
+      await Promise.all([
+        fetchKidProfile(),
+        fetchTeamMembers(),
+        fetchCurrentMilestone()
+      ]);
     } catch (err) {
-      console.error('Error fetching team members:', err);
-      setError('Failed to load team members');
+      console.error('Error loading kid profile data:', err);
+      setError('Failed to load profile data. Please try again.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const fetchKidProfile = async () => {
+    if (!kidProfileId) return;
+
+    const response = await client.models.KidProfile.get({ id: kidProfileId });
+    const data = response?.data;
+    
+    if (!data || !data.id || !data.name || !data.dob || !data.parentId) {
+      throw new Error('Invalid kid profile data');
+    }
+
+    const kidProfile: KidProfile = {
+      id: data.id,
+      name: data.name,
+      age: data.age ?? null,
+      dob: data.dob,
+      parentId: data.parentId,
+      isAutismDiagnosed: data.isAutismDiagnosed ?? false,
+      isDummy: data.isDummy ?? false
+    };
+    setProfile(kidProfile);
+  };
+
+  const fetchTeamMembers = async () => {
+    if (!kidProfileId) return;
+    
+    try {
+      const teamResponse = await client.models.Team.list({
+        filter: {
+          kidProfileId: { eq: kidProfileId }
+        }
+      });
+
+      const team = teamResponse?.data?.[0];
+      if (team && Array.isArray(team.members)) {
+        const membersList = team.members as Array<{
+          id?: string;
+          name?: string;
+          role?: string;
+          status?: string;
+          imageUrl?: string;
+        }>;
+        
+        setTeamMembers(
+          membersList.map(member => ({
+            id: member.id || '',
+            name: member.name || '',
+            role: member.role || 'MEMBER',
+            status: (member.status as 'ACTIVE' | 'PENDING' | 'INACTIVE') || 'PENDING',
+            imageUrl: member.imageUrl
+          }))
+        );
+      }
+    } catch (error) {
+      console.error('Error fetching team members:', error);
     }
   };
 
   const fetchCurrentMilestone = async () => {
-    // TODO: Implement milestone fetching
-    setCurrentMilestone({
-      id: '1',
-      title: 'Two-Word Phrases in Routine Settings',
-      description: 'Learning to combine words to express needs and wants during daily activities.',
-      tasks: [
-        {
-          id: '1',
-          title: 'Picture Exchange Communication',
-          description: 'Practice using PECS cards during snack time',
-          status: 'in-progress'
-        },
-        {
-          id: '2',
-          title: 'Interactive Storytime',
-          description: 'Read "The Very Hungry Caterpillar" with two-word prompts',
-          status: 'pending'
+    if (!kidProfileId) return;
+    
+    try {
+      const milestoneResponse = await client.models.Milestone.list({
+        filter: {
+          kidProfileId: { eq: kidProfileId }
         }
-      ]
-    });
+      });
+
+      if (milestoneResponse?.data?.[0]) {
+        const milestone = milestoneResponse.data[0];
+        setCurrentMilestone({
+          id: milestone.id || '',
+          title: milestone.title || '',
+          description: milestone.description || '',
+          tasks: Array.isArray(milestone.tasks) ? milestone.tasks.map(task => ({
+            id: task.id || '',
+            title: task.title || '',
+            description: task.description || '',
+            status: task.status || 'pending'
+          })) : []
+        });
+      }
+    } catch (error) {
+      console.error('Error fetching current milestone:', error);
+    }
   };
 
   const handleManageTeam = () => {
@@ -185,7 +197,7 @@ export function KidProfileHome({ kidProfileId }: KidProfileHomeProps) {
   };
 
   if (isLoading) {
-    return <div className="loading">Loading profile...</div>;
+    return <div className="loading">Loading...</div>;
   }
 
   if (error) {
@@ -193,19 +205,15 @@ export function KidProfileHome({ kidProfileId }: KidProfileHomeProps) {
   }
 
   if (!profile) {
-    return <div className="error">Profile not found.</div>;
+    return <div className="error">Profile not found</div>;
   }
 
-  if (showQuestionnaire) {
-    return <QuestionnaireForm kidProfileId={kidProfileId} />;
-  }
-
-  if (showHistory) {
+  if (showHistory && kidProfileId) {
     return <AssessmentHistory kidProfileId={kidProfileId} onClose={() => setShowHistory(false)} displayFormat="qa" />;
   }
 
   return (
-    <div className="kid-profile-page">
+    <div className="kid-profile-home">
       <div className="content-wrapper">
         <div className="welcome-section">
           <div className="welcome-text">
@@ -213,10 +221,16 @@ export function KidProfileHome({ kidProfileId }: KidProfileHomeProps) {
             <p>Here's how {profile.name} is progressing today</p>
           </div>
           <div className="action-buttons">
-            <button className="primary-button" onClick={() => setShowQuestionnaire(true)}>
+            <button 
+              className="primary-button" 
+              onClick={() => navigate(`/parent-concerns/${kidProfileId}`)}
+            >
               Take Assessment
             </button>
-            <button className="secondary-button" onClick={() => setShowHistory(true)}>
+            <button 
+              className="secondary-button" 
+              onClick={() => setShowHistory(true)}
+            >
               View Past Assessments
             </button>
           </div>

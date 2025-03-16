@@ -1,423 +1,525 @@
-import { useEffect, useState } from 'react';
-import { generateClient } from 'aws-amplify/data';
+import React, { useState, useEffect } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
+import { generateClient } from 'aws-amplify/api';
 import type { Schema } from '../../amplify/data/resource';
 import './QuestionnaireForm.css';
-import { ParentConcernsForm } from './ParentConcernsForm';
 
 const client = generateClient<Schema>();
-
-type QuestionCategory = 'COGNITION' | 'LANGUAGE' | 'MOTOR' | 'SOCIAL' | 'EMOTIONAL';
-type PageType = 'CONCERNS' | QuestionCategory;
-
-const isConcernsPage = (page: PageType): page is 'CONCERNS' => page === 'CONCERNS';
-const isQuestionCategory = (page: PageType): page is QuestionCategory => !isConcernsPage(page);
 
 interface Question {
   id: string;
   question_text: string;
-  category: QuestionCategory;
-  options: string[];
+  category: 'COGNITION' | 'LANGUAGE' | 'MOTOR' | 'SOCIAL' | 'EMOTIONAL';
 }
 
-interface QuestionnaireFormProps {
-  kidProfileId: string;
-  onBack?: () => void;
+interface AssessmentSummary {
+  totalQuestions: number;
+  answeredQuestions: number;
+  skippedQuestions: number;
+  categoryStats: {
+    [key: string]: {
+      total: number;
+      answered: number;
+      skipped: number;
+    };
+  };
+  responses: {
+    [key: string]: {
+      question: string;
+      response: string;
+    }[];
+  };
+  parentConcerns?: string;
 }
 
-interface Assessment {
+interface PastAssessment {
   date: string;
-  parentConcerns: string | null;
-  responses: Record<string, string>;
+  parentConcerns?: string;
+  responses: {
+    questionId: string;
+    answer: string;
+    timestamp: string;
+    questionText: string;
+    category: string;
+  }[];
+  categoryStats: Record<string, {
+    total: number;
+    answered: number;
+  }>;
+  totalQuestions: number;
+  answeredQuestions: number;
 }
 
-export function QuestionnaireForm({ kidProfileId, onBack }: QuestionnaireFormProps) {
+const QuestionnaireForm: React.FC = () => {
+  const { kidProfileId } = useParams<{ kidProfileId: string }>();
+  const navigate = useNavigate();
+  const [currentPage, setCurrentPage] = useState<Question['category']>('COGNITION');
   const [questions, setQuestions] = useState<Question[]>([]);
-  const [answers, setAnswers] = useState<Record<string, string>>({});
-  const [activePage, setActivePage] = useState<PageType>('CONCERNS');
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [showHistory, setShowHistory] = useState(false);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const [assessmentId, setAssessmentId] = useState('');
-  const [parentConcernsText, setParentConcernsText] = useState<string>('');
-  const [assessmentHistory, setAssessmentHistory] = useState<Assessment[]>([]);
+  const [responses, setResponses] = useState<{ [key: string]: string }>({});
+  const [loading, setLoading] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
+  const [kidProfile, setKidProfile] = useState<any>(null);
+  const [showSummary, setShowSummary] = useState(false);
+  const [assessmentSummary, setAssessmentSummary] = useState<AssessmentSummary | null>(null);
+  const [showPastAssessments, setShowPastAssessments] = useState(false);
+  const [pastAssessments, setPastAssessments] = useState<PastAssessment[]>([]);
+  const [expandedAssessments, setExpandedAssessments] = useState<Set<string>>(new Set());
 
-  const categories: QuestionCategory[] = ['COGNITION', 'LANGUAGE', 'MOTOR', 'SOCIAL', 'EMOTIONAL'];
+  const categories: Question['category'][] = ['COGNITION', 'LANGUAGE', 'MOTOR', 'SOCIAL', 'EMOTIONAL'];
 
   useEffect(() => {
     fetchQuestions();
-    fetchParentConcerns();
-    fetchAssessmentHistory();
-    setAssessmentId(new Date().toISOString());
+    fetchKidProfile();
   }, []);
+
+  const fetchKidProfile = async () => {
+    if (!kidProfileId) return;
+    try {
+      const { data: profile } = await client.models.KidProfile.get({
+        id: kidProfileId
+      });
+      if (profile) {
+        setKidProfile(profile);
+        // Fetch parent concerns
+        const { data: concerns } = await client.models.ParentConcerns.list({
+          filter: {
+            kidProfileId: { eq: kidProfileId }
+          }
+        });
+        // Sort concerns by timestamp and get the most recent one
+        const sortedConcerns = concerns.sort((a, b) => 
+          new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
+        );
+        if (sortedConcerns.length > 0) {
+          setKidProfile({
+            ...profile,
+            parentConcerns: sortedConcerns[0].concernText
+          });
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching kid profile:', error);
+    }
+  };
 
   const fetchQuestions = async () => {
     try {
-      const response = await client.models.QuestionBank.list();
-      const validQuestions = response.data
-        .filter((q): q is NonNullable<typeof q> => 
-          q !== null && 
-          q.id != null &&
-          q.question_text != null &&
-          q.category != null &&
-          categories.includes(q.category as QuestionCategory)
-        )
-        .map(q => ({
-          id: q.id!,
-          question_text: q.question_text!,
-          category: q.category as QuestionCategory,
-          options: Array.isArray(q.options) ? q.options.filter((opt): opt is string => opt != null) : ['Yes', 'No', "Don't Know"]
-        }));
-
-      setQuestions(validQuestions);
-      setIsLoading(false);
-    } catch (err) {
-      console.error('Error fetching questions:', err);
-      setError('Failed to load questions. Please try again later.');
-      setIsLoading(false);
+      const { data: questionList } = await client.models.QuestionBank.list();
+      setQuestions(questionList.filter(q => q.id && q.question_text && q.category).map(q => ({
+        id: q.id!,
+        question_text: q.question_text!,
+        category: q.category!
+      })));
+      setLoading(false);
+    } catch (error) {
+      console.error('Error fetching questions:', error);
+      setLoading(false);
     }
   };
 
-  const fetchParentConcerns = async () => {
+  const handleResponseChange = (questionId: string, value: string) => {
+    setResponses(prev => ({ ...prev, [questionId]: value }));
+  };
+
+  const createAssessmentSummary = (): AssessmentSummary => {
+    const summary: AssessmentSummary = {
+      totalQuestions: questions.length,
+      answeredQuestions: Object.keys(responses).length,
+      skippedQuestions: questions.length - Object.keys(responses).length,
+      categoryStats: {},
+      responses: {}
+    };
+
+    categories.forEach(category => {
+      const categoryQuestions = questions.filter(q => q.category === category);
+      const answeredInCategory = categoryQuestions.filter(q => responses[q.id]);
+      
+      summary.categoryStats[category] = {
+        total: categoryQuestions.length,
+        answered: answeredInCategory.length,
+        skipped: categoryQuestions.length - answeredInCategory.length
+      };
+
+      summary.responses[category] = categoryQuestions.map(q => ({
+        question: q.question_text,
+        response: responses[q.id] || 'Skipped'
+      }));
+    });
+
+    if (kidProfile?.parentConcerns) {
+      summary.parentConcerns = kidProfile.parentConcerns;
+    }
+
+    return summary;
+  };
+
+  const handleCompleteAssessment = async () => {
+    if (!kidProfileId) return;
+    setSubmitting(true);
+
     try {
-      const concerns = await client.models.ParentConcerns.list({
+      const timestamp = new Date().toISOString();
+      const responsePromises = Object.entries(responses).map(([questionId, answer]) => {
+        return client.models.UserResponse.create({
+          kidProfileId,
+          questionId,
+          answer,
+          timestamp
+        });
+      });
+
+      await Promise.all(responsePromises);
+      const summary = createAssessmentSummary();
+      setAssessmentSummary(summary);
+      setShowSummary(true);
+    } catch (error) {
+      console.error('Error saving assessment:', error);
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleBackToProfile = () => {
+    navigate(`/kid-profile/${kidProfileId}`);
+  };
+
+  const handleNextSection = () => {
+    const currentIndex = categories.indexOf(currentPage);
+    if (currentIndex < categories.length - 1) {
+      setCurrentPage(categories[currentIndex + 1]);
+    }
+  };
+
+  const fetchPastAssessments = async () => {
+    if (!kidProfileId) return;
+    try {
+      // Fetch all responses for this kid profile
+      const { data: responses } = await client.models.UserResponse.list({
         filter: {
-          kidProfileId: { eq: kidProfileId },
-          assessmentId: { eq: assessmentId }
+          kidProfileId: { eq: kidProfileId }
         }
       });
-      if (concerns.data[0]?.concernText) {
-        setParentConcernsText(concerns.data[0].concernText);
-      }
-    } catch (err) {
-      console.error('Error fetching parent concerns:', err);
-    }
-  };
 
-  const fetchAssessmentHistory = async () => {
-    try {
-      // Fetch responses
-      const responses = await client.models.UserResponse.list({
-        filter: { kidProfileId: { eq: kidProfileId } }
+      // Fetch all parent concerns
+      const { data: concerns } = await client.models.ParentConcerns.list({
+        filter: {
+          kidProfileId: { eq: kidProfileId }
+        }
       });
 
-      // Fetch parent concerns
-      const concerns = await client.models.ParentConcerns.list({
-        filter: { kidProfileId: { eq: kidProfileId } }
-      });
-
-      // Group by date
-      const assessmentMap = new Map<string, Assessment>();
-
-      // Group responses by date
-      responses.data.forEach(response => {
-        if (!response?.timestamp || !response.questionId || !response.answer) return;
+      // Group responses by timestamp (assessment date)
+      const assessmentMap = new Map<string, PastAssessment>();
+      
+      responses.forEach(response => {
+        if (!response?.timestamp || !response?.questionId || !response?.answer) return;
         
+        // Get the date part only from timestamp
         const date = new Date(response.timestamp).toISOString().split('T')[0];
+        
         if (!assessmentMap.has(date)) {
           assessmentMap.set(date, {
             date,
-            parentConcerns: null,
-            responses: {}
+            responses: [],
+            categoryStats: {} as Record<string, { total: number; answered: number }>,
+            totalQuestions: 0,
+            answeredQuestions: 0
           });
         }
         
         const assessment = assessmentMap.get(date)!;
-        assessment.responses[response.questionId] = response.answer;
+        const question = questions.find(q => q.id === response.questionId);
+        
+        if (question) {
+          assessment.responses.push({
+            questionId: response.questionId,
+            answer: response.answer,
+            timestamp: response.timestamp,
+            questionText: question.question_text,
+            category: question.category
+          });
+
+          // Update category stats
+          if (!assessment.categoryStats[question.category]) {
+            assessment.categoryStats[question.category] = {
+              total: 0,
+              answered: 0
+            };
+          }
+          assessment.categoryStats[question.category].total++;
+          assessment.categoryStats[question.category].answered++;
+          assessment.totalQuestions++;
+          assessment.answeredQuestions++;
+        }
       });
 
       // Add parent concerns to matching dates
-      concerns.data.forEach(concern => {
-        if (!concern?.timestamp || !concern.concernText) return;
-        
+      concerns.forEach(concern => {
+        if (!concern?.timestamp || !concern?.concernText) return;
         const date = new Date(concern.timestamp).toISOString().split('T')[0];
         if (assessmentMap.has(date)) {
           assessmentMap.get(date)!.parentConcerns = concern.concernText;
         }
       });
 
-      // Sort by date (newest first)
-      setAssessmentHistory(
-        Array.from(assessmentMap.values())
-          .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
-      );
-    } catch (err) {
-      console.error('Error fetching assessment history:', err);
+      // Convert to array and sort by date (newest first)
+      const sortedAssessments = Array.from(assessmentMap.values())
+        .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+
+      setPastAssessments(sortedAssessments);
+    } catch (error) {
+      console.error('Error fetching past assessments:', error);
     }
   };
 
-  const handleAnswerChange = (questionId: string, answer: string) => {
-    setAnswers(prev => ({
-      ...prev,
-      [questionId]: answer
-    }));
-  };
-
-  const handleParentConcerns = async (concerns: string) => {
-    if (concerns.trim()) {
-      try {
-        await client.models.ParentConcerns.create({
-          kidProfileId,
-          concernText: concerns,
-          timestamp: new Date().toISOString(),
-          assessmentId
-        });
-        setParentConcernsText(concerns);
-      } catch (err) {
-        console.error('Error saving parent concerns:', err);
+  const toggleAssessment = (date: string) => {
+    setExpandedAssessments(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(date)) {
+        newSet.delete(date);
+      } else {
+        newSet.add(date);
       }
-    }
-    setActivePage('COGNITION');
+      return newSet;
+    });
   };
 
-  const handleSubmitCategory = async () => {
-    // Move to next category if not submitting the entire assessment
-    const currentIndex = categories.indexOf(activePage as QuestionCategory);
-    if (currentIndex < categories.length - 1) {
-      setActivePage(categories[currentIndex + 1]);
-    }
+  const handleViewPastAssessments = () => {
+    setShowPastAssessments(true);
+    fetchPastAssessments();
   };
 
-  const handleCompleteAssessment = async () => {
-    try {
-      setIsSubmitting(true);
-      setError(null);
-      
-      // Get all questions that have been answered
-      const answeredQuestions = questions.filter(q => answers[q.id]);
-      
-      if (answeredQuestions.length === 0) {
-        alert('Please answer at least one question before submitting.');
-        return;
-      }
+  if (loading) {
+    return <div>Loading...</div>;
+  }
 
-      const submissionTimestamp = new Date().toISOString();
-      console.log('Submitting answers with timestamp:', submissionTimestamp);
-      console.log('Total answered questions:', answeredQuestions.length);
-
-      // Track successful and failed submissions
-      const results = {
-        successful: 0,
-        failed: [] as { questionId: string; error: any }[]
-      };
-
-      // Submit all answered questions
-      for (const question of answeredQuestions) {
-        try {
-          await client.models.UserResponse.create({
-            kidProfileId,
-            questionId: question.id,
-            answer: answers[question.id],
-            timestamp: submissionTimestamp
-          });
-          results.successful++;
-        } catch (error) {
-          console.error('Failed to submit answer:', error);
-          results.failed.push({ questionId: question.id, error });
-        }
-      }
-
-      if (results.failed.length > 0) {
-        console.error('Some answers failed to submit:', results.failed);
-        setError(`${results.successful} answers saved, but ${results.failed.length} failed. Please try again.`);
-        return;
-      }
-
-      console.log('Successfully submitted assessment');
-      setAnswers({});
-      setActivePage('CONCERNS');
-      setShowHistory(true);
-      
-    } catch (err) {
-      console.error('Error submitting assessment:', err);
-      setError('Failed to submit assessment. Please try again.');
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
-  const toggleMobileMenu = () => {
-    setIsMobileMenuOpen(!isMobileMenuOpen);
-  };
-
-  const handleCategoryClick = (page: PageType) => {
-    setActivePage(page);
-    setIsMobileMenuOpen(false);
-  };
-
-  const handleBackClick = () => {
-    setIsMobileMenuOpen(false);
-    onBack?.();
-  };
-
-  if (showHistory) {
+  if (showSummary && assessmentSummary) {
     return (
-      <div className="assessment-history">
+      <div className="assessment-summary">
         <div className="header">
-          <h2>Assessment History</h2>
-          <button className="close-button" onClick={() => setShowHistory(false)}>Close</button>
+          <h2>Assessment Summary</h2>
         </div>
+        <div className="summary-content">
+          {assessmentSummary.parentConcerns && (
+            <div className="parent-concerns">
+              <h3>Parent Concerns</h3>
+              <table className="summary-table">
+                <tbody>
+                  <tr>
+                    <td><strong>Concerns:</strong></td>
+                    <td>{assessmentSummary.parentConcerns}</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          )}
 
-        {/* Display current assessment's parent concerns if any */}
-        {parentConcernsText && (
-          <div className="assessment-entry current">
-            <div className="assessment-date">
-              <h3>Current Assessment</h3>
+          <h3>Assessment Overview</h3>
+          <table className="summary-table">
+            <thead>
+              <tr>
+                <th>Total Questions</th>
+                <th>Answered</th>
+                <th>Skipped</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>{assessmentSummary.totalQuestions}</td>
+                <td>{assessmentSummary.answeredQuestions}</td>
+                <td>{assessmentSummary.skippedQuestions}</td>
+              </tr>
+            </tbody>
+          </table>
+
+          <h3>Responses by Category</h3>
+          {Object.entries(assessmentSummary.responses).map(([category, responses]) => (
+            <div key={category} className="category-section">
+              <h4>{category}</h4>
+              <table className="responses-table">
+                <thead>
+                  <tr>
+                    <th>Question</th>
+                    <th>Response</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {responses.map((response, index) => (
+                    <tr key={index}>
+                      <td>{response.question}</td>
+                      <td>{response.response}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
-            <div className="summary-report">
-              <div className="parent-concerns-section">
-                <h3>Parent Concerns</h3>
-                <p className="concerns-text">{parentConcernsText}</p>
-              </div>
-            </div>
+          ))}
+
+          <div className="assessment-buttons">
+            <button
+              className="assessment-button primary"
+              onClick={handleBackToProfile}
+            >
+              Back to Profile
+            </button>
           </div>
-        )}
-
-        {assessmentHistory.map(assessment => (
-          <div key={assessment.date} className="assessment-entry">
-            <div className="assessment-date">
-              <h3>{new Date(assessment.date).toLocaleDateString()}</h3>
-            </div>
-
-            <div className="summary-report">
-              {assessment.parentConcerns && (
-                <div className="parent-concerns-section">
-                  <h3>Parent Concerns</h3>
-                  <p className="concerns-text">{assessment.parentConcerns}</p>
-                </div>
-              )}
-
-              <div className="category-summaries">
-                {categories.map(category => {
-                  const categoryQuestions = questions.filter(q => 
-                    q.category === category && assessment.responses[q.id]
-                  );
-                  if (categoryQuestions.length === 0) return null;
-
-                  return (
-                    <div key={category} className="category-summary">
-                      <h3>{category}</h3>
-                      <div className="category-stats">
-                        <p>Questions Answered: {categoryQuestions.length}</p>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-
-              <div className="detailed-responses">
-                <h3>Detailed Responses</h3>
-                {categories.map(category => {
-                  const categoryQuestions = questions.filter(q => 
-                    q.category === category && assessment.responses[q.id]
-                  );
-                  if (categoryQuestions.length === 0) return null;
-
-                  return (
-                    <div key={category} className="category-section">
-                      <h3>{category}</h3>
-                      <div className="qa-list">
-                        {categoryQuestions.map(question => (
-                          <div key={question.id} className="qa-item">
-                            <div className="qa-question">
-                              <span className="q-label">Q:</span>
-                              <span className="q-text">{question.question_text}</span>
-                            </div>
-                            <div className="qa-answer">
-                              <span className="a-label">A:</span>
-                              <span className="a-text">{assessment.responses[question.id]}</span>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          </div>
-        ))}
+        </div>
       </div>
     );
   }
 
-  if (isLoading) {
-    return <div className="loading">Loading questions...</div>;
-  }
-
-  if (error) {
-    return <div className="error">{error}</div>;
-  }
-
-  if (isConcernsPage(activePage)) {
+  if (showPastAssessments) {
     return (
-      <ParentConcernsForm
-        onSubmit={handleParentConcerns}
-        onNext={() => setActivePage('COGNITION')}
-      />
+      <div className="assessment-summary">
+        <div className="header">
+          <h2>Assessment History</h2>
+          <button
+            className="assessment-button secondary"
+            onClick={() => setShowPastAssessments(false)}
+          >
+            Back to Assessment
+          </button>
+        </div>
+        <div className="summary-content">
+          {pastAssessments.length === 0 ? (
+            <div className="no-assessments">
+              <p>No past assessments found.</p>
+            </div>
+          ) : (
+            pastAssessments.map(assessment => (
+              <div key={assessment.date} className="past-assessment-section">
+                <div 
+                  className="assessment-header" 
+                  onClick={() => toggleAssessment(assessment.date)}
+                >
+                  <h3>
+                    Assessment on {new Date(assessment.date).toLocaleDateString()}
+                    <span className="expand-icon">
+                      {expandedAssessments.has(assessment.date) ? '▼' : '▶'}
+                    </span>
+                  </h3>
+                </div>
+                
+                {expandedAssessments.has(assessment.date) && (
+                  <div className="assessment-details">
+                    {assessment.parentConcerns && (
+                      <div className="parent-concerns">
+                        <h3>Parent Concerns</h3>
+                        <table className="summary-table">
+                          <tbody>
+                            <tr>
+                              <td><strong>Concerns:</strong></td>
+                              <td>{assessment.parentConcerns}</td>
+                            </tr>
+                          </tbody>
+                        </table>
+                      </div>
+                    )}
+
+                    <h3>Assessment Overview</h3>
+                    <table className="summary-table">
+                      <thead>
+                        <tr>
+                          <th>Total Questions</th>
+                          <th>Answered Questions</th>
+                          <th>Completion Rate</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        <tr>
+                          <td>{assessment.totalQuestions}</td>
+                          <td>{assessment.answeredQuestions}</td>
+                          <td>{Math.round((assessment.answeredQuestions / assessment.totalQuestions) * 100)}%</td>
+                        </tr>
+                      </tbody>
+                    </table>
+
+                    <h3>Category Statistics</h3>
+                    <table className="summary-table">
+                      <thead>
+                        <tr>
+                          <th>Category</th>
+                          <th>Questions Answered</th>
+                          <th>Total Questions</th>
+                          <th>Completion Rate</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {Object.entries(assessment.categoryStats).map(([category, stats]) => (
+                          <tr key={category}>
+                            <td>{category}</td>
+                            <td>{stats.answered}</td>
+                            <td>{stats.total}</td>
+                            <td>{Math.round((stats.answered / stats.total) * 100)}%</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+
+                    <h3>Detailed Responses</h3>
+                    {categories.map(category => {
+                      const categoryResponses = assessment.responses
+                        .filter(r => r.category === category)
+                        .sort((a, b) => a.questionText.localeCompare(b.questionText));
+
+                      if (categoryResponses.length === 0) return null;
+
+                      return (
+                        <div key={category} className="category-section">
+                          <h4>{category}</h4>
+                          <table className="responses-table">
+                            <thead>
+                              <tr>
+                                <th>Question</th>
+                                <th>Response</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {categoryResponses.map((response, index) => (
+                                <tr key={index}>
+                                  <td>{response.questionText}</td>
+                                  <td>{response.answer}</td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            ))
+          )}
+        </div>
+      </div>
     );
   }
 
-  const categoryQuestions = questions.filter(q => 
-    isQuestionCategory(activePage) && q.category === activePage
-  );
-  const answeredInCategory = categoryQuestions.filter(q => answers[q.id]).length;
-  const progressPercent = (answeredInCategory / categoryQuestions.length) * 100;
+  const currentQuestions = questions.filter(q => q.category === currentPage);
 
   return (
     <div className="questionnaire-container">
       <div className="questionnaire-header">
-        <h2>Assessment Questions - {activePage}</h2>
+        <h2>Assessment Questions - {currentPage}</h2>
         <div className="header-actions">
-          {onBack && (
-            <button className="back-button" onClick={handleBackClick}>
-              ← Back to Profile
-            </button>
-          )}
+          <button 
+            className="view-history-button"
+            onClick={handleViewPastAssessments}
+          >
+            View Past Assessments
+          </button>
+          <button className="back-button" onClick={handleBackToProfile}>
+            ← Back to Profile
+          </button>
         </div>
-        <button 
-          className={`burger-menu ${isMobileMenuOpen ? 'active' : ''}`}
-          onClick={toggleMobileMenu}
-          aria-label="Toggle menu"
-        >
-          <span></span>
-          <span></span>
-          <span></span>
-        </button>
-        {isMobileMenuOpen && (
-          <div className="mobile-menu active">
-            {onBack && (
-              <button onClick={handleBackClick}>
-                ← Back to Profile
-              </button>
-            )}
-            <button onClick={() => handleCategoryClick('CONCERNS')}>Parent Concerns</button>
-            {categories.map(category => (
-              <button
-                key={category}
-                onClick={() => handleCategoryClick(category as PageType)}
-                className={category === activePage ? 'active' : ''}
-              >
-                {category.charAt(0) + category.slice(1).toLowerCase()}
-              </button>
-            ))}
-          </div>
-        )}
       </div>
 
       <div className="tabs">
-        <button
-          className={`tab-button ${isConcernsPage(activePage) ? 'active' : ''}`}
-          onClick={() => handleCategoryClick('CONCERNS')}
-        >
-          Parent Concerns
-        </button>
         {categories.map(category => (
           <button
             key={category}
-            className={`tab-button ${activePage === category ? 'active' : ''}`}
-            onClick={() => handleCategoryClick(category)}
+            className={`tab-button ${currentPage === category ? 'active' : ''}`}
+            onClick={() => setCurrentPage(category)}
           >
             {category.charAt(0) + category.slice(1).toLowerCase()}
           </button>
@@ -426,26 +528,31 @@ export function QuestionnaireForm({ kidProfileId, onBack }: QuestionnaireFormPro
 
       <div className="category-progress">
         <div className="progress-text">
-          Progress: {answeredInCategory} of {categoryQuestions.length} questions answered
+          Progress: {currentQuestions.filter(q => responses[q.id]).length} of {currentQuestions.length} questions answered
         </div>
         <div className="progress-bar">
-          <div className="progress" style={{ width: `${progressPercent}%` }}></div>
+          <div 
+            className="progress" 
+            style={{ 
+              width: `${(currentQuestions.filter(q => responses[q.id]).length / currentQuestions.length) * 100}%` 
+            }}
+          ></div>
         </div>
       </div>
 
       <div className="questions-section">
-        {categoryQuestions.map(question => (
+        {currentQuestions.map(question => (
           <div key={question.id} className="question-card">
             <p className="question-text">{question.question_text}</p>
             <div className="options">
-              {question.options.map((option, index) => (
+              {['Yes', 'No', "Sometimes"].map((option, index) => (
                 <label key={index} className="option-label">
                   <input
                     type="radio"
                     name={question.id}
-                    value={option}
-                    checked={answers[question.id] === option}
-                    onChange={() => handleAnswerChange(question.id, option)}
+                    value={option.toUpperCase()}
+                    checked={responses[question.id] === option.toUpperCase()}
+                    onChange={() => handleResponseChange(question.id, option.toUpperCase())}
                   />
                   <span className="option-text">{option}</span>
                 </label>
@@ -457,18 +564,17 @@ export function QuestionnaireForm({ kidProfileId, onBack }: QuestionnaireFormPro
 
       <div className="assessment-buttons">
         <button
-          className="assessment-button"
+          className="assessment-button primary"
           onClick={handleCompleteAssessment}
-          disabled={isSubmitting}
+          disabled={submitting}
         >
-          {isSubmitting ? 'Submitting...' : 'Complete Assessment'}
+          {submitting ? 'Submitting...' : 'Complete Assessment'}
         </button>
-        
-        {categories.indexOf(activePage as QuestionCategory) < categories.length - 1 && (
+        {currentPage !== categories[categories.length - 1] && (
           <button
             className="assessment-button secondary"
-            onClick={handleSubmitCategory}
-            disabled={isSubmitting}
+            onClick={handleNextSection}
+            disabled={submitting}
           >
             Next Section
           </button>
@@ -476,4 +582,6 @@ export function QuestionnaireForm({ kidProfileId, onBack }: QuestionnaireFormPro
       </div>
     </div>
   );
-} 
+};
+
+export default QuestionnaireForm; 

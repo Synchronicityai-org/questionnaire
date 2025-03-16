@@ -15,6 +15,7 @@ const ProfileSetup: React.FC = () => {
 
   const handleRoleSelection = async (role: UserRole) => {
     if (loading) return;
+    setSelectedRole(role);
     setLoading(true);
     setError(null);
 
@@ -35,7 +36,7 @@ const ProfileSetup: React.FC = () => {
 
       // Navigate based on role
       if (role === 'PARENT') {
-        navigate('/create-kid-profile');
+        navigate('/kid-profile-form');
       } else {
         navigate('/team-list');
       }
@@ -49,52 +50,44 @@ const ProfileSetup: React.FC = () => {
 
   return (
     <div className="profile-setup-container">
-      <h2>Choose Your Role</h2>
-      <p className="setup-description">Select your role in the child's care journey</p>
-      
-      <div className="role-buttons">
-        <button 
-          onClick={() => {
-            setSelectedRole('PARENT');
-            handleRoleSelection('PARENT');
-          }}
-          className={`role-button ${selectedRole === 'PARENT' ? 'active' : ''}`}
-          disabled={loading}
-        >
-          <span className="icon">👨‍👩‍👧‍👦</span>
-          <h3>Parent</h3>
-          <p>I am the child's parent or primary caregiver</p>
-        </button>
+      <div className="profile-setup-content">
+        <h2>Select Your Role</h2>
+        <p className="profile-description">Choose your role in the child's care journey</p>
 
-        <button 
-          onClick={() => {
-            setSelectedRole('CAREGIVER');
-            handleRoleSelection('CAREGIVER');
-          }}
-          className={`role-button ${selectedRole === 'CAREGIVER' ? 'active' : ''}`}
-          disabled={loading}
-        >
-          <span className="icon">👥</span>
-          <h3>Caregiver</h3>
-          <p>I provide care or support for the child</p>
-        </button>
+        {error && <div className="error-message">{error}</div>}
 
-        <button 
-          onClick={() => {
-            setSelectedRole('CLINICIAN');
-            handleRoleSelection('CLINICIAN');
-          }}
-          className={`role-button ${selectedRole === 'CLINICIAN' ? 'active' : ''}`}
-          disabled={loading}
-        >
-          <span className="icon">👨‍⚕️</span>
-          <h3>Clinician</h3>
-          <p>I am a healthcare professional</p>
-        </button>
+        <div className="role-buttons">
+          <button 
+            onClick={() => handleRoleSelection('PARENT')}
+            className={`role-button ${selectedRole === 'PARENT' ? 'active' : ''}`}
+            disabled={loading}
+          >
+            <span className="icon">👨‍👩‍👧‍👦</span>
+            <h3>Parent</h3>
+            <p>I am the child's parent or primary caregiver</p>
+          </button>
+
+          <button 
+            onClick={() => handleRoleSelection('CAREGIVER')}
+            className={`role-button ${selectedRole === 'CAREGIVER' ? 'active' : ''}`}
+            disabled={loading}
+          >
+            <span className="icon">👩‍⚕️</span>
+            <h3>Caregiver</h3>
+            <p>I provide care or support for the child</p>
+          </button>
+
+          <button 
+            onClick={() => handleRoleSelection('CLINICIAN')}
+            className={`role-button ${selectedRole === 'CLINICIAN' ? 'active' : ''}`}
+            disabled={loading}
+          >
+            <span className="icon">🏥</span>
+            <h3>Clinician</h3>
+            <p>I am a healthcare professional</p>
+          </button>
+        </div>
       </div>
-
-      {error && <div className="error-message">{error}</div>}
-      {loading && <div className="loading-message">Setting up your profile...</div>}
     </div>
   );
 };

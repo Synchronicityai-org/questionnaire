@@ -1,20 +1,35 @@
 .profile-setup-container {
-  max-width: 800px;
-  margin: 2rem auto;
+  min-height: calc(100vh - 140px); /* Account for header and footer */
+  display: flex;
+  justify-content: center;
+  align-items: center;
   padding: 2rem;
+  background-color: #f7fafc;
+}
+
+.profile-setup-content {
+  width: 100%;
+  max-width: 800px;
+  padding: 2.5rem;
+  background-color: white;
+  border-radius: 1rem;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+}
+
+.profile-setup-content h2 {
+  color: #2d3748;
   text-align: center;
-}
-
-.profile-setup-container h2 {
-  font-size: 2rem;
-  color: #333;
   margin-bottom: 1rem;
+  font-size: 1.75rem;
+  font-weight: 600;
 }
 
-.setup-description {
-  color: #666;
+.profile-description {
+  color: #4a5568;
+  text-align: center;
   margin-bottom: 2rem;
-  font-size: 1.1rem;
+  font-size: 1rem;
+  line-height: 1.5;
 }
 
 .role-buttons {
@@ -25,28 +40,30 @@
 }
 
 .role-button {
-  background: white;
-  border: 2px solid #eee;
-  border-radius: 8px;
-  padding: 2rem 1.5rem;
-  text-align: center;
-  cursor: pointer;
-  transition: all 0.3s ease;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 1rem;
+  padding: 2rem 1.5rem;
+  background-color: white;
+  border: 2px solid #e2e8f0;
+  border-radius: 1rem;
+  cursor: pointer;
+  transition: all 0.2s;
 }
 
-.role-button:hover {
-  border-color: #0066cc;
+.role-button:hover:not(:disabled) {
+  border-color: #4299e1;
   transform: translateY(-2px);
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
 }
 
 .role-button.active {
-  border-color: #0066cc;
-  background-color: #f0f7ff;
+  border-color: #4299e1;
+  background-color: #ebf8ff;
+}
+
+.role-button:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
 }
 
 .role-button .icon {
@@ -55,35 +72,41 @@
 }
 
 .role-button h3 {
-  color: #333;
-  margin: 0;
+  color: #2d3748;
+  margin: 0 0 0.5rem 0;
   font-size: 1.25rem;
+  font-weight: 600;
 }
 
 .role-button p {
-  color: #666;
+  color: #4a5568;
   margin: 0;
+  text-align: center;
   font-size: 0.9rem;
   line-height: 1.4;
 }
 
-.role-button:disabled {
-  opacity: 0.7;
-  cursor: not-allowed;
-  transform: none;
-}
-
 .error-message {
-  margin-top: 1.5rem;
-  padding: 1rem;
-  background-color: #fff2f2;
-  border: 1px solid #ffcfcf;
-  border-radius: 4px;
-  color: #d63031;
+  margin-bottom: 1rem;
+  padding: 0.75rem;
+  background-color: #fff5f5;
+  border: 1px solid #feb2b2;
+  border-radius: 0.5rem;
+  color: #c53030;
+  font-size: 0.9rem;
+  text-align: center;
 }
 
-.loading-message {
-  margin-top: 1.5rem;
-  color: #666;
-  font-style: italic;
+@media (max-width: 640px) {
+  .profile-setup-container {
+    padding: 1rem;
+  }
+
+  .profile-setup-content {
+    padding: 1.5rem;
+  }
+
+  .role-buttons {
+    grid-template-columns: 1fr;
+  }
 } 

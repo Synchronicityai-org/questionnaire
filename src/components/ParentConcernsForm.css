@@ -89,8 +89,13 @@
   min-width: 200px;
 }
 
-.assessment-button:hover {
+.assessment-button:hover:not(:disabled) {
   background-color: #5f3da8;
+}
+
+.assessment-button:disabled {
+  background-color: #b3b3b3;
+  cursor: not-allowed;
 }
 
 @media (max-width: 768px) {

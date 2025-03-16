@@ -1,17 +1,31 @@
 import { useState } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
 import './ParentConcernsForm.css';
 
 interface ParentConcernsFormProps {
   onSubmit: (concerns: string) => void;
-  onNext: () => void;
 }
 
-export function ParentConcernsForm({ onSubmit, onNext }: ParentConcernsFormProps) {
+export function ParentConcernsForm({ onSubmit }: ParentConcernsFormProps) {
+  const { kidProfileId } = useParams<{ kidProfileId: string }>();
+  const navigate = useNavigate();
   const [concerns, setConcerns] = useState('');
+  const [loading, setLoading] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    onSubmit(concerns);
+    setLoading(true);
+
+    try {
+      onSubmit(concerns);
+      if (kidProfileId) {
+        navigate(`/questionnaire/${kidProfileId}`);
+      }
+    } catch (error) {
+      console.error('Error saving concerns:', error);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -34,28 +48,20 @@ export function ParentConcernsForm({ onSubmit, onNext }: ParentConcernsFormProps
         <div className="info-section">
           <h3>Parent Concerns</h3>
           <p>Before we begin, please share any specific concerns you have about your child's development. This information helps us better understand your child's needs.</p>
-          <textarea
-            value={concerns}
-            onChange={(e) => setConcerns(e.target.value)}
-            placeholder="Example: I've noticed my child has difficulty following multi-step instructions..."
-            rows={6}
-          />
+          <form onSubmit={handleSubmit}>
+            <textarea
+              value={concerns}
+              onChange={(e) => setConcerns(e.target.value)}
+              placeholder="Share your concerns here (optional)"
+              rows={5}
+            />
+            <div className="button-group">
+              <button type="submit" disabled={loading} className="next-button">
+                {loading ? 'Saving...' : 'Next'}
+              </button>
+            </div>
+          </form>
         </div>
-      </div>
-
-      <div className="assessment-buttons">
-        <button
-          className="assessment-button"
-          onClick={handleSubmit}
-        >
-          Save Concerns & Continue
-        </button>
-        <button
-          className="assessment-button"
-          onClick={onNext}
-        >
-          Skip & Start Assessment
-        </button>
       </div>
     </div>
   );
