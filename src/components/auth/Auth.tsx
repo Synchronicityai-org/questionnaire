@@ -47,15 +47,41 @@ const Auth: React.FC<AuthProps> = ({ isOpen, onClose }) => {
     setLoading(true);
 
     try {
-      await signIn({
-        username: formData.email,
+      const username = formData.email.toLowerCase().trim();
+      const { nextStep } = await signIn({
+        username,
         password: formData.password,
+        options: {
+          authFlowType: "USER_SRP_AUTH"
+        }
       });
-      onClose();
-      navigate('/profile-setup');
-    } catch (error) {
+
+      if (nextStep.signInStep === 'CONFIRM_SIGN_UP') {
+        setAuthState('confirmSignUp');
+        setError('Please verify your email before signing in.');
+        return;
+      }
+
+      if (nextStep.signInStep === 'DONE') {
+        onClose();
+        navigate('/profile-setup');
+      }
+    } catch (error: any) {
       console.error('Error signing in:', error);
-      setError('Invalid credentials. Please try again.');
+      
+      // Handle specific error cases
+      if (error.name === 'UserNotConfirmedException') {
+        setAuthState('confirmSignUp');
+        setError('Please verify your email before signing in.');
+      } else if (error.name === 'NotAuthorizedException') {
+        setError('Incorrect username or password.');
+      } else if (error.name === 'UserNotFoundException') {
+        setError('No account found with this email.');
+      } else if (error.name === 'InvalidParameterException') {
+        setError('Please enter a valid email and password.');
+      } else {
+        setError('Error signing in. Please try again.');
+      }
     } finally {
       setLoading(false);
     }
@@ -73,20 +99,24 @@ const Auth: React.FC<AuthProps> = ({ isOpen, onClose }) => {
       }
 
       const formattedPhone = formatPhoneNumber(formData.phoneNumber);
+      const username = formData.email.toLowerCase().trim();
 
-      await signUp({
-        username: formData.email,
+      const { nextStep } = await signUp({
+        username,
         password: formData.password,
         options: {
           userAttributes: {
-            email: formData.email,
-            given_name: formData.firstName,
-            family_name: formData.lastName,
+            email: username,
+            given_name: formData.firstName.trim(),
+            family_name: formData.lastName.trim(),
             phone_number: formattedPhone
           }
         }
       });
-      setAuthState('confirmSignUp');
+
+      if (nextStep.signUpStep === 'CONFIRM_SIGN_UP') {
+        setAuthState('confirmSignUp');
+      }
     } catch (error: any) {
       console.error('Error signing up:', error);
       
@@ -121,6 +151,7 @@ const Auth: React.FC<AuthProps> = ({ isOpen, onClose }) => {
     try {
       // Trim the code to remove any whitespace
       const cleanCode = formData.code.trim();
+      const username = formData.email.toLowerCase().trim();
       
       // Validate code format
       if (!/^\d{6}$/.test(cleanCode)) {
@@ -128,18 +159,27 @@ const Auth: React.FC<AuthProps> = ({ isOpen, onClose }) => {
       }
 
       await confirmSignUp({
-        username: formData.email.toLowerCase().trim(),
+        username,
         confirmationCode: cleanCode
       });
 
       // After confirmation, try to sign in
       try {
-        await signIn({
-          username: formData.email.toLowerCase().trim(),
+        const { nextStep } = await signIn({
+          username,
           password: formData.password,
+          options: {
+            authFlowType: "USER_SRP_AUTH"
+          }
         });
-        onClose();
-        navigate('/profile-setup');
+
+        if (nextStep.signInStep === 'DONE') {
+          onClose();
+          navigate('/profile-setup');
+        } else {
+          setError('Account verified! Please sign in with your credentials.');
+          setAuthState('signIn');
+        }
       } catch (signInError) {
         console.error('Error signing in after confirmation:', signInError);
         setError('Account verified! Please sign in with your credentials.');
