@@ -21,6 +21,7 @@ const Auth: React.FC<AuthProps> = ({ isOpen, onClose }) => {
   });
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [showCloseWarning, setShowCloseWarning] = useState(false);
 
   const formatPhoneNumber = (phone: string): string => {
     // Remove all non-digit characters
@@ -223,6 +224,11 @@ const Auth: React.FC<AuthProps> = ({ isOpen, onClose }) => {
   };
 
   const handleClose = () => {
+    if (authState === 'confirmSignUp') {
+      setShowCloseWarning(true);
+      return;
+    }
+
     setError(null);
     setAuthState('signIn');
     setFormData({
@@ -234,6 +240,30 @@ const Auth: React.FC<AuthProps> = ({ isOpen, onClose }) => {
       phoneNumber: ''
     });
     onClose();
+  };
+
+  const handleConfirmClose = () => {
+    setShowCloseWarning(false);
+    setAuthState('signIn');
+    setFormData({
+      email: '',
+      password: '',
+      code: '',
+      firstName: '',
+      lastName: '',
+      phoneNumber: ''
+    });
+    onClose();
+  };
+
+  const handleCancelClose = () => {
+    setShowCloseWarning(false);
+  };
+
+  const handleBackdropClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (e.target === e.currentTarget) {
+      handleClose();
+    }
   };
 
   if (!isOpen) return null;
@@ -353,9 +383,9 @@ const Auth: React.FC<AuthProps> = ({ isOpen, onClose }) => {
 
   const renderConfirmSignUp = () => (
     <form onSubmit={handleConfirmSignUp} className="auth-form">
-      <h2>Verify Your Account</h2>
+      <h2>Verify Your Email</h2>
       <p className="verification-info">
-        Please enter the verification code sent to your email address: {formData.email}
+        Please enter the verification code sent to {formData.email}
       </p>
       <div className="form-group">
         <label htmlFor="code">Verification Code</label>
@@ -363,55 +393,58 @@ const Auth: React.FC<AuthProps> = ({ isOpen, onClose }) => {
           type="text"
           id="code"
           value={formData.code}
-          onChange={(e) => setFormData({ ...formData, code: e.target.value.replace(/\D/g, '') })}
-          maxLength={6}
-          pattern="\d{6}"
+          onChange={(e) => setFormData({ ...formData, code: e.target.value })}
           placeholder="Enter 6-digit code"
           required
+          disabled={loading}
         />
-        <small className="input-help">Enter the 6-digit code from your email</small>
       </div>
+      {error && <div className="error-message">{error}</div>}
       <button type="submit" className="submit-button" disabled={loading}>
-        {loading ? 'Verifying...' : 'Verify Account'}
+        {loading ? 'Verifying...' : 'Verify Email'}
       </button>
-      <button 
-        type="button" 
-        className="resend-button"
+      <button
+        type="button"
         onClick={handleResendCode}
+        className="link-button"
         disabled={loading}
       >
-        Resend Code
+        Resend verification code
       </button>
-      <p className="auth-switch">
-        Wrong email?{' '}
-        <button 
-          type="button" 
-          onClick={() => setAuthState('signUp')}
-          className="link-button"
-        >
-          Start Over
-        </button>
-      </p>
-      {error && <div className="error-message">{error}</div>}
+      <button
+        type="button"
+        onClick={() => setAuthState('signIn')}
+        className="link-button"
+        disabled={loading}
+      >
+        Back to Sign In
+      </button>
     </form>
   );
 
-  const renderContent = () => {
-    switch (authState) {
-      case 'signUp':
-        return renderSignUp();
-      case 'confirmSignUp':
-        return renderConfirmSignUp();
-      default:
-        return renderSignIn();
-    }
-  };
-
   return (
-    <div className="auth-modal" onClick={handleClose}>
-      <div className="auth-modal-content" onClick={e => e.stopPropagation()}>
-        <button className="auth-modal-close" onClick={handleClose}>&times;</button>
-        {renderContent()}
+    <div className="auth-overlay" onClick={handleBackdropClick}>
+      <div className="auth-modal">
+        {showCloseWarning ? (
+          <div className="warning-dialog">
+            <h3>Are you sure?</h3>
+            <p>If you close now, you'll need to start the verification process again.</p>
+            <div className="warning-buttons">
+              <button onClick={handleCancelClose} className="cancel-button">
+                Stay Here
+              </button>
+              <button onClick={handleConfirmClose} className="confirm-button">
+                Yes, Close
+              </button>
+            </div>
+          </div>
+        ) : (
+          <>
+            {authState === 'signIn' && renderSignIn()}
+            {authState === 'signUp' && renderSignUp()}
+            {authState === 'confirmSignUp' && renderConfirmSignUp()}
+          </>
+        )}
       </div>
     </div>
   );

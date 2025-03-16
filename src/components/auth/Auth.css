@@ -107,7 +107,7 @@
 }
 
 /* Modal styles */
-.auth-modal {
+.auth-overlay {
   position: fixed;
   top: 0;
   left: 0;
@@ -115,40 +115,150 @@
   bottom: 0;
   background-color: rgba(0, 0, 0, 0.5);
   display: flex;
-  align-items: center;
   justify-content: center;
+  align-items: center;
   z-index: 1000;
-  padding: 1rem;
 }
 
-.auth-modal-content {
+.auth-modal {
   background: white;
-  border-radius: 12px;
-  width: 95%;
-  max-width: 420px;
+  padding: 2rem;
+  border-radius: 8px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  width: 100%;
+  max-width: 400px;
   position: relative;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
 }
 
-.auth-modal-close {
-  position: absolute;
-  top: 1rem;
-  right: 1rem;
+.warning-dialog {
+  text-align: center;
+  padding: 1.5rem;
+}
+
+.warning-dialog h3 {
+  margin: 0 0 1rem;
+  color: #e53935;
+}
+
+.warning-dialog p {
+  margin: 0 0 1.5rem;
+  color: #666;
+}
+
+.warning-buttons {
+  display: flex;
+  justify-content: center;
+  gap: 1rem;
+}
+
+.cancel-button {
+  padding: 0.5rem 1rem;
+  border: none;
+  border-radius: 4px;
+  background-color: #e0e0e0;
+  color: #424242;
+  cursor: pointer;
+  font-weight: 500;
+}
+
+.confirm-button {
+  padding: 0.5rem 1rem;
+  border: none;
+  border-radius: 4px;
+  background-color: #e53935;
+  color: white;
+  cursor: pointer;
+  font-weight: 500;
+}
+
+.cancel-button:hover {
+  background-color: #bdbdbd;
+}
+
+.confirm-button:hover {
+  background-color: #c62828;
+}
+
+.verification-info {
+  margin: 1rem 0;
+  color: #666;
+  text-align: center;
+}
+
+.auth-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.form-group label {
+  font-weight: 500;
+  color: #424242;
+}
+
+.form-group input {
+  padding: 0.75rem;
+  border: 1px solid #e0e0e0;
+  border-radius: 4px;
+  font-size: 1rem;
+}
+
+.form-group input:focus {
+  outline: none;
+  border-color: #2196f3;
+  box-shadow: 0 0 0 2px rgba(33, 150, 243, 0.1);
+}
+
+.submit-button {
+  padding: 0.75rem;
+  border: none;
+  border-radius: 4px;
+  background-color: #2196f3;
+  color: white;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.submit-button:hover {
+  background-color: #1976d2;
+}
+
+.submit-button:disabled {
+  background-color: #90caf9;
+  cursor: not-allowed;
+}
+
+.link-button {
   background: none;
   border: none;
-  font-size: 1.5rem;
+  color: #2196f3;
   cursor: pointer;
-  color: #666;
   padding: 0.5rem;
-  line-height: 1;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: color 0.3s ease;
+  font-size: 0.9rem;
+  text-decoration: underline;
 }
 
-.auth-modal-close:hover {
-  color: #333;
+.link-button:hover {
+  color: #1976d2;
+}
+
+.link-button:disabled {
+  color: #90caf9;
+  cursor: not-allowed;
+}
+
+.error-message {
+  color: #e53935;
+  font-size: 0.9rem;
+  margin-top: 0.5rem;
+  text-align: center;
 }
 
 /* Responsive adjustments */
@@ -194,13 +304,6 @@
 @keyframes spin {
   0% { transform: rotate(0deg); }
   100% { transform: rotate(360deg); }
-}
-
-.verification-info {
-  margin-bottom: 1.5rem;
-  color: #666;
-  font-size: 0.9rem;
-  text-align: center;
 }
 
 .resend-button {
