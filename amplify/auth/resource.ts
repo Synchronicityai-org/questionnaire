@@ -6,16 +6,7 @@ import { defineAuth } from '@aws-amplify/backend';
  */
 export const auth = defineAuth({
   loginWith: {
-    email: {
-      // Configure password requirements
-      validation: {
-        minLength: 8,
-        containsLower: true,
-        containsUpper: true,
-        containsNumbers: true,
-        containsSpecial: true
-      }
-    }
+    email: true
   },
   userAttributes: {
     // Custom attributes for user role and profile type
