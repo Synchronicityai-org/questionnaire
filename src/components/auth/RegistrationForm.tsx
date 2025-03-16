@@ -215,11 +215,11 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ onSuccess }) => {
       return renderProfileTypeSelection();
     case 'kidProfile':
       return <KidProfileForm 
-        onSubmit={(kidProfileId: string, teamId: string) => {
+        onSubmit={(data) => {
           onSuccess({
             userId: userInfo.email,
-            kidProfileId,
-            teamId,
+            kidProfileId: data.kidProfileId,
+            teamId: data.teamId,
             nextStep: 'DASHBOARD',
             isNewRegistration: true,
             profileType: 'PARENT'
