@@ -1,24 +1,20 @@
-import { useState } from 'react';
-import { generateClient } from 'aws-amplify/data';
-import type { Schema } from '../../../amplify/data/resource';
+import React, { useState } from 'react';
+import { useAuth, ProfileType } from '../../hooks/useAuth';
+import KidProfileForm from './KidProfileForm';
 import './RegistrationForm.css';
 
-type Step = 'userInfo' | 'roleSelection' | 'kidProfile' | 'teamSetup';
-type UserRole = 'PARENT' | 'CAREGIVER' | 'CLINICIAN' | 'ADMIN' | 'SME';
-
 interface RegistrationFormProps {
-  onSuccess: (data: { 
-    userId: string; 
-    kidProfileId: string; 
-    teamId: string;
-    nextStep: 'DASHBOARD' | 'ASSESSMENT' | 'TEAM';
-    isNewRegistration?: boolean;
-    role: 'PARENT' | 'CAREGIVER' | 'CLINICIAN';
+  onSuccess: (data: {
+    userId: string;
+    kidProfileId?: string;
+    teamId?: string;
+    nextStep: string;
+    isNewRegistration: boolean;
+    profileType: ProfileType;
   }) => void;
 }
 
 interface UserInfo {
-  username: string;
   email: string;
   password: string;
   fName: string;
@@ -26,404 +22,213 @@ interface UserInfo {
   phoneNumber: string;
 }
 
-interface KidProfileInfo {
-  name: string;
-  dob: string;
-  age: number;
-  isAutismDiagnosed: boolean;
-}
-
-const client = generateClient<Schema>();
-
 const RegistrationForm: React.FC<RegistrationFormProps> = ({ onSuccess }) => {
-  const [currentStep, setCurrentStep] = useState<Step>('userInfo');
+  const { register, setProfileType } = useAuth();
+  const [currentStep, setCurrentStep] = useState<'userInfo' | 'profileType' | 'kidProfile'>('userInfo');
   const [userInfo, setUserInfo] = useState<UserInfo>({
-    username: '',
     email: '',
     password: '',
     fName: '',
     lName: '',
-    phoneNumber: '',
+    phoneNumber: ''
   });
-  const [selectedRole, setSelectedRole] = useState<UserRole | ''>('');
-  const [kidProfile, setKidProfile] = useState<KidProfileInfo>({
-    name: '',
-    dob: '',
-    age: 0,
-    isAutismDiagnosed: false,
-  });
-  const [error, setError] = useState<string | null>(null);
+  const [selectedProfileType, setSelectedProfileType] = useState<ProfileType | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const handleUserInfoSubmit = (e: React.FormEvent) => {
+  const handleUserInfoSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!userInfo.username || !userInfo.email || !userInfo.password) {
-      setError('Please fill in all required fields');
-      return;
-    }
-    setCurrentStep('roleSelection');
-  };
+    setError(null);
 
-  const handleRoleSelection = async (role: UserRole) => {
-    if (isSubmitting) return; // Prevent multiple clicks while submitting
-    
     try {
       setIsSubmitting(true);
-      setError(null);
-      setSelectedRole(role);
       
-      if (role === 'PARENT') {
-        setCurrentStep('kidProfile');
-        setIsSubmitting(false);
-      } else if (role === 'CAREGIVER' || role === 'CLINICIAN') {
-        // For CAREGIVER and CLINICIAN roles
-        const response = await client.models.User.create({
-          username: userInfo.username,
-          email: userInfo.email,
-          password: userInfo.password,
-          fName: userInfo.fName,
-          lName: userInfo.lName,
-          phoneNumber: userInfo.phoneNumber,
-          role: role,
-          status: 'ACTIVE',
-          mName: '-', // Required field
-          address: 'Default Address', // Required field
-          dob: new Date().toISOString().split('T')[0], // Required field
-        });
+      // Register the user with Amplify Auth
+      await register(
+        userInfo.email,
+        userInfo.password,
+        userInfo.fName,
+        userInfo.lName,
+        userInfo.phoneNumber
+      );
 
-        if (response?.data?.id) {
-          // Store user info in session storage
-          sessionStorage.setItem('userId', response.data.id);
-          sessionStorage.setItem('userRole', role);
-          sessionStorage.setItem('mode', 'real');
-
-          onSuccess({
-            userId: response.data.id,
-            kidProfileId: '', // Empty for non-parent roles
-            teamId: '', // Will be set when joining a team
-            nextStep: 'TEAM',
-            isNewRegistration: true,
-            role: role
-          });
-        } else {
-          throw new Error('Failed to create user');
-        }
-      } else {
-        throw new Error('Invalid role selected');
-      }
+      // Move to profile type selection
+      setCurrentStep('profileType');
     } catch (err) {
-      console.error('Error in role selection:', err);
-      setError('Failed to process registration. Please try again.');
+      console.error('Error in registration:', err);
+      setError('An error occurred during registration. Please try again.');
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  const handleKidProfileSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!kidProfile.name || !kidProfile.dob) {
-      setError('Please fill in all required fields');
-      return;
+  const handleProfileTypeSelection = async (type: ProfileType) => {
+    if (isSubmitting) return;
+    
+    try {
+      setIsSubmitting(true);
+      setError(null);
+      setSelectedProfileType(type);
+
+      // Update the user's profile type
+      await setProfileType(type);
+
+      if (type === 'PARENT') {
+        setCurrentStep('kidProfile');
+      } else {
+        // For CAREGIVER and CLINICIAN
+        onSuccess({
+          userId: userInfo.email, // We use email as username
+          nextStep: 'TEAM',
+          isNewRegistration: true,
+          profileType: type
+        });
+      }
+    } catch (err) {
+      console.error('Error in profile type selection:', err);
+      setError('Failed to set profile type. Please try again.');
+    } finally {
+      setIsSubmitting(false);
     }
-    setCurrentStep('teamSetup');
   };
 
   const renderUserInfoForm = () => (
     <form onSubmit={handleUserInfoSubmit} className="user-info-form">
       <h2>Create Your Account</h2>
       <div className="form-group">
-        <input
-          type="text"
-          placeholder="Username"
-          value={userInfo.username}
-          onChange={(e) => setUserInfo({ ...userInfo, username: e.target.value })}
-          required
-        />
-      </div>
-      <div className="form-group">
+        <label htmlFor="email">Email</label>
         <input
           type="email"
-          placeholder="Email"
+          id="email"
           value={userInfo.email}
           onChange={(e) => setUserInfo({ ...userInfo, email: e.target.value })}
           required
         />
       </div>
       <div className="form-group">
+        <label htmlFor="password">Password</label>
         <input
           type="password"
-          placeholder="Password"
+          id="password"
           value={userInfo.password}
           onChange={(e) => setUserInfo({ ...userInfo, password: e.target.value })}
           required
         />
       </div>
       <div className="form-group">
+        <label htmlFor="fName">First Name</label>
         <input
           type="text"
-          placeholder="First Name"
+          id="fName"
           value={userInfo.fName}
           onChange={(e) => setUserInfo({ ...userInfo, fName: e.target.value })}
           required
         />
       </div>
       <div className="form-group">
+        <label htmlFor="lName">Last Name</label>
         <input
           type="text"
-          placeholder="Last Name"
+          id="lName"
           value={userInfo.lName}
           onChange={(e) => setUserInfo({ ...userInfo, lName: e.target.value })}
           required
         />
       </div>
       <div className="form-group">
+        <label htmlFor="phoneNumber">Phone Number</label>
         <input
           type="tel"
-          placeholder="Phone Number"
+          id="phoneNumber"
           value={userInfo.phoneNumber}
           onChange={(e) => setUserInfo({ ...userInfo, phoneNumber: e.target.value })}
           required
         />
       </div>
-      <button type="submit">Next</button>
+      <button type="submit" className="submit-button" disabled={isSubmitting}>
+        {isSubmitting ? 'Creating Account...' : 'Continue'}
+      </button>
+      {error && <div className="error-message">{error}</div>}
     </form>
   );
 
-  const renderRoleSelection = () => (
-    <div className="role-selection">
+  const renderProfileTypeSelection = () => (
+    <div className="profile-type-selection">
       <h2>Select Your Role</h2>
-      <p className="role-description">Choose your role in the child's care journey</p>
-      <div className="role-buttons">
+      <p className="profile-description">Choose your role in the child's care journey</p>
+      <div className="profile-buttons">
         <button 
-          onClick={() => handleRoleSelection('PARENT')}
-          className={`role-button ${selectedRole === 'PARENT' ? 'active' : ''} ${isSubmitting ? 'disabled' : ''}`}
+          onClick={() => handleProfileTypeSelection('PARENT')}
+          className={`profile-button ${selectedProfileType === 'PARENT' ? 'active' : ''}`}
           disabled={isSubmitting}
         >
-          <span className="icon">👨‍👩‍👧‍👦</span>
+          <span className="icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+              <circle cx="9" cy="7" r="4"></circle>
+              <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+              <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+            </svg>
+          </span>
           <h3>Parent</h3>
           <p>I am the child's parent or primary caregiver</p>
         </button>
         <button 
-          onClick={() => handleRoleSelection('CAREGIVER')}
-          className={`role-button ${selectedRole === 'CAREGIVER' ? 'active' : ''} ${isSubmitting ? 'disabled' : ''}`}
+          onClick={() => handleProfileTypeSelection('CAREGIVER')}
+          className={`profile-button ${selectedProfileType === 'CAREGIVER' ? 'active' : ''}`}
           disabled={isSubmitting}
         >
-          <span className="icon">👥</span>
+          <span className="icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path>
+              <rect x="8" y="2" width="8" height="4" rx="1" ry="1"></rect>
+              <path d="M9 12h6"></path>
+              <path d="M9 16h6"></path>
+            </svg>
+          </span>
           <h3>Caregiver</h3>
           <p>I provide care or support for the child</p>
         </button>
         <button 
-          onClick={() => handleRoleSelection('CLINICIAN')}
-          className={`role-button ${selectedRole === 'CLINICIAN' ? 'active' : ''} ${isSubmitting ? 'disabled' : ''}`}
+          onClick={() => handleProfileTypeSelection('CLINICIAN')}
+          className={`profile-button ${selectedProfileType === 'CLINICIAN' ? 'active' : ''}`}
           disabled={isSubmitting}
         >
-          <span className="icon">👨‍⚕️</span>
+          <span className="icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M22 12h-4l-3 9L9 3l-3 9H2"></path>
+            </svg>
+          </span>
           <h3>Clinician</h3>
           <p>I am a healthcare professional</p>
         </button>
       </div>
-      {isSubmitting && (
-        <div className="loading-message">
-          Setting up your account...
-        </div>
-      )}
-    </div>
-  );
-
-  const renderKidProfileForm = () => (
-    <form onSubmit={handleKidProfileSubmit} className="kid-profile-form">
-      <h2>Create Kid's Profile</h2>
-      <div className="form-group">
-        <input
-          type="text"
-          placeholder="Child's Name"
-          value={kidProfile.name}
-          onChange={(e) => setKidProfile({ ...kidProfile, name: e.target.value })}
-          required
-        />
-      </div>
-      <div className="form-group">
-        <input
-          type="date"
-          placeholder="Date of Birth"
-          value={kidProfile.dob}
-          onChange={(e) => {
-            const dob = new Date(e.target.value);
-            const today = new Date();
-            const age = today.getFullYear() - dob.getFullYear();
-            setKidProfile({
-              ...kidProfile,
-              dob: e.target.value,
-              age: age,
-            });
-          }}
-          required
-        />
-      </div>
-      <div className="form-group checkbox-group">
-        <label className="checkbox-label">
-          <input
-            type="checkbox"
-            checked={kidProfile.isAutismDiagnosed}
-            onChange={(e) => setKidProfile({ ...kidProfile, isAutismDiagnosed: e.target.checked })}
-          />
-          Has your child been diagnosed with autism?
-        </label>
-      </div>
-      <button type="submit">Next</button>
-    </form>
-  );
-
-  const renderTeamSetup = () => (
-    <div className="team-setup">
-      <h2>Profile Created Successfully!</h2>
-      <p>What would you like to do next?</p>
-      
-      <div className="next-steps-container">
-        <div className="next-step-option">
-          <button 
-            onClick={() => handleRegistration('DASHBOARD')}
-            disabled={isSubmitting}
-            className="next-step-button dashboard"
-          >
-            <span className="icon">📊</span>
-            <h3>Go to Dashboard</h3>
-            <p>View your child's profile and overall progress</p>
-          </button>
-        </div>
-
-        <div className="next-step-option">
-          <button 
-            onClick={() => handleRegistration('ASSESSMENT')}
-            disabled={isSubmitting}
-            className="next-step-button assessment"
-          >
-            <span className="icon">📝</span>
-            <h3>Start Assessment</h3>
-            <p>Begin the developmental assessment (takes approximately 20 minutes)</p>
-          </button>
-        </div>
-
-        <div className="next-step-option">
-          <button 
-            onClick={() => handleRegistration('TEAM')}
-            disabled={isSubmitting}
-            className="next-step-button team"
-          >
-            <span className="icon">👥</span>
-            <h3>Manage Team</h3>
-            <p>Invite caregivers, clinicians, or other team members</p>
-          </button>
-        </div>
-      </div>
-
-      {isSubmitting && (
-        <div className="loading-message">
-          Setting up your profile...
-        </div>
-      )}
-    </div>
-  );
-
-  const handleRegistration = async (nextStep: 'DASHBOARD' | 'ASSESSMENT' | 'TEAM' = 'DASHBOARD') => {
-    setIsSubmitting(true);
-    setError(null);
-
-    try {
-      if (!selectedRole) {
-        setError('Please select a role');
-        setIsSubmitting(false);
-        return;
-      }
-
-      console.log('Starting registration process...');
-      console.log('Creating user...');
-      const userResponse = await client.models.User.create({
-        username: userInfo.username,
-        email: userInfo.email,
-        password: userInfo.password,
-        fName: userInfo.fName,
-        lName: userInfo.lName,
-        phoneNumber: userInfo.phoneNumber,
-        role: selectedRole,
-        status: 'PENDING'
-      });
-
-      if (!userResponse.data?.id) {
-        throw new Error('Failed to create user');
-      }
-      console.log('User created successfully:', userResponse.data.id);
-
-      if (selectedRole === 'PARENT') {
-        console.log('Creating kid profile...');
-        const kidResponse = await client.models.KidProfile.create({
-          name: kidProfile.name,
-          age: kidProfile.age,
-          dob: kidProfile.dob,
-          parentId: userResponse.data.id,
-          isDummy: false,
-          isAutismDiagnosed: kidProfile.isAutismDiagnosed
-        });
-
-        if (!kidResponse.data?.id) {
-          throw new Error('Failed to create kid profile');
-        }
-        console.log('Kid profile created successfully:', kidResponse.data.id);
-
-        console.log('Creating team...');
-        const teamResponse = await client.models.Team.create({
-          name: `${kidProfile.name}'s Team`,
-          kidProfileId: kidResponse.data.id,
-          adminId: userResponse.data.id
-        });
-
-        if (!teamResponse.data?.id) {
-          throw new Error('Failed to create team');
-        }
-        console.log('Team created successfully:', teamResponse.data.id);
-
-        const registrationData = {
-          userId: userResponse.data.id,
-          kidProfileId: kidResponse.data.id,
-          teamId: teamResponse.data.id,
-          nextStep,
-          isNewRegistration: true,
-          role: selectedRole as 'PARENT' | 'CAREGIVER' | 'CLINICIAN'
-        };
-
-        console.log('Registration completed successfully. Calling onSuccess with data:', registrationData);
-        await Promise.resolve(onSuccess(registrationData));
-      } else {
-        const registrationData = {
-          userId: userResponse.data.id,
-          kidProfileId: '',
-          teamId: '',
-          nextStep: 'DASHBOARD' as const,
-          isNewRegistration: true,
-          role: selectedRole as 'PARENT' | 'CAREGIVER' | 'CLINICIAN'
-        };
-        console.log('Registration completed successfully for non-parent role. Calling onSuccess with data:', registrationData);
-        await Promise.resolve(onSuccess(registrationData));
-      }
-      
-      console.log('Navigation callback completed');
-    } catch (err) {
-      console.error('Registration error:', err);
-      setError('Failed to complete registration. Please try again.');
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
-  return (
-    <div className="registration-container">
       {error && <div className="error-message">{error}</div>}
-      {currentStep === 'userInfo' && renderUserInfoForm()}
-      {currentStep === 'roleSelection' && renderRoleSelection()}
-      {currentStep === 'kidProfile' && renderKidProfileForm()}
-      {currentStep === 'teamSetup' && renderTeamSetup()}
     </div>
   );
+
+  // Render the appropriate step
+  switch (currentStep) {
+    case 'userInfo':
+      return renderUserInfoForm();
+    case 'profileType':
+      return renderProfileTypeSelection();
+    case 'kidProfile':
+      return <KidProfileForm 
+        onSubmit={(kidProfileId: string, teamId: string) => {
+          onSuccess({
+            userId: userInfo.email,
+            kidProfileId,
+            teamId,
+            nextStep: 'DASHBOARD',
+            isNewRegistration: true,
+            profileType: 'PARENT'
+          });
+        }}
+      />;
+    default:
+      return null;
+  }
 };
 
 export default RegistrationForm; 
