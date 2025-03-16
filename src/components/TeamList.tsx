@@ -28,29 +28,85 @@ export function TeamList() {
 
   const fetchTeams = async () => {
     try {
+      const userId = sessionStorage.getItem('userId');
+      if (!userId) {
+        throw new Error('User not authenticated');
+      }
+
+      // Get all teams
       const response = await client.models.Team.list();
+      
+      // Get user's existing team memberships
+      const membershipResponse = await client.models.TeamMember.list({
+        filter: {
+          userId: { eq: userId }
+        }
+      });
+      const userTeamIds = new Set(
+        membershipResponse.data
+          ?.map(m => m.teamId)
+          .filter((id): id is string => id !== null) || []
+      );
+
+      // Get user's pending team requests
+      const requestResponse = await client.models.TeamAccessRequest.list({
+        filter: {
+          userId: { eq: userId },
+          status: { eq: 'PENDING' }
+        }
+      });
+      const pendingRequestTeamIds = new Set(
+        requestResponse.data
+          ?.map(r => r.teamId)
+          .filter((id): id is string => id !== null) || []
+      );
 
       if (response?.data) {
-        const teamsWithProfiles = await Promise.all(
-          response.data.map(async (team) => {
-            if (!team.id || !team.name || !team.kidProfileId) {
-              return null;
-            }
-            const kidProfile = await client.models.KidProfile.get({
-              id: team.kidProfileId
-            });
-            return {
-              id: team.id,
-              name: team.name,
-              kidProfileId: team.kidProfileId,
-              kidProfile: {
-                name: kidProfile.data?.name || 'Unknown',
-                age: kidProfile.data?.age || 0
-              }
-            };
-          })
-        );
-        setTeams(teamsWithProfiles.filter((team): team is Team => team !== null));
+        // Process teams in batches to avoid too many concurrent requests
+        const processTeams = async (teams: any[]) => {
+          const teamsWithProfiles = await Promise.all(
+            teams
+              .filter(team => {
+                return team && team.id && !userTeamIds.has(team.id) && !pendingRequestTeamIds.has(team.id);
+              })
+              .map(async (team) => {
+                try {
+                  if (!team.id || !team.name || !team.kidProfileId) {
+                    console.log('Invalid team data:', team);
+                    return null;
+                  }
+
+                  const kidProfile = await client.models.KidProfile.get({
+                    id: team.kidProfileId
+                  });
+
+                  if (!kidProfile.data) {
+                    console.log('Kid profile not found for team:', team);
+                    return null;
+                  }
+
+                  return {
+                    id: team.id,
+                    name: team.name,
+                    kidProfileId: team.kidProfileId,
+                    kidProfile: {
+                      name: kidProfile.data.name || 'Unknown',
+                      age: kidProfile.data.age || 0
+                    }
+                  };
+                } catch (err) {
+                  console.error('Error processing team:', team, err);
+                  return null;
+                }
+              })
+          );
+          return teamsWithProfiles.filter((team): team is Team => team !== null);
+        };
+
+        // Process all teams
+        const validTeams = await processTeams(response.data);
+        console.log('Valid teams found:', validTeams);
+        setTeams(validTeams);
       }
     } catch (err) {
       console.error('Error fetching teams:', err);

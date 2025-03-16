@@ -125,7 +125,7 @@ function AppContent() {
       if (data.nextStep === 'ASSESSMENT') {
         navigate(`/questionnaire/${data.kidProfileId}`);
       } else if (data.nextStep === 'TEAM') {
-        navigate(`/team/${data.teamId}`);
+        navigate('/team-management');
       } else {
         navigate('/dashboard');
       }

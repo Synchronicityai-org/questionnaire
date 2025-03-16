@@ -65,12 +65,57 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ onSuccess }) => {
   };
 
   const handleRoleSelection = async (role: UserRole) => {
-    setSelectedRole(role);
+    if (isSubmitting) return; // Prevent multiple clicks while submitting
     
-    if (role === 'PARENT') {
-      setCurrentStep('kidProfile');
-    } else {
-      await handleRegistration('DASHBOARD');
+    try {
+      setIsSubmitting(true);
+      setError(null);
+      setSelectedRole(role);
+      
+      if (role === 'PARENT') {
+        setCurrentStep('kidProfile');
+        setIsSubmitting(false);
+      } else if (role === 'CAREGIVER' || role === 'CLINICIAN') {
+        // For CAREGIVER and CLINICIAN roles
+        const response = await client.models.User.create({
+          username: userInfo.username,
+          email: userInfo.email,
+          password: userInfo.password,
+          fName: userInfo.fName,
+          lName: userInfo.lName,
+          phoneNumber: userInfo.phoneNumber,
+          role: role,
+          status: 'ACTIVE',
+          mName: '-', // Required field
+          address: 'Default Address', // Required field
+          dob: new Date().toISOString().split('T')[0], // Required field
+        });
+
+        if (response?.data?.id) {
+          // Store user info in session storage
+          sessionStorage.setItem('userId', response.data.id);
+          sessionStorage.setItem('userRole', role);
+          sessionStorage.setItem('mode', 'real');
+
+          onSuccess({
+            userId: response.data.id,
+            kidProfileId: '', // Empty for non-parent roles
+            teamId: '', // Will be set when joining a team
+            nextStep: 'TEAM',
+            isNewRegistration: true,
+            role: role
+          });
+        } else {
+          throw new Error('Failed to create user');
+        }
+      } else {
+        throw new Error('Invalid role selected');
+      }
+    } catch (err) {
+      console.error('Error in role selection:', err);
+      setError('Failed to process registration. Please try again.');
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
