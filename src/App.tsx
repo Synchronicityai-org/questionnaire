@@ -1,7 +1,7 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, useNavigate } from 'react-router-dom';
 import { Amplify } from 'aws-amplify';
-import config from './amplifyconfiguration.json';
+import config from '../amplify_outputs.json';
 import Header from './components/common/Header';
 import Footer from './components/common/Footer';
 import LandingPage from './components/pages/LandingPage';
