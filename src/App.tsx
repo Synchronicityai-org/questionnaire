@@ -9,6 +9,8 @@ import ProfileSetup from './components/auth/ProfileSetup';
 import KidProfileForm from './components/auth/KidProfileForm';
 import TeamList from './components/team/TeamList';
 import TeamManagement from './components/team/TeamManagement';
+import RoleSelection from './components/auth/RoleSelection';
+import TeamRequest from './components/team/TeamRequest';
 import ProtectedRoute from './components/common/ProtectedRoute';
 import './App.css';
 
@@ -76,6 +78,11 @@ const AppContent: React.FC = () => {
           <Route path="/" element={<LandingPage />} />
 
           {/* Protected routes */}
+          <Route path="/role-selection" element={
+            <ProtectedRoute isAuthenticated={isAuthenticated}>
+              <RoleSelection isModal={false} />
+            </ProtectedRoute>
+          } />
           <Route path="/profile-setup" element={
             <ProtectedRoute isAuthenticated={isAuthenticated}>
               <ProfileSetup />
@@ -89,6 +96,11 @@ const AppContent: React.FC = () => {
                 // Navigate to the team page
                 navigate(`/team/${teamId}`);
               }} />
+            </ProtectedRoute>
+          } />
+          <Route path="/team-request" element={
+            <ProtectedRoute isAuthenticated={isAuthenticated}>
+              <TeamRequest />
             </ProtectedRoute>
           } />
           <Route path="/team-list" element={

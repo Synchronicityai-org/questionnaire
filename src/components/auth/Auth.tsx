@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { signIn, signUp, confirmSignUp, resendSignUpCode } from 'aws-amplify/auth';
-import { useNavigate } from 'react-router-dom';
+import RoleSelection from './RoleSelection';
 import './Auth.css';
 
 interface AuthProps {
@@ -9,8 +9,8 @@ interface AuthProps {
 }
 
 const Auth: React.FC<AuthProps> = ({ isOpen, onClose }) => {
-  const navigate = useNavigate();
   const [authState, setAuthState] = useState<'signIn' | 'signUp' | 'confirmSignUp'>('signIn');
+  const [showRoleSelection, setShowRoleSelection] = useState(false);
   const [formData, setFormData] = useState({
     email: '',
     password: '',
@@ -64,8 +64,7 @@ const Auth: React.FC<AuthProps> = ({ isOpen, onClose }) => {
       }
 
       if (nextStep.signInStep === 'DONE') {
-        onClose();
-        navigate('/profile-setup');
+        setShowRoleSelection(true);
       }
     } catch (error: any) {
       console.error('Error signing in:', error);
@@ -150,11 +149,9 @@ const Auth: React.FC<AuthProps> = ({ isOpen, onClose }) => {
     setLoading(true);
 
     try {
-      // Trim the code to remove any whitespace
       const cleanCode = formData.code.trim();
       const username = formData.email.toLowerCase().trim();
       
-      // Validate code format
       if (!/^\d{6}$/.test(cleanCode)) {
         throw new Error('Please enter a valid 6-digit verification code');
       }
@@ -164,7 +161,6 @@ const Auth: React.FC<AuthProps> = ({ isOpen, onClose }) => {
         confirmationCode: cleanCode
       });
 
-      // After confirmation, try to sign in
       try {
         const { nextStep } = await signIn({
           username,
@@ -175,8 +171,7 @@ const Auth: React.FC<AuthProps> = ({ isOpen, onClose }) => {
         });
 
         if (nextStep.signInStep === 'DONE') {
-          onClose();
-          navigate('/profile-setup');
+          setShowRoleSelection(true);
         } else {
           setError('Account verified! Please sign in with your credentials.');
           setAuthState('signIn');
@@ -423,30 +418,40 @@ const Auth: React.FC<AuthProps> = ({ isOpen, onClose }) => {
   );
 
   return (
-    <div className="auth-overlay" onClick={handleBackdropClick}>
-      <div className="auth-modal">
-        {showCloseWarning ? (
-          <div className="warning-dialog">
-            <h3>Are you sure?</h3>
-            <p>If you close now, you'll need to start the verification process again.</p>
-            <div className="warning-buttons">
-              <button onClick={handleCancelClose} className="cancel-button">
-                Stay Here
-              </button>
-              <button onClick={handleConfirmClose} className="confirm-button">
-                Yes, Close
-              </button>
+    <>
+      <div className="auth-overlay" onClick={handleBackdropClick}>
+        <div className="auth-modal">
+          {showCloseWarning ? (
+            <div className="warning-dialog">
+              <h3>Are you sure?</h3>
+              <p>If you close now, you'll need to start the verification process again.</p>
+              <div className="warning-buttons">
+                <button onClick={handleCancelClose} className="cancel-button">
+                  Stay Here
+                </button>
+                <button onClick={handleConfirmClose} className="confirm-button">
+                  Yes, Close
+                </button>
+              </div>
             </div>
-          </div>
-        ) : (
-          <>
-            {authState === 'signIn' && renderSignIn()}
-            {authState === 'signUp' && renderSignUp()}
-            {authState === 'confirmSignUp' && renderConfirmSignUp()}
-          </>
-        )}
+          ) : (
+            <>
+              {authState === 'signIn' && renderSignIn()}
+              {authState === 'signUp' && renderSignUp()}
+              {authState === 'confirmSignUp' && renderConfirmSignUp()}
+            </>
+          )}
+        </div>
       </div>
-    </div>
+      <RoleSelection 
+        isOpen={showRoleSelection} 
+        onClose={() => {
+          setShowRoleSelection(false);
+          onClose();
+        }}
+        isModal={true}
+      />
+    </>
   );
 };
 

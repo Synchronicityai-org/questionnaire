@@ -1,0 +1,92 @@
+.role-selection-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.role-selection-container {
+  min-height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 2rem;
+  background-color: #f8f9fa;
+}
+
+.role-selection-modal {
+  background-color: white;
+  padding: 2rem;
+  border-radius: 12px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  max-width: 600px;
+  width: 90%;
+}
+
+.role-selection-modal h2 {
+  color: #333;
+  margin-bottom: 1rem;
+  text-align: center;
+}
+
+.role-selection-modal p {
+  color: #666;
+  margin-bottom: 2rem;
+  text-align: center;
+}
+
+.role-buttons {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+}
+
+.role-buttons button {
+  background-color: white;
+  border: 2px solid #e0e0e0;
+  border-radius: 8px;
+  padding: 1.5rem;
+  text-align: left;
+  transition: all 0.2s ease;
+  cursor: pointer;
+}
+
+.role-buttons button:hover {
+  border-color: #007bff;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.role-buttons button h3 {
+  color: #333;
+  margin: 0 0 0.5rem 0;
+  font-size: 1.2rem;
+}
+
+.role-buttons button p {
+  color: #666;
+  margin: 0;
+  font-size: 0.9rem;
+  text-align: left;
+}
+
+@media (max-width: 480px) {
+  .role-selection-modal {
+    padding: 1.5rem;
+    width: 95%;
+  }
+
+  .role-buttons {
+    grid-template-columns: 1fr;
+  }
+
+  .role-buttons button {
+    padding: 1rem;
+  }
+} 
