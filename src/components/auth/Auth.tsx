@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { signIn, signUp, confirmSignUp } from 'aws-amplify/auth';
+import { signIn, signUp, confirmSignUp, resendSignUpCode } from 'aws-amplify/auth';
 import { useNavigate } from 'react-router-dom';
 import './Auth.css';
 
@@ -119,20 +119,64 @@ const Auth: React.FC<AuthProps> = ({ isOpen, onClose }) => {
     setLoading(true);
 
     try {
+      // Trim the code to remove any whitespace
+      const cleanCode = formData.code.trim();
+      
+      // Validate code format
+      if (!/^\d{6}$/.test(cleanCode)) {
+        throw new Error('Please enter a valid 6-digit verification code');
+      }
+
       await confirmSignUp({
-        username: formData.email,
-        confirmationCode: formData.code
+        username: formData.email.toLowerCase().trim(),
+        confirmationCode: cleanCode
       });
-      // After confirmation, sign in the user
-      await signIn({
-        username: formData.email,
-        password: formData.password,
-      });
-      onClose();
-      navigate('/profile-setup');
-    } catch (error) {
+
+      // After confirmation, try to sign in
+      try {
+        await signIn({
+          username: formData.email.toLowerCase().trim(),
+          password: formData.password,
+        });
+        onClose();
+        navigate('/profile-setup');
+      } catch (signInError) {
+        console.error('Error signing in after confirmation:', signInError);
+        setError('Account verified! Please sign in with your credentials.');
+        setAuthState('signIn');
+      }
+    } catch (error: any) {
       console.error('Error confirming sign up:', error);
-      setError('Invalid verification code. Please try again.');
+      if (error.name === 'CodeMismatchException') {
+        setError('Invalid verification code. Please check and try again.');
+      } else if (error.name === 'ExpiredCodeException') {
+        setError('Verification code has expired. Please request a new code.');
+      } else if (error instanceof Error) {
+        setError(error.message);
+      } else {
+        setError('Error verifying account. Please try again.');
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleResendCode = async () => {
+    setError(null);
+    setLoading(true);
+
+    try {
+      await resendSignUpCode({
+        username: formData.email.toLowerCase().trim()
+      });
+      setError('A new verification code has been sent to your email.');
+    } catch (error: any) {
+      console.error('Error resending code:', error);
+      if (error.name === 'LimitExceededException') {
+        setError('Too many attempts. Please wait a while before requesting a new code.');
+      } else {
+        setError('Error sending new code. Please try again later.');
+      }
     } finally {
       setLoading(false);
     }
@@ -269,21 +313,45 @@ const Auth: React.FC<AuthProps> = ({ isOpen, onClose }) => {
 
   const renderConfirmSignUp = () => (
     <form onSubmit={handleConfirmSignUp} className="auth-form">
-      <h2>Verify Your Email</h2>
-      <p>We've sent a verification code to your email address.</p>
+      <h2>Verify Your Account</h2>
+      <p className="verification-info">
+        Please enter the verification code sent to your email address: {formData.email}
+      </p>
       <div className="form-group">
         <label htmlFor="code">Verification Code</label>
         <input
           type="text"
           id="code"
           value={formData.code}
-          onChange={(e) => setFormData({ ...formData, code: e.target.value })}
+          onChange={(e) => setFormData({ ...formData, code: e.target.value.replace(/\D/g, '') })}
+          maxLength={6}
+          pattern="\d{6}"
+          placeholder="Enter 6-digit code"
           required
         />
+        <small className="input-help">Enter the 6-digit code from your email</small>
       </div>
       <button type="submit" className="submit-button" disabled={loading}>
-        {loading ? 'Verifying...' : 'Verify Email'}
+        {loading ? 'Verifying...' : 'Verify Account'}
       </button>
+      <button 
+        type="button" 
+        className="resend-button"
+        onClick={handleResendCode}
+        disabled={loading}
+      >
+        Resend Code
+      </button>
+      <p className="auth-switch">
+        Wrong email?{' '}
+        <button 
+          type="button" 
+          onClick={() => setAuthState('signUp')}
+          className="link-button"
+        >
+          Start Over
+        </button>
+      </p>
       {error && <div className="error-message">{error}</div>}
     </form>
   );
