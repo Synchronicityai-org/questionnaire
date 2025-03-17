@@ -5,7 +5,6 @@ import type { Schema } from '../../amplify/data/resource';
 import './TeamManagement.css';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faArrowLeft, faUserPlus, faTrash, faCheck, faSearch } from '@fortawesome/free-solid-svg-icons';
-import { TeamRequestsManagement } from './TeamRequestsManagement';
 
 const client = generateClient<Schema>();
 
@@ -17,6 +16,11 @@ interface TeamMember {
   userId: string;
   teamId: string;
   email: string | null;
+}
+
+interface Team {
+  id: string;
+  name: string;
 }
 
 // Available healthcare professionals that can be added to the team
@@ -39,11 +43,11 @@ export function TeamManagement() {
   const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState('');
   const [filteredTeamMembers, setFilteredTeamMembers] = useState<TeamMember[]>([]);
-  const [team, setTeam] = useState<{ id: string; name: string } | null>(null);
+  const [team, setTeam] = useState<Team | null>(null);
 
   useEffect(() => {
     if (kidProfileId) {
-      fetchTeam();
+      fetchTeamAndMembers();
     }
   }, [kidProfileId]);
 
@@ -60,35 +64,6 @@ export function TeamManagement() {
       setFilteredTeamMembers(filtered);
     }
   }, [searchQuery, teamMembers]);
-
-  const fetchTeam = async () => {
-    try {
-      const response = await client.models.Team.list({
-        filter: {
-          kidProfileId: { eq: kidProfileId }
-        }
-      });
-
-      if (response?.data?.[0]) {
-        const teamData = response.data[0];
-        if (teamData.id && teamData.name) {
-          setTeam({
-            id: teamData.id,
-            name: teamData.name
-          });
-        } else {
-          setError('Invalid team data');
-        }
-      } else {
-        setError('Team not found');
-      }
-    } catch (err) {
-      console.error('Error fetching team:', err);
-      setError('Failed to load team information');
-    } finally {
-      setIsLoading(false);
-    }
-  };
 
   const fetchTeamAndMembers = async () => {
     try {
@@ -107,31 +82,41 @@ export function TeamManagement() {
 
       console.log('Teams response:', teamsResponse);
 
-      let team = teamsResponse?.data?.[0];
-      if (!team?.id) {
+      let teamData = teamsResponse?.data?.[0];
+      if (!teamData?.id) {
         console.log('No team found, creating new team...');
         // Create a new team if none exists
         const createTeamResponse = await client.models.Team.create({
           kidProfileId: kidProfileId,
           name: 'Support Team',
-          adminId: 'system' // You might want to set this to the current user's ID
+          adminId: sessionStorage.getItem('userId') || 'system'
         });
         
         if (!createTeamResponse?.data?.id) {
           throw new Error('Failed to create team');
         }
-        team = createTeamResponse.data;
-        console.log('New team created:', team);
+        teamData = createTeamResponse.data;
+        console.log('New team created:', teamData);
       }
 
-      setTeamId(team.id);
+      if (!teamData.id) {
+        throw new Error('Team ID is required');
+      }
+
+      const newTeam: Team = {
+        id: teamData.id,
+        name: teamData.name || 'Support Team'
+      };
+
+      setTeamId(newTeam.id);
+      setTeam(newTeam);
 
       // Then fetch all team members for this team
-      console.log('Fetching team members for teamId:', team.id);
+      console.log('Fetching team members for teamId:', newTeam.id);
       const teamMembersResponse = await client.models.TeamMember.list({
         filter: {
           teamId: {
-            eq: team.id || undefined
+            eq: newTeam.id
           }
         }
       });
@@ -203,10 +188,10 @@ export function TeamManagement() {
         role: 'CLINICIAN' as const,
         status: 'ACTIVE' as const,
         password: 'temporary123',
-        phoneNumber: '+1234567890', // Required field with valid format
-        address: 'Default Address',  // Required field with non-empty value
-        dob: new Date().toISOString().split('T')[0], // Required field in YYYY-MM-DD format
-        mName: '-' // Required field with non-empty value
+        phoneNumber: '+1234567890',
+        address: 'Default Address',
+        dob: new Date().toISOString().split('T')[0],
+        mName: '-'
       });
 
       console.log('User creation response:', userResponse);
@@ -215,18 +200,13 @@ export function TeamManagement() {
         throw new Error('Failed to create user');
       }
 
-      console.log('Creating team member with:', {
-        teamId,
-        userId: userResponse.data.id
-      });
-
       // Create the team member with all required fields
       const teamMemberResponse = await client.models.TeamMember.create({
         teamId: teamId,
         userId: userResponse.data.id,
         role: 'MEMBER' as const,
         status: 'ACTIVE' as const,
-        invitedBy: userResponse.data.email || 'system',
+        invitedBy: sessionStorage.getItem('userId') || 'system',
         invitedAt: new Date().toISOString(),
         joinedAt: new Date().toISOString()
       });
@@ -245,24 +225,9 @@ export function TeamManagement() {
         throw new Error('Failed to add team member');
       }
 
-      // Add the new member to the local state
-      const newTeamMember: TeamMember = {
-        id: teamMemberResponse.data.id,
-        name: newMember.name,
-        role: newMember.role,
-        status: 'ACTIVE',
-        userId: userResponse.data.id,
-        teamId: teamId,
-        email: userResponse.data.email
-      };
-
-      console.log('Adding new team member to state:', newTeamMember);
-      setTeamMembers([...teamMembers, newTeamMember]);
-      setFilteredTeamMembers([...filteredTeamMembers, newTeamMember]);
-      setShowAvailableMembers(false);
-
-      // Refresh the team members list to ensure we have the latest data
+      // Refresh the team members list
       await fetchTeamAndMembers();
+      setShowAvailableMembers(false);
     } catch (err) {
       console.error('Error adding team member:', err);
       if (err instanceof Error) {
@@ -309,122 +274,114 @@ export function TeamManagement() {
 
   return (
     <div className="team-management">
-      <h1>{team.name}</h1>
-      <div className="team-sections">
-        <section className="team-requests-section">
-          <TeamRequestsManagement teamId={team.id} />
-        </section>
-        <section className="team-members-section">
-          <div className="team-management-container">
-            <div className="team-management-header">
-              <button className="back-button" onClick={handleBack}>
-                <FontAwesomeIcon icon={faArrowLeft} /> Back
-              </button>
-              <h2>Manage Team Members</h2>
-            </div>
+      <div className="team-management-container">
+        <div className="team-management-header">
+          <button className="back-button" onClick={handleBack}>
+            <FontAwesomeIcon icon={faArrowLeft} /> Back
+          </button>
+          <h2>Manage Team Members</h2>
+        </div>
 
-            {error && <div className="error-message">{error}</div>}
+        {error && <div className="error-message">{error}</div>}
 
-            <div className="add-member-section">
-              <h3>Add New Team Member</h3>
-              <button 
-                className="add-button"
-                onClick={() => setShowAvailableMembers(!showAvailableMembers)}
-              >
-                <FontAwesomeIcon icon={faUserPlus} /> Add Team Member
-              </button>
-              
-              {showAvailableMembers && (
-                <>
-                  <div style={{ marginBottom: '15px', marginTop: '15px' }}>
-                    <div className="search-bar" style={{
-                      position: 'relative',
+        <div className="add-member-section">
+          <h3>Add New Team Member</h3>
+          <button 
+            className="add-button"
+            onClick={() => setShowAvailableMembers(!showAvailableMembers)}
+          >
+            <FontAwesomeIcon icon={faUserPlus} /> Add Team Member
+          </button>
+          
+          {showAvailableMembers && (
+            <>
+              <div style={{ marginBottom: '15px', marginTop: '15px' }}>
+                <div className="search-bar" style={{
+                  position: 'relative',
+                  width: '100%',
+                  maxWidth: '500px'
+                }}>
+                  <FontAwesomeIcon 
+                    icon={faSearch} 
+                    style={{
+                      position: 'absolute',
+                      left: '12px',
+                      top: '50%',
+                      transform: 'translateY(-50%)',
+                      color: '#666'
+                    }}
+                  />
+                  <input
+                    type="text"
+                    placeholder="Search available members..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    style={{
                       width: '100%',
-                      maxWidth: '500px'
-                    }}>
-                      <FontAwesomeIcon 
-                        icon={faSearch} 
-                        style={{
-                          position: 'absolute',
-                          left: '12px',
-                          top: '50%',
-                          transform: 'translateY(-50%)',
-                          color: '#666'
-                        }}
-                      />
-                      <input
-                        type="text"
-                        placeholder="Search available members..."
-                        value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
-                        style={{
-                          width: '100%',
-                          padding: '12px 12px 12px 40px',
-                          borderRadius: '6px',
-                          border: '2px solid #ddd',
-                          fontSize: '14px',
-                          transition: 'border-color 0.2s'
-                        }}
-                      />
-                    </div>
-                  </div>
-                  <div className="available-members-grid">
-                    {getAvailableMembersToAdd()
-                      .filter(member => 
-                        !searchQuery.trim() || 
-                        member.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                        member.role.toLowerCase().includes(searchQuery.toLowerCase())
-                      )
-                      .map((member) => (
-                        <div key={member.id} className="available-member-card">
-                          <div className="member-info">
-                            <div className="member-name">{member.name}</div>
-                            <div className="member-role">{member.role}</div>
-                          </div>
-                          <button
-                            className="add-member-button"
-                            onClick={() => handleAddMember(member)}
-                          >
-                            <FontAwesomeIcon icon={faCheck} />
-                          </button>
-                        </div>
-                      ))}
-                  </div>
-                </>
-              )}
-            </div>
-
-            <div className="team-members-list">
-              <h3>Current Team Members</h3>
-              {isLoading ? (
-                <div className="loading">Loading team members...</div>
-              ) : (
-                <div className="members-grid">
-                  {teamMembers.map((member) => (
-                    <div key={member.id} className="member-card">
-                      <div className="member-avatar">
-                        <div className="avatar-placeholder">{member.name[0]}</div>
-                      </div>
+                      padding: '12px 12px 12px 40px',
+                      borderRadius: '6px',
+                      border: '2px solid #ddd',
+                      fontSize: '14px',
+                      transition: 'border-color 0.2s'
+                    }}
+                  />
+                </div>
+              </div>
+              <div className="available-members-grid">
+                {getAvailableMembersToAdd()
+                  .filter(member => 
+                    !searchQuery.trim() || 
+                    member.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                    member.role.toLowerCase().includes(searchQuery.toLowerCase())
+                  )
+                  .map((member) => (
+                    <div key={member.id} className="available-member-card">
                       <div className="member-info">
                         <div className="member-name">{member.name}</div>
                         <div className="member-role">{member.role}</div>
-                        <div className={`member-status ${member.status.toLowerCase()}`}>
-                          {member.status}
-                        </div>
                       </div>
                       <button
-                        className="remove-button"
-                        onClick={() => handleRemoveMember(member.id)}
+                        className="add-member-button"
+                        onClick={() => handleAddMember(member)}
                       >
-                        <FontAwesomeIcon icon={faTrash} />
+                        <FontAwesomeIcon icon={faCheck} />
                       </button>
                     </div>
                   ))}
+              </div>
+            </>
+          )}
+        </div>
+
+        <div className="team-members-list">
+          <h3>Current Team Members</h3>
+          {isLoading ? (
+            <div className="loading">Loading team members...</div>
+          ) : (
+            <div className="members-grid">
+              {filteredTeamMembers.map((member) => (
+                <div key={member.id} className="member-card">
+                  <div className="member-avatar">
+                    <div className="avatar-placeholder">{member.name[0]}</div>
+                  </div>
+                  <div className="member-info">
+                    <div className="member-name">{member.name}</div>
+                    <div className="member-role">{member.role}</div>
+                    <div className={`member-status ${member.status.toLowerCase()}`}>
+                      {member.status}
+                    </div>
+                  </div>
+                  <button
+                    className="remove-button"
+                    onClick={() => handleRemoveMember(member.id)}
+                  >
+                    <FontAwesomeIcon icon={faTrash} />
+                  </button>
                 </div>
-              )}
+              ))}
             </div>
-          </div>
-        </section>
+          )}
+        </div>
       </div>
     </div>
   );

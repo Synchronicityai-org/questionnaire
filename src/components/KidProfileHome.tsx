@@ -149,7 +149,9 @@ export function KidProfileHome({ kidProfileId }: KidProfileHomeProps) {
         );
 
         // Filter out any null values and set the team members
-        setTeamMembers(members.filter((member): member is TeamMember => member !== null));
+        const validMembers = members.filter((member): member is TeamMember => member !== null);
+        console.log('Valid team members:', validMembers);
+        setTeamMembers(validMembers);
       }
     } catch (err) {
       console.error('Error fetching team members:', err);
