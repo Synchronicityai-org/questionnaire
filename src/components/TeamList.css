@@ -12,15 +12,50 @@
 
 .teams-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-  gap: 2rem;
+  gap: 1.5rem;
+  padding: 1rem;
+}
+
+/* Mobile first - 1 column */
+.teams-grid {
+  grid-template-columns: 1fr;
+}
+
+/* Tablet - 2 columns */
+@media (min-width: 768px) {
+  .teams-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+/* Desktop - 3 columns */
+@media (min-width: 1024px) {
+  .teams-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+/* Large Desktop - 4 columns */
+@media (min-width: 1280px) {
+  .teams-grid {
+    grid-template-columns: repeat(4, 1fr);
+  }
 }
 
 .team-card {
   background: white;
-  border-radius: 8px;
+  border-radius: 12px;
   padding: 1.5rem;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  transition: transform 0.2s, box-shadow 0.2s;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.team-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 8px rgba(0, 0, 0, 0.15);
 }
 
 .team-card h3 {
