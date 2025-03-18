@@ -4,7 +4,7 @@ import { generateClient } from 'aws-amplify/data';
 import type { Schema } from '../../../amplify/data/resource';
 import './TeamManagement.css';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faArrowLeft, faUserPlus, faSearch } from '@fortawesome/free-solid-svg-icons';
+import { faArrowLeft, faUserPlus, faSearch, faCheck, faTimes } from '@fortawesome/free-solid-svg-icons';
 
 interface TeamMember {
   id: string;
@@ -12,6 +12,7 @@ interface TeamMember {
   role: 'CLINICIAN' | 'CAREGIVER' | 'MEMBER';
   status: 'ACTIVE' | 'PENDING' | 'INACTIVE';
   email?: string;
+  joinedAt?: string;
 }
 
 interface Team {
@@ -52,6 +53,7 @@ const TeamManagement: React.FC = () => {
   const navigate = useNavigate();
   const [team, setTeam] = useState<Team | null>(null);
   const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
+  const [teamRequests, setTeamRequests] = useState<TeamRequest[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
@@ -59,11 +61,11 @@ const TeamManagement: React.FC = () => {
   const [searchResults, setSearchResults] = useState<SearchUser[]>([]);
   const [addMemberSearch, setAddMemberSearch] = useState('');
   const [searchLoading, setSearchLoading] = useState(false);
-  const [teamRequests, setTeamRequests] = useState<TeamRequest[]>([]);
 
   useEffect(() => {
     if (kidProfileId) {
       fetchTeamAndMembers();
+      fetchTeamRequests();
     }
   }, [kidProfileId]);
 
@@ -132,7 +134,8 @@ const TeamManagement: React.FC = () => {
               name: `${userData.fName} ${userData.lName || ''}`,
               role: userData.role || 'MEMBER',
               status: member.status as 'ACTIVE' | 'PENDING' | 'INACTIVE',
-              email: userData.email || undefined
+              email: userData.email || undefined,
+              joinedAt: member.joinedAt
             } as TeamMember;
           })
         );
@@ -236,13 +239,11 @@ const TeamManagement: React.FC = () => {
         throw new Error('Request not found');
       }
 
-      // Update the access request status
       await client.models.TeamAccessRequest.update({
         id: requestId,
         status: action
       });
 
-      // If approved, create a new team member
       if (action === 'APPROVED') {
         await client.models.TeamMember.create({
           teamId: team!.id,
@@ -255,11 +256,31 @@ const TeamManagement: React.FC = () => {
         });
       }
 
-      // Refresh data
       await Promise.all([fetchTeamAndMembers(), fetchTeamRequests()]);
     } catch (err) {
       console.error('Error handling team request:', err);
       setError('Failed to process team request');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleRemoveMember = async (memberId: string) => {
+    if (!confirm('Are you sure you want to remove this team member?')) return;
+
+    try {
+      setLoading(true);
+      const client = generateClient<Schema>();
+
+      await client.models.TeamMember.delete({
+        id: memberId
+      });
+
+      // Refresh the team members list
+      await fetchTeamAndMembers();
+    } catch (err) {
+      console.error('Error removing team member:', err);
+      setError('Failed to remove team member');
     } finally {
       setLoading(false);
     }
@@ -400,78 +421,34 @@ const TeamManagement: React.FC = () => {
     }
   };
 
-  const cleanupTeamRequests = async (userId: string) => {
-    try {
-      const client = generateClient<Schema>();
-      console.log('Starting cleanup for user:', userId);
-      
-      // Find all requests for this user
-      const requestsResponse = await client.models.TeamAccessRequest.list({
-        filter: { userId: { eq: userId } }
-      });
-
-      console.log('Found requests:', requestsResponse.data);
-
-      if (requestsResponse.data) {
-        // Delete each request
-        await Promise.all(
-          requestsResponse.data.map(request => {
-            console.log('Deleting request:', request.id);
-            return client.models.TeamAccessRequest.delete({
-              id: request.id
-            });
-          })
-        );
-      }
-
-      // Also find and delete any team memberships
-      const teamMembersResponse = await client.models.TeamMember.list({
-        filter: { userId: { eq: userId } }
-      });
-
-      if (teamMembersResponse.data) {
-        await Promise.all(
-          teamMembersResponse.data.map(member => {
-            console.log('Deleting team member:', member.id);
-            return client.models.TeamMember.delete({
-              id: member.id
-            });
-          })
-        );
-      }
-
-      // Finally delete the user
-      console.log('Deleting user:', userId);
-      await client.models.User.delete({
-        id: userId
-      });
-
-      console.log('Cleanup completed successfully');
-    } catch (err) {
-      console.error('Error cleaning up team requests:', err);
-      throw err;
-    }
-  };
-
   if (loading) {
     return (
       <div className="team-management-container">
-        <div className="loading-spinner"></div>
-        <p>Loading team information...</p>
+        <div className="loading-spinner" role="status">
+          <span className="sr-only">Loading...</span>
+        </div>
       </div>
     );
   }
 
-  if (error) {
+  if (error || !team) {
     return (
       <div className="team-management-container">
-        <div className="error-message">{error}</div>
-        <button onClick={() => window.location.reload()} className="retry-button">
+        <div className="error-message" role="alert">
+          {error || 'Team not found'}
+        </div>
+        <button onClick={() => window.location.reload()} className="primary-button">
           Retry
         </button>
       </div>
     );
   }
+
+  const filteredMembers = teamMembers.filter(member =>
+    member.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    member.email?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    member.role.toLowerCase().includes(searchQuery.toLowerCase())
+  );
 
   return (
     <div className="team-management-container">
@@ -479,39 +456,17 @@ const TeamManagement: React.FC = () => {
         <button className="back-button" onClick={() => navigate(`/kid-profile/${kidProfileId}`)}>
           <FontAwesomeIcon icon={faArrowLeft} /> Back
         </button>
-        <h2>Team Management</h2>
+        <h2>{team.name} - Team Management</h2>
       </div>
 
-      <div className="search-section">
-        <div className="search-bar">
-          <FontAwesomeIcon icon={faSearch} className="search-icon" />
-          <input
-            type="text"
-            placeholder="Search team members..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-          />
-        </div>
-        <button className="add-member-button" onClick={() => setShowAddMember(true)}>
-          <FontAwesomeIcon icon={faUserPlus} /> Add Member
-        </button>
-      </div>
-
-      <div className="team-sections">
-        <div className="team-requests-section">
-          <h3>Team Requests ({teamRequests.length})</h3>
-          {teamRequests.length === 0 ? (
-            <p className="no-requests">No team requests found</p>
-          ) : (
-            <div className="requests-grid">
+      <div className="team-content">
+        <div className="main-content">
+          {teamRequests.length > 0 && (
+            <div className="team-requests-section">
+              <h3>Pending Requests ({teamRequests.length})</h3>
               {teamRequests.map(request => (
                 <div key={request.id} className="request-card">
                   <div className="request-info">
-                    <div className="user-avatar">
-                      <div className="avatar-placeholder">
-                        {request.userName?.charAt(0)?.toUpperCase() || '?'}
-                      </div>
-                    </div>
                     <div className="request-details">
                       <h4>{request.userName || 'Unknown User'}</h4>
                       <p className="request-email">{request.userEmail}</p>
@@ -519,58 +474,100 @@ const TeamManagement: React.FC = () => {
                       {request.message && (
                         <p className="request-message">"{request.message}"</p>
                       )}
-                      <p className="request-status">Status: {request.status}</p>
                       <p className="request-date">
                         Requested on {new Date(request.createdAt).toLocaleDateString()}
                       </p>
                     </div>
                   </div>
-                  {request.status === 'PENDING' && (
-                    <div className="request-actions">
-                      <button
-                        className="approve-button"
-                        onClick={() => handleRequestAction(request.id, 'APPROVED')}
-                      >
-                        Approve
-                      </button>
-                      <button
-                        className="reject-button"
-                        onClick={() => handleRequestAction(request.id, 'REJECTED')}
-                      >
-                        Reject
-                      </button>
-                    </div>
-                  )}
+                  <div className="request-actions">
+                    <button
+                      className="approve-button"
+                      onClick={() => handleRequestAction(request.id, 'APPROVED')}
+                    >
+                      <FontAwesomeIcon icon={faCheck} /> Approve
+                    </button>
+                    <button
+                      className="reject-button"
+                      onClick={() => handleRequestAction(request.id, 'REJECTED')}
+                    >
+                      <FontAwesomeIcon icon={faTimes} /> Reject
+                    </button>
+                  </div>
                 </div>
               ))}
             </div>
           )}
+
+          <div className="team-members-section">
+            <table className="team-members-table">
+              <thead>
+                <tr>
+                  <th>Name</th>
+                  <th>Role</th>
+                  <th>Email</th>
+                  <th>Status</th>
+                  <th>Joined</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filteredMembers.map(member => (
+                  <tr key={member.id}>
+                    <td>{member.name}</td>
+                    <td>{member.role}</td>
+                    <td>{member.email}</td>
+                    <td>
+                      <span className={`status-badge status-${member.status.toLowerCase()}`}>
+                        {member.status}
+                      </span>
+                    </td>
+                    <td>{member.joinedAt ? new Date(member.joinedAt).toLocaleDateString() : 'N/A'}</td>
+                    <td>
+                      <button
+                        className="primary-button"
+                        onClick={() => handleRemoveMember(member.id)}
+                      >
+                        Remove
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
 
-        <div className="team-members-list">
-          <h3>Current Team Members</h3>
-          <div className="members-grid">
-            {teamMembers
-              .filter(member => 
-                member.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                member.role.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                (member.email?.toLowerCase() || '').includes(searchQuery.toLowerCase())
-              )
-              .map(member => (
-                <div key={member.id} className="member-card">
-                  <div className="member-avatar">
-                    <div className="avatar-placeholder">{member.name[0]}</div>
-                  </div>
-                  <div className="member-info">
-                    <h4 className="member-name">{member.name}</h4>
-                    {member.email && <p className="member-email">{member.email}</p>}
-                    <p className="member-role">{member.role}</p>
-                    <span className={`member-status ${member.status.toLowerCase()}`}>
-                      {member.status}
-                    </span>
-                  </div>
-                </div>
-              ))}
+        <div className="sidebar">
+          <div className="search-section">
+            <div className="search-bar">
+              <input
+                type="text"
+                placeholder="Search team members..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                aria-label="Search team members"
+              />
+              <FontAwesomeIcon icon={faSearch} className="search-icon" />
+            </div>
+            <button className="primary-button" onClick={() => setShowAddMember(true)}>
+              <FontAwesomeIcon icon={faUserPlus} /> Add Member
+            </button>
+          </div>
+
+          <div className="team-stats">
+            <h3>Team Statistics</h3>
+            <div className="stat-item">
+              <label>Total Members</label>
+              <span>{teamMembers.length}</span>
+            </div>
+            <div className="stat-item">
+              <label>Active Members</label>
+              <span>{teamMembers.filter(m => m.status === 'ACTIVE').length}</span>
+            </div>
+            <div className="stat-item">
+              <label>Pending Requests</label>
+              <span>{teamRequests.length}</span>
+            </div>
           </div>
         </div>
       </div>

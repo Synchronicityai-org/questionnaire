@@ -117,6 +117,11 @@ const Dashboard: React.FC = () => {
 
         if (teamResponse.data && teamResponse.data.length > 0) {
           const team = teamResponse.data[0];
+          if (!team?.id) {
+            console.warn('Team found but has no ID');
+            return;
+          }
+
           const teamMembersResponse = await client.models.TeamMember.list({
             filter: {
               teamId: { eq: team.id }
@@ -126,18 +131,28 @@ const Dashboard: React.FC = () => {
           if (teamMembersResponse.data) {
             const members = await Promise.all(
               teamMembersResponse.data.map(async (member) => {
-                const userResponse = await client.models.User.get({ 
-                  id: member.userId || '' 
-                });
-                const userData = userResponse.data;
-                return {
-                  id: member.userId || '',
-                  name: userData ? `${userData.fName || ''} ${userData.lName || ''}` : 'Unknown User',
-                  role: userData?.role || 'Team Member'
-                };
+                // Skip if no userId
+                if (!member?.userId) return null;
+                
+                try {
+                  const userResponse = await client.models.User.get({ 
+                    id: member.userId
+                  });
+                  const userData = userResponse?.data;
+                  if (!userData) return null;
+                  
+                  return {
+                    id: member.userId,
+                    name: `${userData.fName ?? ''} ${userData.lName ?? ''}`.trim() || 'Unknown User',
+                    role: userData.role ?? 'Team Member'
+                  };
+                } catch (err) {
+                  console.error('Error fetching user data:', err);
+                  return null;
+                }
               })
             );
-            setTeamMembers(members);
+            setTeamMembers(members.filter((m): m is TeamMember => m !== null));
           }
         }
 
