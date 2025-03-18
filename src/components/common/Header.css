@@ -12,9 +12,8 @@
 }
 
 .header-content {
-  max-width: 1200px;
-  margin: 0 auto;
   padding: 0 1.5rem;
+  margin: 0 auto;
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -30,13 +29,13 @@
 }
 
 .logo-icon {
-  width: 24px;
-  height: 24px;
+  width: 34px;
+  height: 34px;
   color: #007bff;
 }
 
 .logo-text {
-  font-size: 1.3rem;
+  font-size: 2.3rem;
   font-weight: 600;
   letter-spacing: 0.5px;
 }
@@ -61,12 +60,13 @@
 
 .auth-button:hover,
 .user-menu-button:hover {
-  color: #007bff;
+  color: white;
+  background-color: #007bff !important;
 }
 
 .person-icon {
-  width: 20px;
-  height: 20px;
+  width: 30px;
+  height: 30px;
 }
 
 .user-menu-container {

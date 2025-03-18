@@ -335,7 +335,7 @@ const Auth: React.FC<AuthProps> = ({ isOpen, onClose }) => {
         />
         <small className="input-help">Enter 10 digits without spaces or special characters</small>
       </div>
-      <div className="form-group">
+      <div className="form-group full-width">
         <label htmlFor="password">Password</label>
         <input
           type="password"
@@ -407,6 +407,13 @@ const Auth: React.FC<AuthProps> = ({ isOpen, onClose }) => {
     <>
       <div className="auth-overlay" onClick={handleBackdropClick}>
         <div className="auth-modal">
+          <button 
+            className="close-button" 
+            onClick={handleClose}
+            aria-label="Close modal"
+          >
+            ×
+          </button>
           {showCloseWarning ? (
             <div className="warning-dialog">
               <h3>Are you sure?</h3>

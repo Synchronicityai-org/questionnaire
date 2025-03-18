@@ -1,7 +1,10 @@
-import React from 'react';
+import React, { useState } from 'react';
+import Auth from '../auth/Auth';
 import './LandingPage.css';
 
 const LandingPage: React.FC = () => {
+  const [isAuthOpen, setIsAuthOpen] = useState(false);
+
   return (
     <div className="landing-page">
       <section className="hero">
@@ -25,6 +28,7 @@ const LandingPage: React.FC = () => {
           </div>
         </div>
       </section>
+      <Auth isOpen={isAuthOpen} onClose={() => setIsAuthOpen(false)} />
     </div>
   );
 };

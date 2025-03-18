@@ -421,6 +421,10 @@ const TeamManagement: React.FC = () => {
     }
   };
 
+  const handleBack = () => {
+    navigate(`/kid-profile/${kidProfileId}`);
+  };
+
   if (loading) {
     return (
       <div className="team-management-container">
@@ -453,8 +457,9 @@ const TeamManagement: React.FC = () => {
   return (
     <div className="team-management-container">
       <div className="team-management-header">
-        <button className="back-button" onClick={() => navigate(`/kid-profile/${kidProfileId}`)}>
-          <FontAwesomeIcon icon={faArrowLeft} /> Back
+        <button className="back-button" onClick={handleBack}>
+          <FontAwesomeIcon icon={faArrowLeft} />
+          Back
         </button>
         <h2>{team.name} - Team Management</h2>
       </div>
@@ -575,11 +580,21 @@ const TeamManagement: React.FC = () => {
       {showAddMember && (
         <div className="add-member-modal">
           <div className="modal-content">
-            <h3>Add Team Member</h3>
-            <div className="search-section">
+            <button 
+              className="modal-close-button" 
+              onClick={() => setShowAddMember(false)}
+              aria-label="Close modal"
+            >
+              ×
+            </button>
+            <div className="modal-header">
+              <h3>Add Team Member</h3>
+            </div>
+            <div className="modal-search-section">
               <input
                 type="text"
                 placeholder="Search by name or email..."
+                className="add-member-search"
                 value={addMemberSearch}
                 onChange={(e) => {
                   setAddMemberSearch(e.target.value);
@@ -587,63 +602,64 @@ const TeamManagement: React.FC = () => {
                 }}
               />
             </div>
+            <div className="modal-scrollable-content">
+              {searchLoading && <div className="loading-spinner"></div>}
 
-            {searchLoading && <div className="loading-spinner"></div>}
-
-            {searchResults.length > 0 && (
-              <div className="search-results">
-                {searchResults.map(user => (
-                  <div key={user.id} className="search-result-item">
-                    <div className="user-info">
-                      <div className="avatar-placeholder">{user.name[0]}</div>
-                      <div>
-                        <h4>{user.name}</h4>
-                        <p>{user.email}</p>
-                        <span className="role-badge">{user.role}</span>
+              {searchResults.length > 0 && (
+                <div className="search-results">
+                  {searchResults.map(user => (
+                    <div key={user.id} className="search-result-item">
+                      <div className="user-info">
+                        <div className="avatar-placeholder">{user.name[0]}</div>
+                        <div>
+                          <h4>{user.name}</h4>
+                          <p>{user.email}</p>
+                          <span className="role-badge">{user.role}</span>
+                        </div>
                       </div>
+                      <button 
+                        onClick={() => handleAddExistingMember(user)}
+                        className="add-button"
+                      >
+                        Add to Team
+                      </button>
                     </div>
-                    <button 
-                      onClick={() => handleAddExistingMember(user)}
-                      className="add-button"
-                    >
-                      Add to Team
-                    </button>
-                  </div>
-                ))}
-              </div>
-            )}
+                  ))}
+                </div>
+              )}
 
-            {!searchResults.length && addMemberSearch.length >= 2 && !searchLoading && (
-              <div className="no-results">
-                <p>No existing users found. Create a new user:</p>
-                <form onSubmit={(e) => {
-                  e.preventDefault();
-                  const email = (e.currentTarget.elements.namedItem('email') as HTMLInputElement).value;
-                  const role = (e.currentTarget.elements.namedItem('role') as HTMLSelectElement).value;
-                  handleAddMember(email, role as 'CLINICIAN' | 'CAREGIVER');
-                }}>
-                  <input
-                    type="email"
-                    name="email"
-                    placeholder="Enter email address"
-                    required
-                  />
-                  <select name="role" required>
-                    <option value="">Select role</option>
-                    <option value="CLINICIAN">Clinician</option>
-                    <option value="CAREGIVER">Caregiver</option>
-                  </select>
-                  <div className="modal-actions">
-                    <button type="button" onClick={() => setShowAddMember(false)}>Cancel</button>
-                    <button type="submit">Add New Member</button>
-                  </div>
-                </form>
-              </div>
-            )}
+              {!searchResults.length && addMemberSearch.length >= 2 && !searchLoading && (
+                <div className="no-results">
+                  <p>No existing users found. Create a new user:</p>
+                  <form onSubmit={(e) => {
+                    e.preventDefault();
+                    const email = (e.currentTarget.elements.namedItem('email') as HTMLInputElement).value;
+                    const role = (e.currentTarget.elements.namedItem('role') as HTMLSelectElement).value;
+                    handleAddMember(email, role as 'CLINICIAN' | 'CAREGIVER');
+                  }}>
+                    <input
+                      type="email"
+                      name="email"
+                      placeholder="Enter email address"
+                      required
+                    />
+                    <select name="role" required>
+                      <option value="">Select role</option>
+                      <option value="CLINICIAN">Clinician</option>
+                      <option value="CAREGIVER">Caregiver</option>
+                    </select>
+                    <div className="modal-actions">
+                      <button type="button" onClick={() => setShowAddMember(false)}>Cancel</button>
+                      <button type="submit">Add New Member</button>
+                    </div>
+                  </form>
+                </div>
+              )}
 
-            {(!addMemberSearch || addMemberSearch.length < 2) && (
-              <p className="search-hint">Start typing to search for existing users...</p>
-            )}
+              {(!addMemberSearch || addMemberSearch.length < 2) && (
+                <p className="search-hint">Start typing to search for existing users...</p>
+              )}
+            </div>
           </div>
         </div>
       )}

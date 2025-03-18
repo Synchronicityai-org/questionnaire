@@ -48,6 +48,11 @@ const Header: React.FC<HeaderProps> = ({ isAuthenticated }) => {
           <span className="logo-text">SynchronicityAI</span>
         </Link>
         <nav className="nav-links">
+          {isAuthenticated && (
+            <Link to="/kid-profile/1">
+              <button>Kids Profile</button>
+            </Link>
+          )}
           {!isAuthenticated ? (
             <button 
               className="auth-button"
