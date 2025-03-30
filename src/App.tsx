@@ -7,6 +7,7 @@ import type { Schema } from '../amplify/data/resource';
 import Header from './components/common/Header';
 import Footer from './components/common/Footer';
 import LandingPage from './components/pages/LandingPage';
+import DemoDashboard from './components/pages/DemoDashboard';
 import ProfileSetup from './components/auth/ProfileSetup';
 import KidProfileForm from './components/auth/KidProfileForm';
 import TeamList from './components/team/TeamList';
@@ -119,6 +120,7 @@ const AppContent: React.FC = () => {
       <main className="main-content">
         <Routes>
           <Route path="/" element={<LandingPage />} />
+          <Route path="/demo" element={<DemoDashboard />} />
           <Route path="/dashboard" element={
             isAuthenticated ? (
               <Navigate to="/kid-profile" replace />
