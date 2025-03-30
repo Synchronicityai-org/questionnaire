@@ -198,18 +198,18 @@ const TeamManagement: React.FC = () => {
         if (teamRequests && teamRequests.length > 0) {
           const processedRequests = await Promise.all(
             teamRequests.map(async (request) => {
-              const userResponse = await client.models.User.get({
-                id: request.userId
-              });
-              
+          const userResponse = await client.models.User.get({
+            id: request.userId
+          });
+
               const userData = userResponse?.data;
               if (!userData) return null;
 
-              return {
+          return {
                 id: request.id,
                 userId: userData.id,
                 teamId: request.teamId,
-                status: request.status || 'PENDING',
+            status: request.status || 'PENDING',
                 createdAt: request.requestedAt || new Date().toISOString(),
                 userName: userData.email || 'Unknown User',
                 userEmail: userData.email || '',
@@ -245,16 +245,16 @@ const TeamManagement: React.FC = () => {
       });
 
       if (action === 'APPROVED') {
-        await client.models.TeamMember.create({
+          await client.models.TeamMember.create({
           teamId: team!.id,
-          userId: request.userId,
-          role: 'MEMBER',
-          status: 'ACTIVE',
+            userId: request.userId,
+            role: 'MEMBER',
+            status: 'ACTIVE',
           invitedBy: 'system',
-          invitedAt: new Date().toISOString(),
-          joinedAt: new Date().toISOString()
-        });
-      }
+            invitedAt: new Date().toISOString(),
+            joinedAt: new Date().toISOString()
+          });
+        }
 
       await Promise.all([fetchTeamAndMembers(), fetchTeamRequests()]);
     } catch (err) {
@@ -470,7 +470,7 @@ const TeamManagement: React.FC = () => {
             <div className="team-requests-section">
               <h3>Pending Requests ({teamRequests.length})</h3>
               {teamRequests.map(request => (
-                <div key={request.id} className="request-card">
+              <div key={request.id} className="request-card">
                   <div className="request-info">
                     <div className="request-details">
                       <h4>{request.userName || 'Unknown User'}</h4>
@@ -481,27 +481,27 @@ const TeamManagement: React.FC = () => {
                       )}
                       <p className="request-date">
                         Requested on {new Date(request.createdAt).toLocaleDateString()}
-                      </p>
-                    </div>
+                  </p>
+                </div>
                   </div>
                   <div className="request-actions">
-                    <button
+                  <button
                       className="approve-button"
-                      onClick={() => handleRequestAction(request.id, 'APPROVED')}
-                    >
+                    onClick={() => handleRequestAction(request.id, 'APPROVED')}
+                  >
                       <FontAwesomeIcon icon={faCheck} /> Approve
-                    </button>
-                    <button
+                  </button>
+                  <button
                       className="reject-button"
-                      onClick={() => handleRequestAction(request.id, 'REJECTED')}
-                    >
+                    onClick={() => handleRequestAction(request.id, 'REJECTED')}
+                  >
                       <FontAwesomeIcon icon={faTimes} /> Reject
-                    </button>
-                  </div>
+                  </button>
                 </div>
-              ))}
-            </div>
-          )}
+              </div>
+            ))}
+          </div>
+        )}
 
           <div className="team-members-section">
             <table className="team-members-table">

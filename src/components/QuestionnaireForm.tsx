@@ -106,8 +106,8 @@ const QuestionnaireForm: React.FC = () => {
     try {
       const { data: questionList } = await client.models.QuestionBank.list();
       setQuestions(questionList.filter(q => q.id && q.question_text && q.category).map(q => ({
-        id: q.id!,
-        question_text: q.question_text!,
+          id: q.id!,
+          question_text: q.question_text!,
         category: q.category!
       })));
       setLoading(false);
@@ -455,16 +455,16 @@ const QuestionnaireForm: React.FC = () => {
                       </tbody>
                     </table>
 
-                    <h3>Detailed Responses</h3>
-                    {categories.map(category => {
+                <h3>Detailed Responses</h3>
+                {categories.map(category => {
                       const categoryResponses = assessment.responses
                         .filter(r => r.category === category)
                         .sort((a, b) => a.questionText.localeCompare(b.questionText));
 
                       if (categoryResponses.length === 0) return null;
 
-                      return (
-                        <div key={category} className="category-section">
+                  return (
+                    <div key={category} className="category-section">
                           <h4>{category}</h4>
                           <table className="responses-table">
                             <thead>
@@ -482,15 +482,15 @@ const QuestionnaireForm: React.FC = () => {
                               ))}
                             </tbody>
                           </table>
-                        </div>
-                      );
-                    })}
-                  </div>
-                )}
+                    </div>
+                  );
+                })}
               </div>
+                )}
+            </div>
             ))
           )}
-        </div>
+          </div>
       </div>
     );
   }
@@ -502,16 +502,16 @@ const QuestionnaireForm: React.FC = () => {
       <div className="questionnaire-header">
         <h2>Assessment Questions - {currentPage}</h2>
         <div className="header-actions">
-          <button 
+        <button 
             className="view-history-button"
             onClick={handleViewPastAssessments}
-          >
+        >
             View Past Assessments
-          </button>
+        </button>
           <button className="back-button" onClick={handleBackToProfile}>
-            ← Back to Profile
-          </button>
-        </div>
+                ← Back to Profile
+              </button>
+          </div>
       </div>
 
       <div className="tabs">
