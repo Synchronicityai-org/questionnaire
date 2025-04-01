@@ -56,7 +56,11 @@ export function ParentConcernsForm({ onSubmit }: ParentConcernsFormProps) {
               rows={5}
             />
             <div className="button-group">
-              <button type="submit" disabled={loading} className="next-button">
+              <button 
+                type="submit" 
+                disabled={loading} 
+                className="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-all duration-300 cursor-pointer shadow-lg hover:shadow-xl hover:-translate-y-0.5 active:translate-y-0 active:shadow-md disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:shadow-lg disabled:hover:-translate-y-0"
+              >
                 {loading ? 'Saving...' : 'Next'}
               </button>
             </div>

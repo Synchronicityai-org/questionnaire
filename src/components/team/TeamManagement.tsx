@@ -161,7 +161,8 @@ const TeamManagement: React.FC = () => {
       // Look for the specific request by ID
       const specificRequest = allRequestsResponse.data?.find(req => 
         req.id === '8f3b0b4a-df59-46da-9e6d-fb2acf9c558b' &&
-        req.teamId === '99a9f28b-40a7-407f-9dc0-f1a260437ef7'
+        req.teamId === '99a9f28b-40a7-407f-9dc0-f1a260437ef7' &&
+        req.status === 'PENDING' // Only show pending requests
       );
       console.log('Found specific request:', specificRequest);
 
@@ -179,7 +180,6 @@ const TeamManagement: React.FC = () => {
             teamId: specificRequest.teamId,
             status: specificRequest.status || 'PENDING',
             createdAt: specificRequest.requestedAt || new Date().toISOString(),
-            // Use email as name if no first/last name available
             userName: userData.email || 'Unknown User',
             userEmail: userData.email || '',
             userRole: userData.role || 'CAREGIVER',
@@ -190,26 +190,27 @@ const TeamManagement: React.FC = () => {
           setTeamRequests([request]);
         }
       } else {
-        // If we don't find the specific request, look for any requests for this team
+        // If we don't find the specific request, look for any pending requests for this team
         const teamRequests = allRequestsResponse.data?.filter(req => 
-          req.teamId === '99a9f28b-40a7-407f-9dc0-f1a260437ef7'
+          req.teamId === '99a9f28b-40a7-407f-9dc0-f1a260437ef7' &&
+          req.status === 'PENDING' // Only show pending requests
         );
         
         if (teamRequests && teamRequests.length > 0) {
           const processedRequests = await Promise.all(
             teamRequests.map(async (request) => {
-          const userResponse = await client.models.User.get({
-            id: request.userId
-          });
+              const userResponse = await client.models.User.get({
+                id: request.userId
+              });
 
               const userData = userResponse?.data;
               if (!userData) return null;
 
-          return {
+              return {
                 id: request.id,
                 userId: userData.id,
                 teamId: request.teamId,
-            status: request.status || 'PENDING',
+                status: request.status || 'PENDING',
                 createdAt: request.requestedAt || new Date().toISOString(),
                 userName: userData.email || 'Unknown User',
                 userEmail: userData.email || '',
@@ -222,10 +223,13 @@ const TeamManagement: React.FC = () => {
           const validRequests = processedRequests.filter((r): r is TeamRequest => r !== null);
           console.log('All team requests:', validRequests);
           setTeamRequests(validRequests);
+        } else {
+          setTeamRequests([]); // Set empty array if no pending requests
         }
       }
     } catch (err) {
       console.error('Error fetching team requests:', err);
+      setTeamRequests([]); // Set empty array on error
     }
   };
 

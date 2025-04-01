@@ -1,29 +1,93 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { signOut } from 'aws-amplify/auth';
+import { signOut, getCurrentUser } from 'aws-amplify/auth';
+import { generateClient } from 'aws-amplify/data';
+import type { Schema } from '../../../amplify/data/resource';
 import Auth from '../auth/Auth';
 import './Header.css';
 
 interface HeaderProps {
   isAuthenticated: boolean;
+  onAuthChange?: (isAuth: boolean) => void;
 }
 
-const Header: React.FC<HeaderProps> = ({ isAuthenticated }) => {
+const Header: React.FC<HeaderProps> = ({ isAuthenticated, onAuthChange }) => {
   const [isAuthOpen, setIsAuthOpen] = useState(false);
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [isSigningOut, setIsSigningOut] = useState(false);
+  const [kidProfileId, setKidProfileId] = useState<string | null>(null);
+  const [localAuth, setLocalAuth] = useState(isAuthenticated);
   const navigate = useNavigate();
+  const client = generateClient<Schema>();
+
+  useEffect(() => {
+    setLocalAuth(isAuthenticated);
+  }, [isAuthenticated]);
+
+  useEffect(() => {
+    if (localAuth) {
+      fetchKidProfileId();
+    } else {
+      setKidProfileId(null);
+      setShowUserMenu(false);
+    }
+  }, [localAuth]);
+
+  const fetchKidProfileId = async () => {
+    try {
+      const currentUser = await getCurrentUser();
+      if (!currentUser?.userId) {
+        setKidProfileId(null);
+        return;
+      }
+
+      const kidProfiles = await client.models.KidProfile.list({
+        filter: {
+          parentId: {
+            eq: currentUser.userId
+          }
+        }
+      });
+
+      if (kidProfiles.data && kidProfiles.data.length > 0 && kidProfiles.data[0].id) {
+        setKidProfileId(kidProfiles.data[0].id);
+      } else {
+        setKidProfileId(null);
+      }
+    } catch (error) {
+      console.error('Error fetching kid profile:', error);
+      setKidProfileId(null);
+    }
+  };
+
+  const handleKidProfileClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    if (kidProfileId) {
+      navigate(`/kid-profile/${kidProfileId}`);
+    } else {
+      navigate('/kid-profile-form');
+    }
+  };
 
   const handleSignOut = async () => {
-    if (isSigningOut) return; // Prevent multiple clicks
+    if (isSigningOut) return;
     
     try {
       setIsSigningOut(true);
-      await signOut({ global: true });
       setShowUserMenu(false);
-      navigate('/');
+      setLocalAuth(false);
+      if (onAuthChange) {
+        onAuthChange(false);
+      }
+      await signOut({ global: true });
+      setKidProfileId(null);
+      navigate('/', { replace: true });
     } catch (error) {
       console.error('Error signing out:', error);
+      setLocalAuth(true);
+      if (onAuthChange) {
+        onAuthChange(true);
+      }
     } finally {
       setIsSigningOut(false);
     }
@@ -48,16 +112,17 @@ const Header: React.FC<HeaderProps> = ({ isAuthenticated }) => {
           <span className="logo-text">SynchronicityAI</span>
         </Link>
         <nav className="nav-links">
-          {isAuthenticated && (
-            <Link to="/kid-profile/1">
-              <button>Kids Profile</button>
-            </Link>
+          {localAuth && !isSigningOut && kidProfileId && (
+            <button onClick={handleKidProfileClick} className="nav-button">
+              Kids Profile
+            </button>
           )}
-          {!isAuthenticated ? (
+          {(!localAuth || isSigningOut) ? (
             <button 
               className="auth-button"
               onClick={() => setIsAuthOpen(true)}
               aria-label="Login"
+              disabled={isSigningOut}
             >
               <svg 
                 xmlns="http://www.w3.org/2000/svg" 
@@ -100,9 +165,8 @@ const Header: React.FC<HeaderProps> = ({ isAuthenticated }) => {
                   <button 
                     onClick={handleSignOut} 
                     className="menu-item sign-out-button"
-                    disabled={isSigningOut}
                   >
-                    {isSigningOut ? 'Signing out...' : 'Sign Out'}
+                    Sign Out
                   </button>
                 </div>
               )}

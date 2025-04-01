@@ -249,7 +249,37 @@
   background-color: #e8eaed;
 }
 
-.loading, .error {
+.loading {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  height: 120px;
+  margin: 2rem auto;
+  background: transparent;
+  z-index: 1000;
+  gap: 1rem;
+  color: #5f6368;
+  font-size: 0.9rem;
+}
+
+.loading::after {
+  content: '';
+  width: 30px;
+  height: 30px;
+  border: 2px solid #f3f3f3;
+  border-top: 2px solid #1a73e8;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin-top: -1rem;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.error {
   text-align: center;
   padding: 2rem;
   color: #5f6368;

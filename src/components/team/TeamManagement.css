@@ -25,6 +25,13 @@
   min-height: calc(100vh - 64px);
   max-width: 1400px;
   margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  padding: 20px;
+  background-color: #f8f9fa;
 }
 
 .team-management-header {
@@ -147,37 +154,112 @@
 /* Team members table */
 .team-members-table {
   width: 100%;
-  border-collapse: separate;
-  border-spacing: 0;
-  margin-bottom: 2rem;
+  border-collapse: collapse;
   background: white;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-  border-radius: 4px;
-  overflow: hidden;
+  table-layout: fixed;
 }
 
-.team-members-table th {
-  background-color: var(--color-gray-5);
-  color: var(--color-gray-70);
-  font-weight: 600;
-  padding: 1rem;
-  text-align: left;
-  border-bottom: 2px solid var(--color-gray-10);
-  white-space: nowrap;
-}
-
+.team-members-table th,
 .team-members-table td {
-  padding: 1rem;
-  border-bottom: 1px solid var(--color-gray-10);
-  color: var(--color-gray-90);
+  padding: 12px 16px;
+  text-align: left;
+  border-bottom: 1px solid #eee;
+  word-wrap: break-word;
+  white-space: normal;
+  vertical-align: top;
 }
 
-.team-members-table tr:last-child td {
+/* Fixed column widths with better distribution */
+.team-members-table th:nth-child(1),
+.team-members-table td:nth-child(1) {
+  width: 20%; /* Name column */
+}
+
+.team-members-table th:nth-child(2),
+.team-members-table td:nth-child(2) {
+  width: 15%; /* Role column */
+}
+
+.team-members-table th:nth-child(3),
+.team-members-table td:nth-child(3) {
+  width: 25%; /* Email column */
+}
+
+.team-members-table th:nth-child(4),
+.team-members-table td:nth-child(4) {
+  width: 15%; /* Status column */
+}
+
+.team-members-table th:nth-child(5),
+.team-members-table td:nth-child(5) {
+  width: 15%; /* Joined column */
+}
+
+.team-members-table th:nth-child(6),
+.team-members-table td:nth-child(6) {
+  width: 10%; /* Actions column */
+}
+
+/* Responsive container for the table */
+.team-members-section {
+  width: 100%;
+  margin-bottom: 20px;
+}
+
+/* Responsive breakpoints */
+@media screen and (max-width: 992px) {
+  .team-members-table th,
+  .team-members-table td {
+    padding: 10px 12px;
+    font-size: 0.9em;
+  }
+}
+
+@media screen and (max-width: 768px) {
+  .team-members-table th,
+  .team-members-table td {
+    padding: 8px 10px;
+    font-size: 0.85em;
+  }
+}
+
+@media screen and (max-width: 576px) {
+  .team-members-table th,
+  .team-members-table td {
+    padding: 6px 8px;
+    font-size: 0.8em;
+  }
+}
+
+/* Table header styling */
+.team-members-table th {
+  background-color: var(--color-primary);
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  font-weight: 600;
+  color: white;
+  padding: 14px 16px;
   border-bottom: none;
+  text-transform: uppercase;
+  font-size: 0.9rem;
+  letter-spacing: 0.5px;
 }
 
-.team-members-table tr:hover td {
-  background-color: var(--color-gray-5);
+.team-members-table th:first-child {
+  border-top-left-radius: 4px;
+}
+
+.team-members-table th:last-child {
+  border-top-right-radius: 4px;
+}
+
+/* Adjust the table body cells to match the new header style */
+.team-members-table td {
+  background-color: white;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--color-gray-10);
 }
 
 /* Status badges */
@@ -566,11 +648,19 @@
 
 /* Loading and error states */
 .loading-spinner {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  min-height: 200px;
-  color: var(--color-primary);
+  display: inline-block;
+  width: 40px;
+  height: 40px;
+  border: 3px solid #f3f3f3;
+  border-top: 3px solid #3498db;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin: 20px auto;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
 }
 
 .error-message {
@@ -767,4 +857,29 @@
 .modal-close-button:focus {
   outline: none;
   box-shadow: 0 0 0 3px rgba(0, 94, 162, 0.1);
+}
+
+.team-members-table td:last-child {
+  padding: 8px;
+  min-width: 90px;
+}
+
+.team-members-table .primary-button {
+  padding: 6px 12px;
+  font-size: 0.875rem;
+  white-space: nowrap;
+  width: 100%;
+  justify-content: center;
+}
+
+@media screen and (max-width: 768px) {
+  .team-members-table td:last-child {
+    padding: 6px;
+    min-width: 80px;
+  }
+
+  .team-members-table .primary-button {
+    padding: 4px 8px;
+    font-size: 0.8rem;
+  }
 }
