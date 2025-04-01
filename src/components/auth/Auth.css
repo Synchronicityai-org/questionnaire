@@ -72,18 +72,43 @@
   font-size: 1.1rem;
   font-weight: 500;
   cursor: pointer;
-  transition: all 0.3s;
+  transition: all 0.3s ease;
   margin-top: 1rem;
+  position: relative;
+  overflow: hidden;
+  z-index: 1;
+}
+
+.submit-button:before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background-color: #0056b3;
+  transition: all 0.3s ease;
+  z-index: -1;
+}
+
+.submit-button:hover:before {
+  left: 0;
 }
 
 .submit-button:hover {
-  background-color: #0056b3;
-  transform: translateY(-1px);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
 }
 
 .submit-button:disabled {
   background-color: #ccc;
   cursor: not-allowed;
+}
+
+.submit-button:focus {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.3);
+  background-color: #007bff;
 }
 
 .auth-switch {
@@ -109,6 +134,12 @@
   text-decoration: underline;
   background-color: none !important;
   transform: translateY(-1px) !important;
+}
+
+.link-button:focus {
+  outline: none;
+  color: #007bff;
+  text-decoration: underline;
 }
 
 .error-message {
@@ -177,6 +208,36 @@
   color: #424242;
   cursor: pointer;
   font-weight: 500;
+  position: relative;
+  overflow: hidden;
+  z-index: 1;
+}
+
+.cancel-button:before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background-color: #bdbdbd;
+  transition: all 0.3s ease;
+  z-index: -1;
+}
+
+.cancel-button:hover:before {
+  left: 0;
+}
+
+.cancel-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+  background-color: #bdbdbd;
+}
+
+.cancel-button:focus {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.3);
 }
 
 .confirm-button {
@@ -187,14 +248,36 @@
   color: white;
   cursor: pointer;
   font-weight: 500;
+  position: relative;
+  overflow: hidden;
+  z-index: 1;
 }
 
-.cancel-button:hover {
-  background-color: #bdbdbd;
+.confirm-button:before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background-color: #c62828;
+  transition: all 0.3s ease;
+  z-index: -1;
+}
+
+.confirm-button:hover:before {
+  left: 0;
 }
 
 .confirm-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
   background-color: #c62828;
+}
+
+.confirm-button:focus {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.3);
 }
 
 .verification-info {
@@ -237,7 +320,7 @@
   padding: 0.75rem;
   border: none;
   border-radius: 4px;
-  background-color: #2196f3;
+  background-color: #2196f3 !important;
   color: white;
   font-weight: 500;
   cursor: pointer;
