@@ -470,11 +470,11 @@ const TeamManagement: React.FC = () => {
 
       <div className="team-content">
         <div className="main-content">
-          {teamRequests.length > 0 && (
-            <div className="team-requests-section">
-              <h3>Pending Requests ({teamRequests.length})</h3>
-              {teamRequests.map(request => (
-              <div key={request.id} className="request-card">
+          <div className="team-requests-section">
+            <h3>Pending Requests ({teamRequests.length})</h3>
+            {teamRequests.length > 0 ? (
+              teamRequests.map(request => (
+                <div key={request.id} className="request-card">
                   <div className="request-info">
                     <div className="request-details">
                       <h4>{request.userName || 'Unknown User'}</h4>
@@ -485,27 +485,31 @@ const TeamManagement: React.FC = () => {
                       )}
                       <p className="request-date">
                         Requested on {new Date(request.createdAt).toLocaleDateString()}
-                  </p>
-                </div>
+                      </p>
+                    </div>
                   </div>
                   <div className="request-actions">
-                  <button
+                    <button
                       className="approve-button"
-                    onClick={() => handleRequestAction(request.id, 'APPROVED')}
-                  >
+                      onClick={() => handleRequestAction(request.id, 'APPROVED')}
+                    >
                       <FontAwesomeIcon icon={faCheck} /> Approve
-                  </button>
-                  <button
+                    </button>
+                    <button
                       className="reject-button"
-                    onClick={() => handleRequestAction(request.id, 'REJECTED')}
-                  >
+                      onClick={() => handleRequestAction(request.id, 'REJECTED')}
+                    >
                       <FontAwesomeIcon icon={faTimes} /> Reject
-                  </button>
+                    </button>
+                  </div>
                 </div>
+              ))
+            ) : (
+              <div className="no-requests-message">
+                <p>No pending requests available</p>
               </div>
-            ))}
+            )}
           </div>
-        )}
 
           <div className="team-members-section">
             <table className="team-members-table">
@@ -533,7 +537,7 @@ const TeamManagement: React.FC = () => {
                     <td>{member.joinedAt ? new Date(member.joinedAt).toLocaleDateString() : 'N/A'}</td>
                     <td>
                       <button
-                        className="primary-button"
+                        className="table-remove-btn"
                         onClick={() => handleRemoveMember(member.id)}
                       >
                         Remove

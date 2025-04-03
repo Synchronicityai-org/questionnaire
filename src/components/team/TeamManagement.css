@@ -25,13 +25,6 @@
   min-height: calc(100vh - 64px);
   max-width: 1400px;
   margin: 0 auto;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  min-height: 100vh;
-  padding: 20px;
-  background-color: #f8f9fa;
 }
 
 .team-management-header {
@@ -80,7 +73,6 @@
   text-align: center;
 }
 
-/* Two-column layout */
 .team-content {
   display: grid;
   grid-template-columns: 1fr 300px;
@@ -88,15 +80,79 @@
   margin-top: 2rem;
 }
 
-/* Search section */
+.main-content {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+.team-requests-section,
+.team-members-section,
+.search-section,
+.team-stats {
+  background: white;
+  padding: 1.5rem;
+  border-radius: 8px;
+  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15), 0 3px 6px rgba(0, 0, 0, 0.1);
+  margin-bottom: 1.5rem;
+}
+
+.team-requests-section h3 {
+  color: var(--color-gray-90);
+  margin: 0 0 1.5rem 0;
+  font-size: 1.25rem;
+}
+
+.request-card {
+  background: white;
+  border: 1px solid var(--color-gray-10);
+  border-radius: 8px;
+  padding: 1.5rem;
+  margin-bottom: 1rem;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1), 0 2px 4px rgba(0, 0, 0, 0.08);
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1.5rem;
+}
+
+.request-info {
+  flex: 1;
+}
+
+.request-actions {
+  display: flex;
+  gap: 1rem;
+  flex-shrink: 0;
+}
+
+.team-members-section {
+  overflow-x: auto;
+  width: 100%;
+  margin-bottom: 20px;
+}
+
+.sidebar {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
 .search-section {
   background: white;
   padding: 1.5rem;
-  border-radius: 4px;
+  border-radius: 8px;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-  margin-bottom: 2rem;
 }
 
+.team-stats {
+  background: white;
+  padding: 1.5rem;
+  border-radius: 8px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+/* Search section */
 .search-bar {
   position: relative;
   display: flex;
@@ -153,24 +209,53 @@
 
 /* Team members table */
 .team-members-table {
-  width: 100%;
   border-collapse: collapse;
-  background: white;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  border-spacing: 0;
+  width: 100%;
+  border: 1px solid #ddd;
   table-layout: fixed;
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2), 0 4px 8px rgba(0, 0, 0, 0.15);
 }
 
+/* Table header and cell styling */
 .team-members-table th,
 .team-members-table td {
-  padding: 12px 16px;
   text-align: left;
-  border-bottom: 1px solid #eee;
-  word-wrap: break-word;
-  white-space: normal;
-  vertical-align: top;
+  padding: 8px;
+  border: 1px solid #ddd;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
-/* Fixed column widths with better distribution */
+/* Table header specific styling */
+.team-members-table th {
+  background-color: #1a73e8;
+  font-weight: 600;
+  color: white;
+  padding: 12px 8px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+}
+
+/* Table body styling */
+.team-members-table tbody {
+  display: table-row-group;
+}
+
+/* Table row hover effect */
+.team-members-table tr:hover {
+  background-color: #f5f5f5;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.08);
+}
+
+/* Container for horizontal scrolling */
+.team-members-section {
+  overflow-x: auto;
+  width: 100%;
+  margin-bottom: 20px;
+}
+
+/* Fixed column widths */
 .team-members-table th:nth-child(1),
 .team-members-table td:nth-child(1) {
   width: 20%; /* Name column */
@@ -196,105 +281,71 @@
   width: 15%; /* Joined column */
 }
 
+/* Table remove button */
+.table-remove-btn {
+  background-color: #FFF3F0;
+  color: #D54309;
+  border: none;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 0.7rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+  display: inline-block;
+  min-width: 70px;
+  width: 70px;
+  height: 24px;
+  line-height: 1;
+  margin: 0 auto;
+  box-sizing: border-box;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Actions column styling */
 .team-members-table th:nth-child(6),
 .team-members-table td:nth-child(6) {
-  width: 10%; /* Actions column */
+  width: 70px;
+  min-width: 70px;
+  max-width: 70px;
+  text-align: center;
+  padding: 8px 4px;
+  overflow: hidden;
 }
 
-/* Responsive container for the table */
-.team-members-section {
-  width: 100%;
-  margin-bottom: 20px;
-}
-
-/* Responsive breakpoints */
-@media screen and (max-width: 992px) {
-  .team-members-table th,
-  .team-members-table td {
-    padding: 10px 12px;
-    font-size: 0.9em;
-  }
-}
-
-@media screen and (max-width: 768px) {
-  .team-members-table th,
-  .team-members-table td {
-    padding: 8px 10px;
-    font-size: 0.85em;
-  }
-}
-
-@media screen and (max-width: 576px) {
-  .team-members-table th,
-  .team-members-table td {
-    padding: 6px 8px;
-    font-size: 0.8em;
-  }
-}
-
-/* Table header styling */
-.team-members-table th {
-  background-color: var(--color-primary);
-  position: sticky;
-  top: 0;
-  z-index: 2;
-  font-weight: 600;
-  color: white;
-  padding: 14px 16px;
-  border-bottom: none;
-  text-transform: uppercase;
-  font-size: 0.9rem;
-  letter-spacing: 0.5px;
-}
-
-.team-members-table th:first-child {
-  border-top-left-radius: 4px;
-}
-
-.team-members-table th:last-child {
-  border-top-right-radius: 4px;
-}
-
-/* Adjust the table body cells to match the new header style */
-.team-members-table td {
-  background-color: white;
-  padding: 12px 16px;
-  border-bottom: 1px solid var(--color-gray-10);
+/* Ensure the button container cell doesn't wrap */
+.team-members-table td:last-child {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  padding: 8px 4px;
+  display: table-cell;
+  vertical-align: middle;
 }
 
 /* Status badges */
 .status-badge {
-  padding: 0.25rem 0.75rem;
-  border-radius: 12px;
-  font-size: 0.875rem;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 0.75rem;
   font-weight: 500;
-  display: inline-flex;
-  align-items: center;
-  gap: 0.5rem;
-}
-
-.status-badge::before {
-  content: '';
-  display: block;
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background-color: currentColor;
+  display: inline-block;
 }
 
 .status-active {
   background-color: #E6F4EA;
-  color: var(--color-success);
+  color: #137333;
 }
 
 .status-pending {
   background-color: #FEF7E0;
-  color: var(--color-warning);
+  color: #B06000;
 }
 
 .status-inactive {
-  background-color: var(--color-gray-10);
-  color: var(--color-gray-50);
+  background-color: #F1F3F4;
+  color: #5F6368;
 }
 
 /* Team requests section */
@@ -310,14 +361,6 @@
   color: var(--color-gray-90);
   margin: 0 0 1.5rem 0;
   font-size: 1.25rem;
-}
-
-.request-card {
-  background: white;
-  border: 1px solid var(--color-gray-10);
-  border-radius: 4px;
-  padding: 1.5rem;
-  margin-bottom: 1rem;
 }
 
 .request-details h4 {
@@ -648,19 +691,10 @@
 
 /* Loading and error states */
 .loading-spinner {
-  display: inline-block;
-  width: 40px;
-  height: 40px;
-  border: 3px solid #f3f3f3;
-  border-top: 3px solid #3498db;
-  border-radius: 50%;
-  animation: spin 1s linear infinite;
-  margin: 20px auto;
-}
-
-@keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 200px;
 }
 
 .error-message {
@@ -668,35 +702,57 @@
   border: 1px solid var(--color-error);
   color: var(--color-error);
   padding: 1rem;
-  border-radius: 4px;
+  border-radius: 8px;
   margin: 1rem 0;
+  text-align: center;
 }
 
 /* Responsive adjustments */
 @media (max-width: 1024px) {
   .team-content {
     grid-template-columns: 1fr;
+    gap: 1rem;
   }
   
   .sidebar {
     width: 100%;
-    margin-top: 2rem;
+    margin-top: 1rem;
+  }
+
+  .team-requests-section,
+  .team-members-section,
+  .search-section,
+  .team-stats {
+    margin-bottom: 1rem;
   }
 }
 
 @media (max-width: 768px) {
   .team-management-container {
-    padding: 1rem;
+    padding: 0.75rem;
   }
   
   .team-management-header {
-    padding: 1rem;
+    padding: 0.75rem;
+    margin-bottom: 1rem;
   }
   
   .team-management-header h2 {
     font-size: 1.5rem;
   }
   
+  .request-card {
+    flex-direction: column;
+    gap: 0.75rem;
+    padding: 1rem;
+  }
+  
+  .request-actions {
+    width: 100%;
+    justify-content: flex-end;
+    gap: 0.5rem;
+  }
+
   .team-members-table {
     display: block;
     overflow-x: auto;
@@ -705,181 +761,57 @@
   
   .team-members-table th,
   .team-members-table td {
-    padding: 0.75rem;
+    padding: 0.5rem;
+  }
+
+  .main-content {
+    gap: 1rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .team-management-container {
+    padding: 0.5rem;
   }
   
-  .request-card {
-    padding: 1rem;
+  .team-requests-section,
+  .team-members-section,
+  .search-section,
+  .team-stats {
+    padding: 0.75rem;
+    margin-bottom: 0.75rem;
   }
   
   .request-actions {
     flex-direction: column;
     gap: 0.5rem;
   }
-
-  .search-result-item {
-    padding: 1rem;
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 1rem;
-  }
-
-  .user-info {
-    gap: 1rem;
-  }
-
-  .avatar-placeholder {
-    width: 40px;
-    height: 40px;
-    font-size: 1.1rem;
-  }
-
-  .user-info h4 {
-    font-size: 1rem;
-  }
-
-  .user-info p {
-    font-size: 0.9rem;
-  }
-
-  .add-button {
+  
+  .request-actions button {
     width: 100%;
-    justify-content: center;
   }
 
-  .modal-content {
-    max-width: 95%;
-    padding: 1.5rem;
+  .team-content {
+    gap: 0.75rem;
   }
 
-  .search-results {
-    grid-template-columns: 1fr;
-  }
-
-  .modal-close-button {
-    top: 1rem;
-    right: 1rem;
-    width: 28px;
-    height: 28px;
-    font-size: 1.25rem;
-  }
-
-  .back-button {
-    padding: 0.4rem 0.8rem;
+  .team-management-header {
+    margin-bottom: 0.75rem;
   }
 }
 
-/* Team Statistics */
-.team-stats {
-  background: white;
-  padding: 1.5rem;
-  border-radius: 4px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-  margin-top: 2rem;
+/* No requests message */
+.no-requests-message {
+  background-color: #f8f9fa;
+  padding: 2rem;
+  border-radius: 8px;
+  text-align: center;
+  border: 1px dashed #e0e0e0;
+  margin: 1rem 0;
 }
 
-.team-stats h3 {
-  color: var(--color-gray-90);
-  margin: 0 0 1.5rem 0;
-  font-size: 1.25rem;
-}
-
-.stat-item {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 1rem;
-  background-color: var(--color-gray-5);
-  border-radius: 4px;
-  margin-bottom: 1rem;
-}
-
-.stat-item:last-child {
-  margin-bottom: 0;
-}
-
-.stat-item label {
-  color: var(--color-gray-70);
-  font-weight: 500;
-}
-
-.stat-item span {
-  font-size: 1.25rem;
-  font-weight: 600;
-  color: var(--color-primary);
-}
-
-/* Main content layout */
-.main-content {
-  flex: 1;
-}
-
-.sidebar {
-  width: 300px;
-} 
-.add-member-search {
-  width: 100%;
-  padding: 0.75rem 2.5rem 0.75rem 1rem;
-  border: 2px solid var(--color-gray-10);
-  border-radius: 4px;
+.no-requests-message p {
+  color: #666;
   font-size: 1rem;
-  transition: border-color 0.2s;
-}
-
-.modal-close-button {
-  position: absolute;
-  top: 1.5rem;
-  right: 1.5rem;
-  width: 32px;
-  height: 32px;
-  border-radius: 50%;
-  background: none;
-  border: none;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: var(--color-gray-50);
-  font-size: 1.5rem;
-  line-height: 1;
-  padding: 0;
   margin: 0;
-  transition: all 0.2s ease;
-  z-index: 1001;
-}
-
-.modal-close-button:hover {
-  background-color: var(--color-gray-5);
-  color: var(--color-gray-70);
-  transform: rotate(90deg);
-}
-
-.modal-close-button:focus {
-  outline: none;
-  box-shadow: 0 0 0 3px rgba(0, 94, 162, 0.1);
-}
-
-.team-members-table td:last-child {
-  padding: 8px;
-  min-width: 90px;
-}
-
-.team-members-table .primary-button {
-  padding: 6px 12px;
-  font-size: 0.875rem;
-  white-space: nowrap;
-  width: 100%;
-  justify-content: center;
-}
-
-@media screen and (max-width: 768px) {
-  .team-members-table td:last-child {
-    padding: 6px;
-    min-width: 80px;
-  }
-
-  .team-members-table .primary-button {
-    padding: 4px 8px;
-    font-size: 0.8rem;
-  }
 }

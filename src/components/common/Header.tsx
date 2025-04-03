@@ -60,6 +60,15 @@ const Header: React.FC<HeaderProps> = ({ isAuthenticated, onAuthChange }) => {
     }
   };
 
+  const handleLogoClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    if (localAuth && kidProfileId) {
+      navigate(`/kid-profile/${kidProfileId}`);
+    } else {
+      navigate('/');
+    }
+  };
+
   const handleKidProfileClick = (e: React.MouseEvent) => {
     e.preventDefault();
     if (kidProfileId) {
@@ -96,7 +105,7 @@ const Header: React.FC<HeaderProps> = ({ isAuthenticated, onAuthChange }) => {
   return (
     <header className="header">
       <div className="header-content">
-        <Link to="/" className="logo-container">
+        <Link to="/" className="logo-container" onClick={handleLogoClick}>
           <svg 
             className="logo-icon" 
             viewBox="0 0 24 24" 

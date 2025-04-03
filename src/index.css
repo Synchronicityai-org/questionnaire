@@ -110,7 +110,7 @@ li {
 }
 
 li:hover {
-  background: #dadbf9;
+  padding: 12px;
 }
 
 a {

@@ -282,11 +282,19 @@ export function KidProfileHome() {
   };
 
   if (isManageTeamLoading) {
-    return <div className="loading">Loading team management...</div>;
+    return (
+      <div className="loading">
+        <div className="loading-text">Loading team management...</div>
+      </div>
+    );
   }
 
   if (isLoading) {
-    return <div className="loading">Loading profile data...</div>;
+    return (
+      <div className="loading">
+        <div className="loading-text">Loading profile data...</div>
+      </div>
+    );
   }
 
   if (error) {

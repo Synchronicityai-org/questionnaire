@@ -2,9 +2,9 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Auth from '../auth/Auth';
 import './LandingPage.css';
-import teamCollaboration from '../../assets/images/teamCollboration.png';
-import progressTracking from '../../assets/images/progresstracking.png';
-import securedCommunication from '../../assets/images/securedCommunication.png';
+import teamCollaboration from '../../assets/images/teamCollobaration.png';
+import progressTracking from '../../assets/images/progressTracking.jpeg';
+import securedCommunication from '../../assets/images/secureCommunication.jpeg';
 
 const LandingPage: React.FC = () => {
   const [isAuthOpen, setIsAuthOpen] = useState(false);
