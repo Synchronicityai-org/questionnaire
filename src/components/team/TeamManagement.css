@@ -689,14 +689,39 @@
   border: 0;
 }
 
-/* Loading and error states */
+/* Loading spinner */
 .loading-spinner {
   display: flex;
   justify-content: center;
   align-items: center;
-  min-height: 200px;
+  height: 20px;
+  width: 20px;
+  margin: 0.5rem 0;
 }
 
+.loading-spinner::after {
+  content: '';
+  width: 20px;
+  height: 20px;
+  border: 2px solid #f3f3f3;
+  border-top: 2px solid #1a73e8;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* Remove duplicate loading styles */
+.loading {
+  text-align: center;
+  color: #5f6368;
+  padding: 2rem;
+}
+
+/* Error message */
 .error-message {
   background-color: #FFF3F0;
   border: 1px solid var(--color-error);
@@ -814,4 +839,49 @@
   color: #666;
   font-size: 1rem;
   margin: 0;
+}
+
+/* Modal styles */
+.modal-close-button {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  cursor: pointer;
+  color: #5f6368;
+  padding: 0.5rem;
+  width: auto;
+  height: auto;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: color 0.2s ease;
+}
+
+.modal-close-button:hover {
+  color: #1a73e8;
+}
+
+/* Search bar in modal */
+.add-member-search {
+  width: 100%;
+  padding: 0.75rem 1rem;
+  border: 1px solid #dadce0;
+  border-radius: 4px;
+  font-size: 1rem;
+  margin-bottom: 1rem;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.add-member-search:focus {
+  outline: none;
+  border-color: #1a73e8;
+  box-shadow: 0 0 0 2px rgba(26, 115, 232, 0.1);
+}
+
+.add-member-search::placeholder {
+  color: #5f6368;
 }

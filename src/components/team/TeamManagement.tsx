@@ -470,6 +470,44 @@ const TeamManagement: React.FC = () => {
 
       <div className="team-content">
         <div className="main-content">
+          <div className="team-members-section">
+            <table className="team-members-table">
+              <thead>
+                <tr>
+                  <th>Name</th>
+                  <th>Role</th>
+                  <th>Email</th>
+                  <th>Status</th>
+                  <th>Joined</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filteredMembers.map(member => (
+                  <tr key={member.id}>
+                    <td>{member.name}</td>
+                    <td>{member.role}</td>
+                    <td>{member.email}</td>
+                    <td>
+                      <span className={`status-badge status-${member.status.toLowerCase()}`}>
+                        {member.status}
+                      </span>
+                    </td>
+                    <td>{member.joinedAt ? new Date(member.joinedAt).toLocaleDateString() : 'N/A'}</td>
+                    <td>
+                      <button
+                        className="table-remove-btn"
+                        onClick={() => handleRemoveMember(member.id)}
+                      >
+                        Remove
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
           <div className="team-requests-section">
             <h3>Pending Requests ({teamRequests.length})</h3>
             {teamRequests.length > 0 ? (
@@ -509,44 +547,6 @@ const TeamManagement: React.FC = () => {
                 <p>No pending requests available</p>
               </div>
             )}
-          </div>
-
-          <div className="team-members-section">
-            <table className="team-members-table">
-              <thead>
-                <tr>
-                  <th>Name</th>
-                  <th>Role</th>
-                  <th>Email</th>
-                  <th>Status</th>
-                  <th>Joined</th>
-                  <th>Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filteredMembers.map(member => (
-                  <tr key={member.id}>
-                    <td>{member.name}</td>
-                    <td>{member.role}</td>
-                    <td>{member.email}</td>
-                    <td>
-                      <span className={`status-badge status-${member.status.toLowerCase()}`}>
-                        {member.status}
-                      </span>
-                    </td>
-                    <td>{member.joinedAt ? new Date(member.joinedAt).toLocaleDateString() : 'N/A'}</td>
-                    <td>
-                      <button
-                        className="table-remove-btn"
-                        onClick={() => handleRemoveMember(member.id)}
-                      >
-                        Remove
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
           </div>
         </div>
 
