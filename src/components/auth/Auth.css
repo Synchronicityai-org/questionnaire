@@ -177,6 +177,34 @@
   overflow-y: auto;
   position: relative;
   margin: 2rem;
+  animation: fadeIn 1s, slideIn .8s linear;
+}
+@keyframes slideIn {
+  0% {
+    transform: translateX(400px);
+    animation-timing-function: ease-out;
+  }
+  60% {
+    transform: translateX(-30px);
+    animation-timing-function: ease-in;
+  }
+  80% {
+    transform: translateX(10px);
+    animation-timing-function: ease-out;
+  }
+  100% {
+    transform: translateX(0px);
+    animation-timing-function: ease-in;
+  }
+}
+
+@keyframes fadeIn {
+  0% {
+    opacity: 0;
+  }
+  100% {
+    opacity: 1;
+  }
 }
 
 .warning-dialog {

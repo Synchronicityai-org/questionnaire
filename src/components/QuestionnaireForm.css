@@ -1101,11 +1101,10 @@ html {
 .assessment-button.secondary {
   background-color: #f8f9fa;
   color: #1a73e8;
-  border: 2px solid #1a73e8;
 }
 
 .assessment-button.secondary:hover:not(:disabled) {
-  background-color: #e9ecef;
+  background-color: #5a6268;
 }
 
 .summary-report {
