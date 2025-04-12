@@ -118,7 +118,7 @@ const Header: React.FC<HeaderProps> = ({ isAuthenticated, onAuthChange }) => {
             <circle cx="12" cy="12" r="10" />
             <path d="M12 6v6l4 2" />
           </svg>
-          <span className="logo-text">SynchronicityAI</span>
+          <span className="logo-text">TinyWinsAI</span>
         </Link>
         <nav className="nav-links">
           {localAuth && !isSigningOut && kidProfileId && (

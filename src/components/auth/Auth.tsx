@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { signIn, signUp, confirmSignUp, resendSignUpCode } from 'aws-amplify/auth';
+import { signIn, signUp, confirmSignUp, resendSignUpCode, resetPassword, confirmResetPassword } from 'aws-amplify/auth';
 import './Auth.css';
 
 interface AuthProps {
@@ -8,14 +8,15 @@ interface AuthProps {
 }
 
 const Auth: React.FC<AuthProps> = ({ isOpen, onClose }) => {
-  const [authState, setAuthState] = useState<'signIn' | 'signUp' | 'confirmSignUp'>('signIn');
+  const [authState, setAuthState] = useState<'signIn' | 'signUp' | 'confirmSignUp' | 'forgotPassword' | 'confirmResetPassword'>('signIn');
   const [formData, setFormData] = useState({
     email: '',
     password: '',
     code: '',
     firstName: '',
     lastName: '',
-    phoneNumber: ''
+    phoneNumber: '',
+    newPassword: ''
   });
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -204,6 +205,61 @@ const Auth: React.FC<AuthProps> = ({ isOpen, onClose }) => {
     }
   };
 
+  const handleForgotPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError(null);
+    setLoading(true);
+
+    try {
+      await resetPassword({
+        username: formData.email.toLowerCase().trim()
+      });
+      setAuthState('confirmResetPassword');
+    } catch (error: any) {
+      console.error('Error initiating password reset:', error);
+      if (error.name === 'UserNotFoundException') {
+        setError('No account found with this email.');
+      } else {
+        setError('Error initiating password reset. Please try again.');
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleConfirmResetPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError(null);
+    setLoading(true);
+
+    try {
+      await confirmResetPassword({
+        username: formData.email.toLowerCase().trim(),
+        confirmationCode: formData.code,
+        newPassword: formData.newPassword
+      });
+      setError('Password has been reset successfully. Please sign in with your new password.');
+      setAuthState('signIn');
+      setFormData(prev => ({
+        ...prev,
+        password: '',
+        code: '',
+        newPassword: ''
+      }));
+    } catch (error: any) {
+      console.error('Error confirming password reset:', error);
+      if (error.name === 'CodeMismatchException') {
+        setError('Invalid verification code. Please try again.');
+      } else if (error.name === 'InvalidPasswordException') {
+        setError('Password must be at least 8 characters long and contain uppercase, lowercase, numbers, and special characters.');
+      } else {
+        setError('Error resetting password. Please try again.');
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleClose = () => {
     if (authState === 'confirmSignUp') {
       setShowCloseWarning(true);
@@ -218,7 +274,8 @@ const Auth: React.FC<AuthProps> = ({ isOpen, onClose }) => {
       code: '',
       firstName: '',
       lastName: '',
-      phoneNumber: ''
+      phoneNumber: '',
+      newPassword: ''
     });
     onClose();
   };
@@ -232,7 +289,8 @@ const Auth: React.FC<AuthProps> = ({ isOpen, onClose }) => {
       code: '',
       firstName: '',
       lastName: '',
-      phoneNumber: ''
+      phoneNumber: '',
+      newPassword: ''
     });
     onClose();
   };
@@ -285,6 +343,13 @@ const Auth: React.FC<AuthProps> = ({ isOpen, onClose }) => {
           Sign Up
         </button>
       </p>
+      <button
+        type="button"
+        onClick={() => setAuthState('forgotPassword')}
+        className="link-button"
+      >
+        Forgot Password?
+      </button>
       {error && <div className="error-message">{error}</div>}
     </form>
   );
@@ -403,6 +468,77 @@ const Auth: React.FC<AuthProps> = ({ isOpen, onClose }) => {
     </form>
   );
 
+  const renderForgotPassword = () => (
+    <form onSubmit={handleForgotPassword} className="auth-form">
+      <h2>Reset Password</h2>
+      <p className="verification-info">
+        Enter your email address and we'll send you a verification code to reset your password.
+      </p>
+      <div className="form-group">
+        <label htmlFor="email">Email</label>
+        <input
+          type="email"
+          id="email"
+          value={formData.email}
+          onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+          required
+        />
+      </div>
+      <button type="submit" className="submit-button" disabled={loading}>
+        {loading ? 'Sending Code...' : 'Send Verification Code'}
+      </button>
+      <button
+        type="button"
+        onClick={() => setAuthState('signIn')}
+        className="link-button"
+      >
+        Back to Sign In
+      </button>
+      {error && <div className="error-message">{error}</div>}
+    </form>
+  );
+
+  const renderConfirmResetPassword = () => (
+    <form onSubmit={handleConfirmResetPassword} className="auth-form">
+      <h2>Reset Password</h2>
+      <p className="verification-info">
+        Please enter the verification code sent to {formData.email} and your new password.
+      </p>
+      <div className="form-group">
+        <label htmlFor="code">Verification Code</label>
+        <input
+          type="text"
+          id="code"
+          value={formData.code}
+          onChange={(e) => setFormData({ ...formData, code: e.target.value })}
+          placeholder="Enter 6-digit code"
+          required
+        />
+      </div>
+      <div className="form-group">
+        <label htmlFor="newPassword">New Password</label>
+        <input
+          type="password"
+          id="newPassword"
+          value={formData.newPassword}
+          onChange={(e) => setFormData({ ...formData, newPassword: e.target.value })}
+          required
+        />
+      </div>
+      <button type="submit" className="submit-button" disabled={loading}>
+        {loading ? 'Resetting Password...' : 'Reset Password'}
+      </button>
+      <button
+        type="button"
+        onClick={() => setAuthState('forgotPassword')}
+        className="link-button"
+      >
+        Back
+      </button>
+      {error && <div className="error-message">{error}</div>}
+    </form>
+  );
+
   return (
     <>
       <div className="auth-overlay" onClick={handleBackdropClick}>
@@ -432,6 +568,8 @@ const Auth: React.FC<AuthProps> = ({ isOpen, onClose }) => {
               {authState === 'signIn' && renderSignIn()}
               {authState === 'signUp' && renderSignUp()}
               {authState === 'confirmSignUp' && renderConfirmSignUp()}
+              {authState === 'forgotPassword' && renderForgotPassword()}
+              {authState === 'confirmResetPassword' && renderConfirmResetPassword()}
             </>
           )}
         </div>
