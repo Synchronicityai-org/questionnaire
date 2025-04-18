@@ -709,7 +709,10 @@
     flex-direction: column;
     width: 100%;
   }
-
+  .header-actions > buttons{
+    font-size:smaller;
+    padding: 0 0.5rem;
+  }
   .questionnaire-container {
     padding: 1rem;
   }
@@ -736,6 +739,10 @@
     padding: 0.35rem 0.5rem;
     min-width: 70px;
     font-size: 0.85rem;
+  }
+  .questionnaire-header{
+    display: flex;
+    flex-direction: column;
   }
 }
 

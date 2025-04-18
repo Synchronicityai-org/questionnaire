@@ -563,14 +563,7 @@ const QuestionnaireForm: React.FC = () => {
       </div>
 
       <div className="assessment-buttons">
-        <button
-          className="assessment-button primary"
-          onClick={handleCompleteAssessment}
-          disabled={submitting}
-        >
-          {submitting ? 'Submitting...' : 'Complete Assessment'}
-        </button>
-        {currentPage !== categories[categories.length - 1] && (
+      {currentPage !== categories[categories.length - 1] && (
           <button
             className="assessment-button secondary"
             onClick={handleNextSection}
@@ -579,6 +572,13 @@ const QuestionnaireForm: React.FC = () => {
             Next Section
           </button>
         )}
+        <button
+          className="assessment-button primary"
+          onClick={handleCompleteAssessment}
+          disabled={submitting}
+        >
+          {submitting ? 'Submitting...' : 'Complete Assessment'}
+        </button>
       </div>
     </div>
   );
