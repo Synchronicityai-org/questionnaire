@@ -5,6 +5,16 @@ import type { Schema } from '../../amplify/data/resource';
 import './KidProfileHome.css';
 import { AssessmentHistory } from './AssessmentHistory';
 import { useNavigate, useParams } from 'react-router-dom';
+import { 
+  CalendarIcon, 
+  PuzzlePieceIcon, 
+  ChatBubbleBottomCenterTextIcon,
+  TrophyIcon,
+  AcademicCapIcon,
+  SparklesIcon,
+  HomeIcon,
+  UserGroupIcon
+} from '@heroicons/react/24/outline';
 
 const client = generateClient<Schema>();
 
@@ -281,6 +291,98 @@ export function KidProfileHome() {
     navigate(`/team-management/${kidProfileId}`);
   };
 
+  const renderMilestoneContent = () => {
+    if (isLoading) {
+      return <div className="loading">Loading milestone data...</div>;
+    }
+
+    if (!currentMilestone) {
+      return (
+        <div className="empty-state">
+          <div className="empty-state-icon">
+            <AcademicCapIcon className="h-16 w-16 text-blue-600" />
+          </div>
+          <h3>Let's Start Your Journey!</h3>
+          <p>Take an assessment to get personalized milestones and tasks tailored for {profile?.name}'s development.</p>
+          <div className="empty-state-actions">
+            <button 
+              className="primary-button"
+              onClick={() => navigate(`/parent-concerns/${kidProfileId}`)}
+            >
+              Take Initial Assessment
+            </button>
+          </div>
+        </div>
+      );
+    }
+
+    return (
+      <>
+        <h4>{currentMilestone.title}</h4>
+        <p>{currentMilestone.description}</p>
+        <div className="progress-bar">
+          <div className="progress" style={{ width: '65%' }}></div>
+        </div>
+        <div className="tasks-section">
+          <h4>Current Tasks</h4>
+          {currentMilestone.tasks.map(task => (
+            <div key={task.id} className="task-item">
+              <h5>{task.title}</h5>
+              <p>{task.description}</p>
+              <span className={`status ${task.status}`}>{task.status}</span>
+            </div>
+          ))}
+        </div>
+      </>
+    );
+  };
+
+  const renderProgressSection = () => {
+    return (
+      <div className="progress-section">
+        <div className="card-header">
+          <h3>Overall Progress</h3>
+        </div>
+        <div className="development-areas">
+          <div className="development-area">
+            <div className="area-header">
+              <span className="area-icon">
+                <ChatBubbleBottomCenterTextIcon className="h-6 w-6 text-blue-600" />
+              </span>
+              <h4>Communication</h4>
+            </div>
+            <div className="progress-bar">
+              <div className="progress-placeholder"></div>
+            </div>
+          </div>
+          <div className="development-area">
+            <div className="area-header">
+              <span className="area-icon">
+                <SparklesIcon className="h-6 w-6 text-blue-600" />
+              </span>
+              <h4>Social Skills</h4>
+            </div>
+            <div className="progress-bar">
+              <div className="progress-placeholder"></div>
+            </div>
+          </div>
+          <div className="development-area">
+            <div className="area-header">
+              <span className="area-icon">
+                <HomeIcon className="h-6 w-6 text-blue-600" />
+              </span>
+              <h4>Daily Living</h4>
+            </div>
+            <div className="progress-bar">
+              <div className="progress-placeholder"></div>
+            </div>
+          </div>
+        </div>
+        <p className="progress-note">Progress tracking will begin after your first assessment</p>
+      </div>
+    );
+  };
+
   if (isManageTeamLoading) {
     return (
       <div className="loading">
@@ -314,18 +416,18 @@ export function KidProfileHome() {
       <div className="content-wrapper">
         <div className="welcome-section">
           <div className="welcome-text">
-            <h2>Welcome back, {profile.name?.split(' ')[0]}</h2>
-            <p>Here's how {profile.name} is progressing today</p>
+            <h2>Welcome back{profile ? `, ${profile.name}` : ''}</h2>
+            <p>Let's start tracking development progress</p>
           </div>
           <div className="action-buttons">
             <button 
-              className="primary-button" 
+              className="primary-button"
               onClick={() => navigate(`/parent-concerns/${kidProfileId}`)}
             >
               Take Assessment
             </button>
             <button 
-              className="secondary-button" 
+              className="secondary-button"
               onClick={() => setShowHistory(true)}
             >
               View Past Assessments
@@ -334,88 +436,116 @@ export function KidProfileHome() {
         </div>
 
         <table className="main-content">
-          <tr>
-            <td className="left-column">
-              <div className="milestone-card">
-                <div className="card-header">
-                  <h3>Current Milestone</h3>
-                  <span className="trophy-icon">🏆</span>
+          <tbody>
+            <tr>
+              <td className="left-column">
+                <div className="milestone-card">
+                  <div className="card-header">
+                    <h3>Current Milestone</h3>
+                    <span className="trophy-icon">
+                      <TrophyIcon className="h-6 w-6 text-blue-600" />
+                    </span>
+                  </div>
+                  {renderMilestoneContent()}
                 </div>
-                {currentMilestone ? (
-                  <>
-                    <h4>{currentMilestone.title}</h4>
-                    <p>{currentMilestone.description}</p>
-                    <div className="progress-bar">
-                      <div className="progress" style={{ width: '65%' }}></div>
-                    </div>
-                    <div className="tasks-section">
-                      <h4>Current Tasks</h4>
-                      {currentMilestone.tasks.map(task => (
-                        <div key={task.id} className="task-item">
-                          <h5>{task.title}</h5>
-                          <p>{task.description}</p>
-                          <span className={`status ${task.status}`}>{task.status}</span>
+                {renderProgressSection()}
+              </td>
+              <td className="right-column">
+                <div className="team-section">
+                  <div className="card-header">
+                    <h3>{profile.name}'s Support Team</h3>
+                  </div>
+                  <div className="team-members">
+                    {teamMembers.length === 0 ? (
+                      <div className="empty-team">
+                        <UserGroupIcon className="h-12 w-12 text-gray-400" />
+                        <p>Add team members to collaborate</p>
+                      </div>
+                    ) : (
+                      teamMembers.map(member => (
+                        <div key={member.id} className="team-member">
+                          <div className="member-avatar">
+                            {member.imageUrl ? (
+                              <img src={member.imageUrl} alt={member.name} />
+                            ) : (
+                              <div className="avatar-placeholder">{member.name[0]}</div>
+                            )}
+                          </div>
+                          <div className="member-info">
+                            <h4>{member.name}</h4>
+                            <p>{member.role}</p>
+                          </div>
                         </div>
-                      ))}
-                    </div>
-                  </>
-                ) : (
-                  <p>No milestone data available</p>
-                )}
-              </div>
-
-              <div className="progress-section">
-                <h3>Overall Progress</h3>
-                <div className="progress-bar">
-                  <div className="progress" style={{ width: '45%' }}></div>
+                      ))
+                    )}
+                  </div>
+                  <button 
+                    className="manage-team-button" 
+                    onClick={handleManageTeam}
+                    disabled={isManageTeamLoading}
+                  >
+                    Manage Team
+                  </button>
                 </div>
-              </div>
-            </td>
-            <td className="right-column">
-              <div className="team-section">
-                <h3>{profile.name}'s Support Team</h3>
-                <div className="team-members">
-                  {teamMembers.map(member => (
-                    <div key={member.id} className="team-member">
-                      <div className="member-avatar">
-                        {member.imageUrl ? (
-                          <img src={member.imageUrl} alt={member.name} />
-                        ) : (
-                          <div className="avatar-placeholder">{member.name[0]}</div>
-                        )}
-                      </div>
-                      <div className="member-info">
-                        <h4>{member.name}</h4>
-                        <p>{member.role}</p>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-                <button 
-                  className="manage-team-button" 
-                  onClick={handleManageTeam}
-                  disabled={isManageTeamLoading}
-                >
-                  Manage Team
-                </button>
-              </div>
 
-              <div className="community-section">
-                <h3>Community Insights</h3>
-                <div className="insight-card">
-                  <h4>Visual Schedule Success</h4>
-                  <p>Using a visual schedule during morning routine helped reduce anxiety and improved transitions.</p>
-                  <div className="insight-meta">
-                    <span>24 👍</span>
-                    <span>about 1 hour ago</span>
-                    <span>by Emily K.</span>
+                <div className="resources-section">
+                  <div className="card-header">
+                    <h3>Resources</h3>
+                    <button 
+                      className="view-all-button"
+                      onClick={() => navigate('/resources')}
+                    >
+                      View All
+                    </button>
+                  </div>
+                  <div className="resources-grid">
+                    <div className="resource-card" onClick={() => navigate('/resources/visual-schedules')}>
+                      <div className="resource-icon">
+                        <CalendarIcon className="h-8 w-8 text-blue-600" />
+                      </div>
+                      <h4>Visual Schedules</h4>
+                      <p>Create and use visual schedules to help with daily routines</p>
+                    </div>
+                    <div className="resource-card" onClick={() => navigate('/resources/sensory-activities')}>
+                      <div className="resource-icon">
+                        <PuzzlePieceIcon className="h-8 w-8 text-blue-600" />
+                      </div>
+                      <h4>Sensory Activities</h4>
+                      <p>Fun activities to support sensory development</p>
+                    </div>
+                    <div className="resource-card" onClick={() => navigate('/resources/communication-tools')}>
+                      <div className="resource-icon">
+                        <ChatBubbleBottomCenterTextIcon className="h-8 w-8 text-blue-600" />
+                      </div>
+                      <h4>Communication Tools</h4>
+                      <p>Tools and strategies to enhance communication</p>
+                    </div>
                   </div>
                 </div>
-              </div>
-            </td>
-          </tr>
+
+                <div className="community-section">
+                  <h3>Community Insights</h3>
+                  <div className="insight-card">
+                    <h4>Visual Schedule Success</h4>
+                    <p>Using a visual schedule during morning routine helped reduce anxiety and improved transitions.</p>
+                    <div className="insight-meta">
+                      <span>24 👍</span>
+                      <span>about 1 hour ago</span>
+                      <span>by Emily K.</span>
+                    </div>
+                  </div>
+                </div>
+              </td>
+            </tr>
+          </tbody>
         </table>
       </div>
+      {showHistory && (
+        <AssessmentHistory
+          kidProfileId={kidProfileId || ''}
+          onClose={() => setShowHistory(false)}
+        />
+      )}
     </div>
   );
 } 
