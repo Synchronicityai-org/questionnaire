@@ -124,7 +124,7 @@ export function KidProfileHome() {
       setIsLoading(false);
       return;
     }
-
+    
     try {
       setIsLoading(true);
       setError(null);
@@ -227,11 +227,11 @@ export function KidProfileHome() {
         }>;
         
         const processedMembers = membersList.map(member => ({
-          id: member.id || '',
-          name: member.name || '',
-          role: member.role || 'MEMBER',
-          status: (member.status as 'ACTIVE' | 'PENDING' | 'INACTIVE') || 'PENDING',
-          imageUrl: member.imageUrl
+            id: member.id || '',
+            name: member.name || '',
+            role: member.role || 'MEMBER',
+            status: (member.status as 'ACTIVE' | 'PENDING' | 'INACTIVE') || 'PENDING',
+            imageUrl: member.imageUrl
         }));
         
         console.log('Team members processed:', processedMembers);
@@ -421,13 +421,13 @@ export function KidProfileHome() {
           </div>
           <div className="action-buttons">
             <button 
-              className="primary-button"
+              className="primary-button" 
               onClick={() => navigate(`/parent-concerns/${kidProfileId}`)}
             >
               Take Assessment
             </button>
             <button 
-              className="secondary-button"
+              className="secondary-button" 
               onClick={() => setShowHistory(true)}
             >
               View Past Assessments
@@ -439,15 +439,15 @@ export function KidProfileHome() {
           <tbody>
             <tr>
               <td className="left-column">
-                <div className="milestone-card">
-                  <div className="card-header">
-                    <h3>Current Milestone</h3>
+            <div className="milestone-card">
+              <div className="card-header">
+                <h3>Current Milestone</h3>
                     <span className="trophy-icon">
                       <TrophyIcon className="h-6 w-6 text-blue-600" />
                     </span>
                   </div>
                   {renderMilestoneContent()}
-                </div>
+              </div>
                 {renderProgressSection()}
               </td>
               <td className="right-column">
@@ -463,30 +463,30 @@ export function KidProfileHome() {
                       </div>
                     ) : (
                       teamMembers.map(member => (
-                        <div key={member.id} className="team-member">
-                          <div className="member-avatar">
-                            {member.imageUrl ? (
-                              <img src={member.imageUrl} alt={member.name} />
-                            ) : (
-                              <div className="avatar-placeholder">{member.name[0]}</div>
-                            )}
-                          </div>
-                          <div className="member-info">
-                            <h4>{member.name}</h4>
-                            <p>{member.role}</p>
-                          </div>
-                        </div>
+                  <div key={member.id} className="team-member">
+                    <div className="member-avatar">
+                      {member.imageUrl ? (
+                        <img src={member.imageUrl} alt={member.name} />
+                      ) : (
+                        <div className="avatar-placeholder">{member.name[0]}</div>
+                      )}
+                    </div>
+                    <div className="member-info">
+                      <h4>{member.name}</h4>
+                      <p>{member.role}</p>
+                    </div>
+                  </div>
                       ))
                     )}
-                  </div>
+              </div>
                   <button 
                     className="manage-team-button" 
                     onClick={handleManageTeam}
                     disabled={isManageTeamLoading}
                   >
-                    Manage Team
-                  </button>
-                </div>
+                Manage Team
+              </button>
+            </div>
 
                 <div className="resources-section">
                   <div className="card-header">
@@ -523,18 +523,18 @@ export function KidProfileHome() {
                   </div>
                 </div>
 
-                <div className="community-section">
-                  <h3>Community Insights</h3>
-                  <div className="insight-card">
-                    <h4>Visual Schedule Success</h4>
-                    <p>Using a visual schedule during morning routine helped reduce anxiety and improved transitions.</p>
-                    <div className="insight-meta">
-                      <span>24 👍</span>
-                      <span>about 1 hour ago</span>
-                      <span>by Emily K.</span>
-                    </div>
-                  </div>
+            <div className="community-section">
+              <h3>Community Insights</h3>
+              <div className="insight-card">
+                <h4>Visual Schedule Success</h4>
+                <p>Using a visual schedule during morning routine helped reduce anxiety and improved transitions.</p>
+                <div className="insight-meta">
+                  <span>24 👍</span>
+                  <span>about 1 hour ago</span>
+                  <span>by Emily K.</span>
                 </div>
+              </div>
+            </div>
               </td>
             </tr>
           </tbody>

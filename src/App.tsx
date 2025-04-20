@@ -17,6 +17,9 @@ import { KidProfileHome } from './components/KidProfileHome';
 import ProtectedRoute from './components/common/ProtectedRoute';
 import QuestionnaireForm from './components/QuestionnaireForm';
 import { ParentConcernsForm } from './components/ParentConcernsForm';
+import VisualSchedules from './components/resources/VisualSchedules';
+import SensoryActivities from './components/resources/SensoryActivities';
+import { CommunicationTools } from './components/resources/CommunicationTools';
 import './App.css';
 
 
@@ -121,6 +124,9 @@ const AppContent: React.FC = () => {
         <Routes>
           <Route path="/" element={<LandingPage />} />
           <Route path="/demo" element={<DemoDashboard />} />
+          <Route path="/resources/visual-schedules" element={<VisualSchedules />} />
+          <Route path="/resources/sensory-activities" element={<SensoryActivities />} />
+          <Route path="/resources/communication-tools" element={<CommunicationTools />} />
           <Route path="/questionnaire/demo" element={<QuestionnaireForm />} />
           <Route path="/dashboard" element={
             isAuthenticated ? (
