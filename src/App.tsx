@@ -121,6 +121,7 @@ const AppContent: React.FC = () => {
         <Routes>
           <Route path="/" element={<LandingPage />} />
           <Route path="/demo" element={<DemoDashboard />} />
+          <Route path="/questionnaire/demo" element={<QuestionnaireForm />} />
           <Route path="/dashboard" element={
             isAuthenticated ? (
               <Navigate to="/kid-profile" replace />
