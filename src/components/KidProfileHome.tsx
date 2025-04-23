@@ -32,14 +32,20 @@ interface Milestone {
   id: string;
   title: string;
   description: string;
+  tasks: MilestoneGroup[];
+  aha_moment?: string;
+}
+
+interface MilestoneGroup {
+  name: string;
   tasks: Task[];
 }
 
 interface Task {
-  id: string;
-  title: string;
-  description: string;
-  status: 'in-progress' | 'pending' | 'completed';
+  name: string;
+  parent_friendly_description: string;
+  home_friendly_strategies: string;
+  in_database: string;
 }
 
 interface TeamMember {
@@ -262,20 +268,35 @@ export function KidProfileHome() {
 
       if (milestoneResponse?.data?.[0]) {
         const milestone = milestoneResponse.data[0];
-        const processedMilestone = {
+        if (!milestone.id) {
+          console.error('Milestone ID is missing');
+          return;
+        }
+
+        const { data: tasks } = await client.models.Task.list({
+          filter: {
+            milestoneId: { eq: milestone.id }
+          }
+        });
+
+        // Transform the data to match the API response structure
+        const milestoneGroups: MilestoneGroup[] = [{
+          name: milestone.title || '',
+          tasks: tasks.map(task => ({
+            name: task.title || '',
+            parent_friendly_description: task.description || '',
+            home_friendly_strategies: task.videoLink || '',
+            in_database: 'true'
+          }))
+        }];
+
+        setCurrentMilestone({
           id: milestone.id || '',
           title: milestone.title || '',
           description: milestone.description || '',
-          tasks: Array.isArray(milestone.tasks) ? milestone.tasks.map(task => ({
-            id: task.id || '',
-            title: task.title || '',
-            description: task.description || '',
-            status: task.status || 'pending'
-          })) : []
-        };
-        
-        console.log('Current milestone processed:', processedMilestone);
-        setCurrentMilestone(processedMilestone);
+          tasks: milestoneGroups,
+          aha_moment: milestone.description || undefined // Handle null case
+        });
       } else {
         console.log('No milestone found for kid profile');
         setCurrentMilestone(null);
@@ -317,23 +338,51 @@ export function KidProfileHome() {
     }
 
     return (
-      <>
-        <h4>{currentMilestone.title}</h4>
-        <p>{currentMilestone.description}</p>
-        <div className="progress-bar">
-          <div className="progress" style={{ width: '65%' }}></div>
-        </div>
-        <div className="tasks-section">
-          <h4>Current Tasks</h4>
-          {currentMilestone.tasks.map(task => (
-            <div key={task.id} className="task-item">
-              <h5>{task.title}</h5>
-              <p>{task.description}</p>
-              <span className={`status ${task.status}`}>{task.status}</span>
+      <div className="milestone-content">
+        {/* Developmental Overview */}
+        {currentMilestone.description && (
+          <div className="overview-section">
+            <h4 className="section-title">Developmental Overview</h4>
+            <p className="overview-text">{currentMilestone.description}</p>
+          </div>
+        )}
+
+        {/* Milestones and Tasks */}
+        <div className="milestones-section">
+          {currentMilestone.tasks.map((milestone, index) => (
+            <div key={index} className="milestone-group">
+              {milestone.name && (
+                <h4 className="milestone-title">{milestone.name}</h4>
+              )}
+              <div className="tasks-list">
+                {milestone.tasks.map((task, taskIndex) => (
+                  <div key={taskIndex} className="task-card">
+                    <div className="task-header">
+                      <h5 className="task-title">{task.name}</h5>
+                      <span className="status-badge pending">New</span>
+                    </div>
+                    <p className="task-description">{task.parent_friendly_description}</p>
+                    {task.home_friendly_strategies && (
+                      <div className="task-strategy">
+                        <h6 className="strategy-title">Home Strategy:</h6>
+                        <p className="strategy-text">{task.home_friendly_strategies}</p>
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
             </div>
           ))}
         </div>
-      </>
+
+        {/* Aha Moment */}
+        {currentMilestone.aha_moment && (
+          <div className="insight-section">
+            <h4 className="section-title">Key Insight</h4>
+            <p className="insight-text">{currentMilestone.aha_moment}</p>
+          </div>
+        )}
+      </div>
     );
   };
 
@@ -427,7 +476,7 @@ export function KidProfileHome() {
               Take Assessment
             </button>
             <button 
-              className="secondary-button" 
+              className="primary-button" 
               onClick={() => setShowHistory(true)}
             >
               View Past Assessments

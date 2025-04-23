@@ -64,13 +64,18 @@ const QuestionnaireForm: React.FC = () => {
   const [showPastAssessments, setShowPastAssessments] = useState(false);
   const [pastAssessments, setPastAssessments] = useState<PastAssessment[]>([]);
   const [expandedAssessments, setExpandedAssessments] = useState<Set<string>>(new Set());
+  const [error, setError] = useState<string | null>(null);
 
   const categories: Question['category'][] = ['COGNITION', 'LANGUAGE', 'MOTOR', 'SOCIAL', 'EMOTIONAL'];
 
   useEffect(() => {
+    if (!kidProfileId) {
+      setError('Kid Profile ID is required');
+      return;
+    }
     fetchQuestions();
     fetchKidProfile();
-  }, []);
+  }, [kidProfileId]);
 
   const fetchKidProfile = async () => {
     if (!kidProfileId) return;
@@ -154,8 +159,12 @@ const QuestionnaireForm: React.FC = () => {
   };
 
   const handleCompleteAssessment = async () => {
-    if (!kidProfileId) return;
+    if (!kidProfileId) {
+      setError('Kid Profile ID is required');
+      return;
+    }
     setSubmitting(true);
+    setError(null);
 
     try {
       const timestamp = new Date().toISOString();
@@ -172,8 +181,84 @@ const QuestionnaireForm: React.FC = () => {
       const summary = createAssessmentSummary();
       setAssessmentSummary(summary);
       setShowSummary(true);
+
+      // Debug logging for API configuration
+      console.log('API Configuration:', {
+        url: import.meta.env.VITE_MILESTONES_API_URL,
+        hasKey: !!import.meta.env.VITE_MILESTONES_API_KEY
+      });
+
+      // Call the milestones API using environment variables
+      console.log('Calling milestones API...');
+      try {
+        const apiUrl = import.meta.env.VITE_MILESTONES_API_URL;
+        const apiKey = import.meta.env.VITE_MILESTONES_API_KEY;
+
+        if (!apiUrl || !apiKey) {
+          throw new Error('API URL or Key is missing. Please check your environment variables.');
+        }
+
+        const milestonesResponse = await fetch(apiUrl, {
+          method: 'POST',
+          headers: {
+            'x-api-key': apiKey,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            summary: "Based on the questionnaire responses, the child exhibits limited engagement in peer interactions, showing a strong preference for solitary play. The child maintains minimal eye contact and struggles to respond to social cues, such as being called by name. While the child may display some awareness of others, they do not actively initiate or sustain interactions, leading to difficulties in forming connections.",
+            notes: "I feel like my son is trapped in his own world. He doesn't play with other kids, and when I call his name, he doesn't even look at me. It breaks my heart to see him sitting alone while other children are laughing and playing. I don't know if he's ignoring me or if he just doesn't understand. I try so hard to get him to engage, but he pulls away. I don't want him to be lonely. I just want him to connect, even a little."
+          })
+        });
+
+        if (!milestonesResponse.ok) {
+          const errorText = await milestonesResponse.text();
+          console.error('API Response:', {
+            status: milestonesResponse.status,
+            statusText: milestonesResponse.statusText,
+            body: errorText,
+            url: apiUrl
+          });
+          throw new Error(`Failed to fetch milestones: ${milestonesResponse.status} ${milestonesResponse.statusText}`);
+        }
+
+        const responseData = await milestonesResponse.json();
+        console.log('Milestones API response:', responseData);
+
+        // Parse the document string from the response
+        const documentData = JSON.parse(responseData.content.document);
+        console.log('Parsed document data:', documentData);
+
+        // Create milestones and tasks
+        for (const milestoneData of documentData.milestones) {
+          // Create milestone
+          const { data: milestone } = await client.models.Milestone.create({
+            kidProfileId,
+            title: milestoneData.name,
+            description: documentData.developmental_overview
+          });
+
+          if (milestone && milestoneData.tasks) {
+            // Create tasks for this milestone
+            const taskPromises = milestoneData.tasks.map((task: any) => 
+              client.models.Task.create({
+                milestoneId: milestone.id,
+                title: task.name,
+                description: task.parent_friendly_description,
+                videoLink: task.home_friendly_strategies || ''
+              })
+            );
+            await Promise.all(taskPromises);
+          }
+        }
+
+      } catch (apiError) {
+        console.error('API Error:', apiError);
+        throw new Error(`API Error: ${apiError instanceof Error ? apiError.message : 'Unknown error'}`);
+      }
+
     } catch (error) {
       console.error('Error saving assessment:', error);
+      setError(error instanceof Error ? error.message : 'Failed to save assessment');
     } finally {
       setSubmitting(false);
     }
@@ -288,8 +373,20 @@ const QuestionnaireForm: React.FC = () => {
     fetchPastAssessments();
   };
 
+  if (error) {
+    return (
+      <div className="error-container">
+        <h2>Error</h2>
+        <p>{error}</p>
+        <button onClick={() => navigate('/')} className="back-button">
+          Go Back Home
+        </button>
+      </div>
+    );
+  }
+
   if (loading) {
-    return <div>Loading...</div>;
+    return <div className="loading">Loading...</div>;
   }
 
   if (showSummary && assessmentSummary) {
