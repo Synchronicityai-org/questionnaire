@@ -30,6 +30,16 @@ interface AssessmentSummary {
     }[];
   };
   parentConcerns?: string;
+  milestones?: {
+    name: string;
+    tasks: {
+      name: string;
+      description: string;
+      strategies: string;
+    }[];
+  }[];
+  developmentalOverview?: string;
+  ahaMoment?: string;
 }
 
 interface PastAssessment {
@@ -84,7 +94,6 @@ const QuestionnaireForm: React.FC = () => {
         id: kidProfileId
       });
       if (profile) {
-        setKidProfile(profile);
         // Fetch parent concerns
         const { data: concerns } = await client.models.ParentConcerns.list({
           filter: {
@@ -96,16 +105,60 @@ const QuestionnaireForm: React.FC = () => {
           new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
         );
         if (sortedConcerns.length > 0) {
-          setKidProfile({
-            ...profile,
-            parentConcerns: sortedConcerns[0].concernText
-          });
+          setKidProfile((prev: { parentConcerns?: string } | null) => ({
+            ...prev,
+            parentConcerns: sortedConcerns[0].concernText || ''
+          }));
+        } else {
+          setKidProfile(profile);
         }
       }
     } catch (error) {
       console.error('Error fetching kid profile:', error);
     }
   };
+
+  // Add a function to refresh parent concerns
+  const refreshParentConcerns = async () => {
+    if (!kidProfileId) return;
+    try {
+      const { data: concerns } = await client.models.ParentConcerns.list({
+        filter: {
+          kidProfileId: { eq: kidProfileId }
+        }
+      });
+      const sortedConcerns = concerns.sort((a, b) => 
+        new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
+      );
+      if (sortedConcerns.length > 0) {
+        setKidProfile(prev => ({
+          ...prev,
+          parentConcerns: sortedConcerns[0].concernText || ''
+        }));
+      }
+    } catch (error) {
+      console.error('Error refreshing parent concerns:', error);
+    }
+  };
+
+  // Add useEffect to refresh parent concerns when component mounts and when kidProfileId changes
+  useEffect(() => {
+    if (kidProfileId) {
+      refreshParentConcerns();
+    }
+  }, [kidProfileId]);
+
+  // Add useEffect to refresh parent concerns when the component is focused
+  useEffect(() => {
+    const handleFocus = () => {
+      refreshParentConcerns();
+    };
+
+    window.addEventListener('focus', handleFocus);
+    return () => {
+      window.removeEventListener('focus', handleFocus);
+    };
+  }, [kidProfileId]);
 
   const fetchQuestions = async () => {
     try {
@@ -158,6 +211,55 @@ const QuestionnaireForm: React.FC = () => {
     return summary;
   };
 
+  // Add a function to fetch milestones
+  const fetchMilestones = async () => {
+    if (!kidProfileId) return;
+    try {
+      const { data: milestones } = await client.models.Milestone.list({
+        filter: {
+          kidProfileId: { eq: kidProfileId }
+        }
+      });
+
+      // For each milestone, fetch its tasks
+      const milestonesWithTasks = await Promise.all(
+        milestones.map(async (milestone) => {
+          if (!milestone.id) return null;
+          const { data: tasks } = await client.models.Task.list({
+            filter: {
+              milestoneId: { eq: milestone.id }
+            }
+          });
+          return {
+            name: milestone.title || '',
+            tasks: tasks.map(task => ({
+              name: task.title || '',
+              description: task.description || '',
+              strategies: task.videoLink || ''
+            }))
+          };
+        })
+      );
+
+      // Filter out null milestones and update the assessment summary
+      const validMilestones = milestonesWithTasks.filter((milestone): milestone is NonNullable<typeof milestone> => milestone !== null);
+
+      // Update the assessment summary with the fetched milestones
+      setAssessmentSummary(prev => {
+        if (!prev) return null;
+        return {
+          ...prev,
+          milestones: validMilestones,
+          developmentalOverview: milestones[0]?.description || '',
+          ahaMoment: milestones[0]?.description || '' // Using description as aha moment for now
+        };
+      });
+
+    } catch (error) {
+      console.error('Error fetching milestones:', error);
+    }
+  };
+
   const handleCompleteAssessment = async () => {
     if (!kidProfileId) {
       setError('Kid Profile ID is required');
@@ -182,10 +284,96 @@ const QuestionnaireForm: React.FC = () => {
       setAssessmentSummary(summary);
       setShowSummary(true);
 
-      // Debug logging for API configuration
-      console.log('API Configuration:', {
-        url: import.meta.env.VITE_MILESTONES_API_URL,
-        hasKey: !!import.meta.env.VITE_MILESTONES_API_KEY
+      // Generate text summary from responses
+      const responseSummary = categories.map(category => {
+        const categoryQuestions = questions.filter(q => q.category === category);
+        const categoryResponses = categoryQuestions.map(q => {
+          const response = responses[q.id];
+          return {
+            question: q.question_text,
+            answer: response || 'Not answered'
+          };
+        });
+
+        return {
+          category,
+          responses: categoryResponses
+        };
+      });
+
+      // Generate narrative summary with detailed responses
+      const generateNarrativeSummary = (summary: Array<{
+        category: string;
+        responses: Array<{
+          question: string;
+          answer: string;
+        }>;
+      }>) => {
+        const narrativeParts = summary.map(category => {
+          const responses = category.responses;
+          const yesResponses = responses.filter(r => r.answer === 'YES');
+          const noResponses = responses.filter(r => r.answer === 'NO');
+          const sometimesResponses = responses.filter(r => r.answer === 'SOMETIMES');
+
+          let categoryNarrative = `In the ${category.category.toLowerCase()} category:\n\n`;
+          
+          // Add detailed responses
+          responses.forEach(r => {
+            categoryNarrative += `Question: ${r.question}\nResponse: ${r.answer}\n\n`;
+          });
+
+          // Add summary
+          categoryNarrative += `Summary: `;
+          
+          if (yesResponses.length > 0) {
+            categoryNarrative += `The child shows strength in ${yesResponses.map(r => r.question.toLowerCase()).join(', ')}. `;
+          }
+          
+          if (noResponses.length > 0) {
+            categoryNarrative += `However, they struggle with ${noResponses.map(r => r.question.toLowerCase()).join(', ')}. `;
+          }
+          
+          if (sometimesResponses.length > 0) {
+            categoryNarrative += `There is inconsistent performance in ${sometimesResponses.map(r => r.question.toLowerCase()).join(', ')}. `;
+          }
+
+          return categoryNarrative;
+        });
+
+        return narrativeParts.join('\n\n');
+      };
+
+      const summaryText = generateNarrativeSummary(responseSummary);
+
+      // Log the summary text
+      console.log('User Response Summary:', {
+        summaryText,
+        responseSummary,
+        categories: categories.map(category => ({
+          category,
+          questionCount: questions.filter(q => q.category === category).length,
+          answeredCount: questions.filter(q => q.category === category && responses[q.id]).length
+        }))
+      });
+
+      // Fetch parent concerns
+      const { data: concerns } = await client.models.ParentConcerns.list({
+        filter: {
+          kidProfileId: { eq: kidProfileId }
+        }
+      });
+
+      // Get the most recent parent concerns
+      const sortedConcerns = concerns.sort((a, b) => 
+        new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
+      );
+      const latestConcerns = sortedConcerns[0]?.concernText || "No parent concerns provided.";
+
+      // Log parent concerns
+      console.log('Parent Concerns:', {
+        latestConcerns,
+        totalConcerns: concerns.length,
+        timestamp: sortedConcerns[0]?.timestamp
       });
 
       // Call the milestones API using environment variables
@@ -198,6 +386,20 @@ const QuestionnaireForm: React.FC = () => {
           throw new Error('API URL or Key is missing. Please check your environment variables.');
         }
 
+        // Log the complete API payload
+        console.log('API Payload:', {
+          url: apiUrl,
+          method: 'POST',
+          headers: {
+            'x-api-key': '***hidden***',
+            'Content-Type': 'application/json'
+          },
+          body: {
+            summary: summaryText,
+            notes: latestConcerns
+          }
+        });
+
         const milestonesResponse = await fetch(apiUrl, {
           method: 'POST',
           headers: {
@@ -205,8 +407,8 @@ const QuestionnaireForm: React.FC = () => {
             'Content-Type': 'application/json'
           },
           body: JSON.stringify({
-            summary: "Based on the questionnaire responses, the child exhibits limited engagement in peer interactions, showing a strong preference for solitary play. The child maintains minimal eye contact and struggles to respond to social cues, such as being called by name. While the child may display some awareness of others, they do not actively initiate or sustain interactions, leading to difficulties in forming connections.",
-            notes: "I feel like my son is trapped in his own world. He doesn't play with other kids, and when I call his name, he doesn't even look at me. It breaks my heart to see him sitting alone while other children are laughing and playing. I don't know if he's ignoring me or if he just doesn't understand. I try so hard to get him to engage, but he pulls away. I don't want him to be lonely. I just want him to connect, even a little."
+            summary: summaryText,
+            notes: latestConcerns
           })
         });
 
@@ -222,11 +424,18 @@ const QuestionnaireForm: React.FC = () => {
         }
 
         const responseData = await milestonesResponse.json();
-        console.log('Milestones API response:', responseData);
+        console.log('API Response Data:', {
+          status: milestonesResponse.status,
+          data: responseData
+        });
 
         // Parse the document string from the response
         const documentData = JSON.parse(responseData.content.document);
-        console.log('Parsed document data:', documentData);
+        console.log('Parsed Document Data:', {
+          developmental_overview: documentData.developmental_overview,
+          milestones: documentData.milestones,
+          aha_moment: documentData.aha_moment
+        });
 
         // Create milestones and tasks
         for (const milestoneData of documentData.milestones) {
@@ -251,10 +460,28 @@ const QuestionnaireForm: React.FC = () => {
           }
         }
 
+        // Update the assessment summary with the milestone data
+        setAssessmentSummary(prev => ({
+          ...prev!,
+          milestones: documentData.milestones.map((milestone: any) => ({
+            name: milestone.name,
+            tasks: milestone.tasks.map((task: any) => ({
+              name: task.name,
+              description: task.parent_friendly_description,
+              strategies: task.home_friendly_strategies
+            }))
+          })),
+          developmentalOverview: documentData.developmental_overview,
+          ahaMoment: documentData.aha_moment
+        }));
+
       } catch (apiError) {
         console.error('API Error:', apiError);
         throw new Error(`API Error: ${apiError instanceof Error ? apiError.message : 'Unknown error'}`);
       }
+
+      // After saving milestones and tasks, fetch them to update the UI
+      await fetchMilestones();
 
     } catch (error) {
       console.error('Error saving assessment:', error);
@@ -263,6 +490,13 @@ const QuestionnaireForm: React.FC = () => {
       setSubmitting(false);
     }
   };
+
+  // Add useEffect to fetch milestones when component mounts
+  useEffect(() => {
+    if (kidProfileId) {
+      fetchMilestones();
+    }
+  }, [kidProfileId]);
 
   const handleBackToProfile = () => {
     navigate(`/kid-profile/${kidProfileId}`);
@@ -407,6 +641,45 @@ const QuestionnaireForm: React.FC = () => {
                   </tr>
                 </tbody>
               </table>
+            </div>
+          )}
+
+          {assessmentSummary.developmentalOverview && (
+            <div className="developmental-overview">
+              <h3>Developmental Overview</h3>
+              <p>{assessmentSummary.developmentalOverview}</p>
+            </div>
+          )}
+
+          {assessmentSummary.milestones && assessmentSummary.milestones.length > 0 && (
+            <div className="milestones-section">
+              <h3>Recommended Milestones</h3>
+              {assessmentSummary.milestones.map((milestone, index) => (
+                <div key={index} className="milestone-card">
+                  <h4>{milestone.name}</h4>
+                  <div className="tasks-list">
+                    {milestone.tasks.map((task, taskIndex) => (
+                      <div key={taskIndex} className="task-item">
+                        <h5>{task.name}</h5>
+                        <p>{task.description}</p>
+                        {task.strategies && (
+                          <div className="strategies">
+                            <h6>Home Strategies:</h6>
+                            <p>{task.strategies}</p>
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {assessmentSummary.ahaMoment && (
+            <div className="aha-moment">
+              <h3>Key Insight</h3>
+              <p>{assessmentSummary.ahaMoment}</p>
             </div>
           )}
 
