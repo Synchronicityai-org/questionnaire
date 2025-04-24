@@ -60,6 +60,17 @@ interface PastAssessment {
   answeredQuestions: number;
 }
 
+interface KidProfile {
+  id: string;
+  name: string;
+  age: number | null;
+  dob: string;
+  parentId: string;
+  isAutismDiagnosed: boolean;
+  isDummy: boolean;
+  parentConcerns?: string;
+}
+
 const QuestionnaireForm: React.FC = () => {
   const { kidProfileId } = useParams<{ kidProfileId: string }>();
   const navigate = useNavigate();
@@ -68,7 +79,7 @@ const QuestionnaireForm: React.FC = () => {
   const [responses, setResponses] = useState<{ [key: string]: string }>({});
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
-  const [kidProfile, setKidProfile] = useState<any>(null);
+  const [kidProfile, setKidProfile] = useState<KidProfile | null>(null);
   const [showSummary, setShowSummary] = useState(false);
   const [assessmentSummary, setAssessmentSummary] = useState<AssessmentSummary | null>(null);
   const [showPastAssessments, setShowPastAssessments] = useState(false);
@@ -105,12 +116,21 @@ const QuestionnaireForm: React.FC = () => {
           new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
         );
         if (sortedConcerns.length > 0) {
-          setKidProfile((prev: { parentConcerns?: string } | null) => ({
+          setKidProfile(prev => prev ? {
             ...prev,
             parentConcerns: sortedConcerns[0].concernText || ''
-          }));
+          } : null);
         } else {
-          setKidProfile(profile);
+          const profileData: KidProfile = {
+            id: profile.id || '',
+            name: profile.name || '',
+            age: profile.age || null,
+            dob: profile.dob || '',
+            parentId: profile.parentId || '',
+            isAutismDiagnosed: profile.isAutismDiagnosed || false,
+            isDummy: profile.isDummy || false
+          };
+          setKidProfile(profileData);
         }
       }
     } catch (error) {
@@ -131,10 +151,10 @@ const QuestionnaireForm: React.FC = () => {
         new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
       );
       if (sortedConcerns.length > 0) {
-        setKidProfile(prev => ({
+        setKidProfile(prev => prev ? {
           ...prev,
           parentConcerns: sortedConcerns[0].concernText || ''
-        }));
+        } : null);
       }
     } catch (error) {
       console.error('Error refreshing parent concerns:', error);
