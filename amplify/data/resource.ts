@@ -38,6 +38,7 @@ const schema = a.schema({
     parent: a.belongsTo("User", "parentId"),
     team: a.hasOne("Team", "kidProfileId"),
     milestones: a.hasMany("Milestone", "kidProfileId"),
+    milestoneTasks: a.hasMany("MilestoneTask", "kidProfileId"),
     userResponses: a.hasMany("UserResponse", "kidProfileId"),
     parentConcerns: a.hasMany("ParentConcerns", "kidProfileId"),
     isDummy: a.boolean().required().default(false),
@@ -164,6 +165,25 @@ const schema = a.schema({
     respondedAt: a.datetime(),
     message: a.string(), // Optional message from requester
     responseMessage: a.string(), // Optional response message from admin
+  })
+  .authorization((allow) => [allow.owner(), allow.publicApiKey()]),
+
+  MilestoneTask: a.model({
+    id: a.id(),
+    kidProfileId: a.string().required(),
+    KidProfile: a.belongsTo("KidProfile", "kidProfileId"),
+    title: a.string().required(),
+    type: a.enum(['MILESTONE', 'TASK']),
+    parentId: a.string(),
+    developmentalOverview: a.string(),
+    parentFriendlyDescription: a.string(),
+    strategies: a.string(),
+    status: a.enum(['NOT_STARTED', 'IN_PROGRESS', 'COMPLETED']),
+    parentFeedback: a.string(),
+    isEffective: a.boolean(),
+    feedbackDate: a.datetime(),
+    createdAt: a.datetime(),
+    updatedAt: a.datetime(),
   })
   .authorization((allow) => [allow.owner(), allow.publicApiKey()]),
 });
