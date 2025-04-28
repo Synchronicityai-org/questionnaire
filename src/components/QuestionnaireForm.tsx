@@ -459,15 +459,26 @@ const QuestionnaireForm: React.FC = () => {
 
         // Create milestones and tasks
         for (const milestoneData of documentData.milestones) {
-          // Create milestone
+          // Create milestone in old structure
           const { data: milestone } = await client.models.Milestone.create({
             kidProfileId,
             title: milestoneData.name,
             description: documentData.developmental_overview
           });
 
+          // Create milestone in new MilestoneTask structure
+          const { data: milestoneTask } = await client.models.MilestoneTask.create({
+            kidProfileId,
+            title: milestoneData.name,
+            type: 'MILESTONE',
+            developmentalOverview: documentData.developmental_overview,
+            status: 'NOT_STARTED',
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString()
+          });
+
           if (milestone && milestoneData.tasks) {
-            // Create tasks for this milestone
+            // Create tasks for old structure
             const taskPromises = milestoneData.tasks.map((task: any) => 
               client.models.Task.create({
                 milestoneId: milestone.id,
@@ -477,6 +488,24 @@ const QuestionnaireForm: React.FC = () => {
               })
             );
             await Promise.all(taskPromises);
+
+            // Create tasks for new MilestoneTask structure
+            if (milestoneTask) {
+              const milestoneTaskPromises = milestoneData.tasks.map((task: any) => 
+                client.models.MilestoneTask.create({
+                  kidProfileId,
+                  title: task.name,
+                  type: 'TASK',
+                  parentId: milestoneTask.id,
+                  parentFriendlyDescription: task.parent_friendly_description,
+                  strategies: task.home_friendly_strategies || '',
+                  status: 'NOT_STARTED',
+                  createdAt: new Date().toISOString(),
+                  updatedAt: new Date().toISOString()
+                })
+              );
+              await Promise.all(milestoneTaskPromises);
+            }
           }
         }
 
