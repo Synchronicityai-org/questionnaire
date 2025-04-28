@@ -60,17 +60,6 @@ interface PastAssessment {
   answeredQuestions: number;
 }
 
-interface KidProfile {
-  id: string;
-  name: string;
-  age: number | null;
-  dob: string;
-  parentId: string;
-  isAutismDiagnosed: boolean;
-  isDummy: boolean;
-  parentConcerns?: string;
-}
-
 const QuestionnaireForm: React.FC = () => {
   const { kidProfileId } = useParams<{ kidProfileId: string }>();
   const navigate = useNavigate();
