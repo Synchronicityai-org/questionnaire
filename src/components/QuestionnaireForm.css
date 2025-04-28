@@ -1511,4 +1511,42 @@ html {
 
 .submit-button:hover {
   background-color: #1557b0;
+}
+
+.parent-concerns {
+  background: #f8f9fa;
+  padding: 1.5rem;
+  border-radius: 8px;
+  margin-bottom: 2rem;
+  border-left: 4px solid #1a73e8;
+}
+
+.parent-concerns h3 {
+  color: #1a73e8;
+  margin-bottom: 1rem;
+  font-size: 1.2rem;
+}
+
+.concerns-input {
+  background: white;
+  padding: 1rem;
+  border-radius: 4px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.concerns-input textarea {
+  width: 100%;
+  min-height: 150px;
+  padding: 1rem;
+  border: 1px solid #e0e0e0;
+  border-radius: 4px;
+  font-size: 1rem;
+  line-height: 1.5;
+  resize: vertical;
+}
+
+.concerns-input textarea:focus {
+  outline: none;
+  border-color: #1a73e8;
+  box-shadow: 0 0 0 2px rgba(26, 115, 232, 0.2);
 } 

@@ -4,7 +4,7 @@ import { getCurrentUser } from 'aws-amplify/auth';
 import type { Schema } from '../../amplify/data/resource';
 import './KidProfileHome.css';
 import { AssessmentHistory } from './AssessmentHistory';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { 
   CalendarIcon, 
   PuzzlePieceIcon, 
@@ -58,14 +58,17 @@ interface TeamMember {
 
 export function KidProfileHome() {
   const { kidProfileId } = useParams<{ kidProfileId?: string }>();
+  const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const [profile, setProfile] = useState<KidProfile | null>(null);
   const [currentMilestone, setCurrentMilestone] = useState<Milestone | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [isMilestoneLoading, setIsMilestoneLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
   const [showHistory, setShowHistory] = useState(false);
   const [isManageTeamLoading, setIsManageTeamLoading] = useState(false);
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
 
   // Reset states when kidProfileId changes
   useEffect(() => {
@@ -87,6 +90,48 @@ export function KidProfileHome() {
 
     initializeData();
   }, [kidProfileId]);
+
+  // Add useEffect to refresh milestones when component mounts and when window gains focus
+  useEffect(() => {
+    const handleFocus = () => {
+      if (kidProfileId) {
+        fetchCurrentMilestone();
+      }
+    };
+
+    window.addEventListener('focus', handleFocus);
+    return () => {
+      window.removeEventListener('focus', handleFocus);
+    };
+  }, [kidProfileId]);
+
+  // Add useEffect to refresh milestones periodically
+  useEffect(() => {
+    if (kidProfileId) {
+      const interval = setInterval(() => {
+        fetchCurrentMilestone();
+      }, 30000); // Refresh every 30 seconds
+
+      return () => clearInterval(interval);
+    }
+  }, [kidProfileId]);
+
+  // Effect to fetch milestones when URL parameter changes
+  useEffect(() => {
+    if (kidProfileId) {
+      const fetchLatestMilestones = async () => {
+        setIsMilestoneLoading(true);
+        try {
+          await fetchCurrentMilestone();
+        } catch (error) {
+          console.error('Error fetching latest milestones:', error);
+        } finally {
+          setIsMilestoneLoading(false);
+        }
+      };
+      fetchLatestMilestones();
+    }
+  }, [kidProfileId, searchParams.get('t')]);
 
   const loadFirstKidProfile = async () => {
     try {
@@ -259,10 +304,12 @@ export function KidProfileHome() {
     }
     
     try {
+      setIsMilestoneLoading(true);
       console.log('Fetching current milestone for kid profile:', kidProfileId);
-      const milestoneResponse = await client.models.Milestone.list({
+      const milestoneResponse = await client.models.MilestoneTask.list({
         filter: {
-          kidProfileId: { eq: kidProfileId }
+          kidProfileId: { eq: kidProfileId },
+          type: { eq: 'MILESTONE' }
         }
       });
 
@@ -273,9 +320,11 @@ export function KidProfileHome() {
           return;
         }
 
-        const { data: tasks } = await client.models.Task.list({
+        const { data: tasks } = await client.models.MilestoneTask.list({
           filter: {
-            milestoneId: { eq: milestone.id }
+            kidProfileId: { eq: kidProfileId },
+            type: { eq: 'TASK' },
+            parentId: { eq: milestone.id }
           }
         });
 
@@ -284,8 +333,8 @@ export function KidProfileHome() {
           name: milestone.title || '',
           tasks: tasks.map(task => ({
             name: task.title || '',
-            parent_friendly_description: task.description || '',
-            home_friendly_strategies: task.videoLink || '',
+            parent_friendly_description: task.parentFriendlyDescription || '',
+            home_friendly_strategies: task.strategies || '',
             in_database: 'true'
           }))
         }];
@@ -293,9 +342,9 @@ export function KidProfileHome() {
         setCurrentMilestone({
           id: milestone.id || '',
           title: milestone.title || '',
-          description: milestone.description || '',
+          description: milestone.developmentalOverview || '',
           tasks: milestoneGroups,
-          aha_moment: milestone.description || undefined // Handle null case
+          aha_moment: milestone.developmentalOverview || undefined // Handle null case
         });
       } else {
         console.log('No milestone found for kid profile');
@@ -304,6 +353,8 @@ export function KidProfileHome() {
     } catch (error) {
       console.error('Error fetching current milestone:', error);
       setCurrentMilestone(null);
+    } finally {
+      setIsMilestoneLoading(false);
     }
   };
 
@@ -312,9 +363,18 @@ export function KidProfileHome() {
     navigate(`/team-management/${kidProfileId}`);
   };
 
+  const handleAssessmentComplete = () => {
+    setRefreshTrigger(prev => prev + 1);
+  };
+
   const renderMilestoneContent = () => {
-    if (isLoading) {
-      return <div className="loading">Loading milestone data...</div>;
+    if (isLoading || isMilestoneLoading) {
+      return (
+        <div className="loading">
+          <div className="loading-spinner"></div>
+          <p>Loading milestone data...</p>
+        </div>
+      );
     }
 
     if (!currentMilestone) {
@@ -374,14 +434,6 @@ export function KidProfileHome() {
             </div>
           ))}
         </div>
-
-        {/* Aha Moment */}
-        {currentMilestone.aha_moment && (
-          <div className="insight-section">
-            <h4 className="section-title">Key Insight</h4>
-            <p className="insight-text">{currentMilestone.aha_moment}</p>
-          </div>
-        )}
       </div>
     );
   };
@@ -457,7 +509,12 @@ export function KidProfileHome() {
   }
 
   if (showHistory && kidProfileId) {
-    return <AssessmentHistory kidProfileId={kidProfileId} onClose={() => setShowHistory(false)} displayFormat="qa" />;
+    return <AssessmentHistory 
+      kidProfileId={kidProfileId} 
+      onClose={() => setShowHistory(false)} 
+      displayFormat="qa"
+      onRefresh={handleAssessmentComplete}
+    />;
   }
 
   return (
@@ -593,6 +650,7 @@ export function KidProfileHome() {
         <AssessmentHistory
           kidProfileId={kidProfileId || ''}
           onClose={() => setShowHistory(false)}
+          onRefresh={handleAssessmentComplete}
         />
       )}
     </div>

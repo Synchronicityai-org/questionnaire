@@ -9,6 +9,7 @@ interface AssessmentHistoryProps {
   kidProfileId: string;
   onClose: () => void;
   displayFormat?: 'summary' | 'qa';
+  onRefresh?: () => void;
 }
 
 type Category = "COGNITION" | "LANGUAGE" | "MOTOR" | "SOCIAL" | "EMOTIONAL";
@@ -23,7 +24,7 @@ type GroupedResponse = {
   }[];
 };
 
-export function AssessmentHistory({ kidProfileId, onClose, displayFormat = 'summary' }: AssessmentHistoryProps) {
+export function AssessmentHistory({ kidProfileId, onClose, displayFormat = 'summary', onRefresh }: AssessmentHistoryProps) {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [assessments, setAssessments] = useState<GroupedResponse[]>([]);
@@ -241,6 +242,13 @@ export function AssessmentHistory({ kidProfileId, onClose, displayFormat = 'summ
     );
   };
 
+  const handleClose = () => {
+    if (onRefresh) {
+      onRefresh();
+    }
+    onClose();
+  };
+
   if (isLoading) {
     return <div className="questionnaire-status">Loading assessment history...</div>;
   }
@@ -257,7 +265,7 @@ export function AssessmentHistory({ kidProfileId, onClose, displayFormat = 'summ
     <div className="assessment-history">
       <div className="header">
         <h2>Assessment History</h2>
-        <button onClick={onClose} className="close-button">Close</button>
+        <button onClick={handleClose} className="close-button">Close</button>
       </div>
       <div className="assessments-list">
         {assessments.map((assessment, index) => (

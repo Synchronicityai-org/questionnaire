@@ -199,7 +199,7 @@ const QuestionnaireForm: React.FC = () => {
     setResponses(prev => ({ ...prev, [questionId]: value }));
   };
 
-  const createAssessmentSummary = (): AssessmentSummary => {
+  const createAssessmentSummary = async (): Promise<AssessmentSummary> => {
     const summary: AssessmentSummary = {
       totalQuestions: questions.length,
       answeredQuestions: Object.keys(responses).length,
@@ -224,8 +224,24 @@ const QuestionnaireForm: React.FC = () => {
       }));
     });
 
-    if (kidProfile?.parentConcerns) {
-      summary.parentConcerns = kidProfile.parentConcerns;
+    // Fetch parent concerns
+    if (kidProfileId) {
+      try {
+        const { data: concerns } = await client.models.ParentConcerns.list({
+          filter: {
+            kidProfileId: { eq: kidProfileId }
+          }
+        });
+        // Sort concerns by timestamp and get the most recent one
+        const sortedConcerns = concerns.sort((a, b) => 
+          new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
+        );
+        if (sortedConcerns.length > 0) {
+          summary.parentConcerns = sortedConcerns[0].concernText || '';
+        }
+      } catch (error) {
+        console.error('Error fetching parent concerns:', error);
+      }
     }
 
     return summary;
@@ -300,7 +316,7 @@ const QuestionnaireForm: React.FC = () => {
       });
 
       await Promise.all(responsePromises);
-      const summary = createAssessmentSummary();
+      const summary = await createAssessmentSummary();
       setAssessmentSummary(summary);
       setShowSummary(true);
 
@@ -449,48 +465,48 @@ const QuestionnaireForm: React.FC = () => {
           data: responseData
         });
 
-        // Parse the document string from the response
-        const documentData = JSON.parse(responseData.content.document);
-        console.log('Parsed Document Data:', {
-          developmental_overview: documentData.developmental_overview,
-          milestones: documentData.milestones,
-          aha_moment: documentData.aha_moment
-        });
+        // Log the raw document string to see what's wrong
+        console.log('Raw document string:', responseData.content.document);
 
-        // Create milestones and tasks
-        for (const milestoneData of documentData.milestones) {
-          // Create milestone in old structure
-          const { data: milestone } = await client.models.Milestone.create({
-            kidProfileId,
-            title: milestoneData.name,
-            description: documentData.developmental_overview
+        try {
+          // Parse the document string from the response
+          const documentData = JSON.parse(responseData.content.document);
+          console.log('Parsed Document Data:', {
+            developmental_overview: documentData.developmental_overview,
+            milestones: documentData.milestones,
+            aha_moment: documentData.aha_moment
           });
 
-          // Create milestone in new MilestoneTask structure
-          const { data: milestoneTask } = await client.models.MilestoneTask.create({
-            kidProfileId,
-            title: milestoneData.name,
-            type: 'MILESTONE',
-            developmentalOverview: documentData.developmental_overview,
-            status: 'NOT_STARTED',
-            createdAt: new Date().toISOString(),
-            updatedAt: new Date().toISOString()
+          // First, delete existing milestone tasks for this kid profile
+          const existingMilestones = await client.models.MilestoneTask.list({
+            filter: {
+              kidProfileId: { eq: kidProfileId }
+            }
           });
 
-          if (milestone && milestoneData.tasks) {
-            // Create tasks for old structure
-            const taskPromises = milestoneData.tasks.map((task: any) => 
-              client.models.Task.create({
-                milestoneId: milestone.id,
-                title: task.name,
-                description: task.parent_friendly_description,
-                videoLink: task.home_friendly_strategies || ''
-              })
+          // Delete all existing milestone tasks
+          if (existingMilestones.data) {
+            const deletePromises = existingMilestones.data.map(milestone => 
+              client.models.MilestoneTask.delete({ id: milestone.id! })
             );
-            await Promise.all(taskPromises);
+            await Promise.all(deletePromises);
+          }
 
-            // Create tasks for new MilestoneTask structure
+          // Create new milestone tasks
+          for (const milestoneData of documentData.milestones) {
+            // Create milestone in new MilestoneTask structure
+            const { data: milestoneTask } = await client.models.MilestoneTask.create({
+              kidProfileId,
+              title: milestoneData.name,
+              type: 'MILESTONE',
+              developmentalOverview: documentData.developmental_overview,
+              status: 'NOT_STARTED',
+              createdAt: new Date().toISOString(),
+              updatedAt: new Date().toISOString()
+            });
+
             if (milestoneTask) {
+              // Create tasks for new MilestoneTask structure
               const milestoneTaskPromises = milestoneData.tasks.map((task: any) => 
                 client.models.MilestoneTask.create({
                   kidProfileId,
@@ -507,22 +523,33 @@ const QuestionnaireForm: React.FC = () => {
               await Promise.all(milestoneTaskPromises);
             }
           }
-        }
 
-        // Update the assessment summary with the milestone data
-        setAssessmentSummary(prev => ({
-          ...prev!,
-          milestones: documentData.milestones.map((milestone: any) => ({
-            name: milestone.name,
-            tasks: milestone.tasks.map((task: any) => ({
-              name: task.name,
-              description: task.parent_friendly_description,
-              strategies: task.home_friendly_strategies
-            }))
-          })),
-          developmentalOverview: documentData.developmental_overview,
-          ahaMoment: documentData.aha_moment
-        }));
+          // Update the assessment summary with the milestone data
+          setAssessmentSummary(prev => ({
+            ...prev!,
+            milestones: documentData.milestones.map((milestone: any) => ({
+              name: milestone.name,
+              tasks: milestone.tasks.map((task: any) => ({
+                name: task.name,
+                description: task.parent_friendly_description,
+                strategies: task.home_friendly_strategies
+              }))
+            })),
+            developmentalOverview: documentData.developmental_overview,
+            ahaMoment: documentData.aha_moment
+          }));
+
+          // Force a refresh of the milestone data
+          await fetchMilestones();
+
+          // Navigate back to profile with a timestamp to force refresh
+          navigate(`/kid-profile/${kidProfileId}?t=${Date.now()}`);
+
+        } catch (parseError: unknown) {
+          console.error('Error parsing API response:', parseError);
+          console.error('Raw response:', responseData);
+          throw new Error(`Failed to parse API response: ${parseError instanceof Error ? parseError.message : 'Unknown error'}`);
+        }
 
       } catch (apiError) {
         console.error('API Error:', apiError);
@@ -679,58 +706,12 @@ const QuestionnaireForm: React.FC = () => {
           <h2>Assessment Summary</h2>
         </div>
         <div className="summary-content">
-          {assessmentSummary.parentConcerns && (
-            <div className="parent-concerns">
-              <h3>Parent Concerns</h3>
-              <table className="summary-table">
-                <tbody>
-                  <tr>
-                    <td><strong>Concerns:</strong></td>
-                    <td>{assessmentSummary.parentConcerns}</td>
-                  </tr>
-                </tbody>
-              </table>
+          <div className="parent-concerns">
+            <h3>Parent Concerns</h3>
+            <div className="concerns-text">
+              {assessmentSummary.parentConcerns || 'No concerns reported'}
             </div>
-          )}
-
-          {assessmentSummary.developmentalOverview && (
-            <div className="developmental-overview">
-              <h3>Developmental Overview</h3>
-              <p>{assessmentSummary.developmentalOverview}</p>
-            </div>
-          )}
-
-          {assessmentSummary.milestones && assessmentSummary.milestones.length > 0 && (
-            <div className="milestones-section">
-              <h3>Recommended Milestones</h3>
-              {assessmentSummary.milestones.map((milestone, index) => (
-                <div key={index} className="milestone-card">
-                  <h4>{milestone.name}</h4>
-                  <div className="tasks-list">
-                    {milestone.tasks.map((task, taskIndex) => (
-                      <div key={taskIndex} className="task-item">
-                        <h5>{task.name}</h5>
-                        <p>{task.description}</p>
-                        {task.strategies && (
-                          <div className="strategies">
-                            <h6>Home Strategies:</h6>
-                            <p>{task.strategies}</p>
-                          </div>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-
-          {assessmentSummary.ahaMoment && (
-            <div className="aha-moment">
-              <h3>Key Insight</h3>
-              <p>{assessmentSummary.ahaMoment}</p>
-            </div>
-          )}
+          </div>
 
           <h3>Assessment Overview</h3>
           <table className="summary-table">
