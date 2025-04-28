@@ -68,7 +68,6 @@ export function KidProfileHome() {
   const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
   const [showHistory, setShowHistory] = useState(false);
   const [isManageTeamLoading, setIsManageTeamLoading] = useState(false);
-  const [refreshTrigger, setRefreshTrigger] = useState(0);
 
   // Reset states when kidProfileId changes
   useEffect(() => {
@@ -79,6 +78,7 @@ export function KidProfileHome() {
     setIsLoading(true);
   }, [kidProfileId]);
 
+  // Load initial data
   useEffect(() => {
     const initializeData = async () => {
       if (kidProfileId) {
@@ -89,31 +89,6 @@ export function KidProfileHome() {
     };
 
     initializeData();
-  }, [kidProfileId]);
-
-  // Add useEffect to refresh milestones when component mounts and when window gains focus
-  useEffect(() => {
-    const handleFocus = () => {
-      if (kidProfileId) {
-        fetchCurrentMilestone();
-      }
-    };
-
-    window.addEventListener('focus', handleFocus);
-    return () => {
-      window.removeEventListener('focus', handleFocus);
-    };
-  }, [kidProfileId]);
-
-  // Add useEffect to refresh milestones periodically
-  useEffect(() => {
-    if (kidProfileId) {
-      const interval = setInterval(() => {
-        fetchCurrentMilestone();
-      }, 30000); // Refresh every 30 seconds
-
-      return () => clearInterval(interval);
-    }
   }, [kidProfileId]);
 
   // Effect to fetch milestones when URL parameter changes
@@ -364,7 +339,7 @@ export function KidProfileHome() {
   };
 
   const handleAssessmentComplete = () => {
-    setRefreshTrigger(prev => prev + 1);
+    // Refresh logic
   };
 
   const renderMilestoneContent = () => {
