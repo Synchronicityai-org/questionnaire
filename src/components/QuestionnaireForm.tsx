@@ -79,7 +79,6 @@ const QuestionnaireForm: React.FC = () => {
   const [responses, setResponses] = useState<{ [key: string]: string }>({});
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
-  const [kidProfile, setKidProfile] = useState<KidProfile | null>(null);
   const [showSummary, setShowSummary] = useState(false);
   const [assessmentSummary, setAssessmentSummary] = useState<AssessmentSummary | null>(null);
   const [showPastAssessments, setShowPastAssessments] = useState(false);
@@ -95,89 +94,6 @@ const QuestionnaireForm: React.FC = () => {
       return;
     }
     fetchQuestions();
-    fetchKidProfile();
-  }, [kidProfileId]);
-
-  const fetchKidProfile = async () => {
-    if (!kidProfileId) return;
-    try {
-      const { data: profile } = await client.models.KidProfile.get({
-        id: kidProfileId
-      });
-      if (profile) {
-        // Fetch parent concerns
-        const { data: concerns } = await client.models.ParentConcerns.list({
-          filter: {
-            kidProfileId: { eq: kidProfileId }
-          }
-        });
-        // Sort concerns by timestamp and get the most recent one
-        const sortedConcerns = concerns.sort((a, b) => 
-          new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
-        );
-        if (sortedConcerns.length > 0) {
-          setKidProfile(prev => prev ? {
-            ...prev,
-            parentConcerns: sortedConcerns[0].concernText || ''
-          } : null);
-        } else {
-          const profileData: KidProfile = {
-            id: profile.id || '',
-            name: profile.name || '',
-            age: profile.age || null,
-            dob: profile.dob || '',
-            parentId: profile.parentId || '',
-            isAutismDiagnosed: profile.isAutismDiagnosed || false,
-            isDummy: profile.isDummy || false
-          };
-          setKidProfile(profileData);
-        }
-      }
-    } catch (error) {
-      console.error('Error fetching kid profile:', error);
-    }
-  };
-
-  // Add a function to refresh parent concerns
-  const refreshParentConcerns = async () => {
-    if (!kidProfileId) return;
-    try {
-      const { data: concerns } = await client.models.ParentConcerns.list({
-        filter: {
-          kidProfileId: { eq: kidProfileId }
-        }
-      });
-      const sortedConcerns = concerns.sort((a, b) => 
-        new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
-      );
-      if (sortedConcerns.length > 0) {
-        setKidProfile(prev => prev ? {
-          ...prev,
-          parentConcerns: sortedConcerns[0].concernText || ''
-        } : null);
-      }
-    } catch (error) {
-      console.error('Error refreshing parent concerns:', error);
-    }
-  };
-
-  // Add useEffect to refresh parent concerns when component mounts and when kidProfileId changes
-  useEffect(() => {
-    if (kidProfileId) {
-      refreshParentConcerns();
-    }
-  }, [kidProfileId]);
-
-  // Add useEffect to refresh parent concerns when the component is focused
-  useEffect(() => {
-    const handleFocus = () => {
-      refreshParentConcerns();
-    };
-
-    window.addEventListener('focus', handleFocus);
-    return () => {
-      window.removeEventListener('focus', handleFocus);
-    };
   }, [kidProfileId]);
 
   const fetchQuestions = async () => {
