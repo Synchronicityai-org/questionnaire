@@ -235,27 +235,38 @@ const QuestionnaireForm: React.FC = () => {
   const fetchMilestones = async () => {
     if (!kidProfileId) return;
     try {
-      const { data: milestones } = await client.models.Milestone.list({
+      // First fetch all milestone type records
+      const { data: milestoneTasks } = await client.models.MilestoneTask.list({
         filter: {
-          kidProfileId: { eq: kidProfileId }
+          and: [
+            { kidProfileId: { eq: kidProfileId } },
+            { type: { eq: 'MILESTONE' } }
+          ]
         }
       });
 
-      // For each milestone, fetch its tasks
+      // For each milestone, fetch its associated tasks
       const milestonesWithTasks = await Promise.all(
-        milestones.map(async (milestone) => {
+        milestoneTasks.map(async (milestone) => {
           if (!milestone.id) return null;
-          const { data: tasks } = await client.models.Task.list({
+          
+          // Fetch tasks associated with this milestone
+          const { data: tasks } = await client.models.MilestoneTask.list({
             filter: {
-              milestoneId: { eq: milestone.id }
+              and: [
+                { kidProfileId: { eq: kidProfileId } },
+                { type: { eq: 'TASK' } },
+                { parentId: { eq: milestone.id } }
+              ]
             }
           });
+
           return {
             name: milestone.title || '',
             tasks: tasks.map(task => ({
               name: task.title || '',
-              description: task.description || '',
-              strategies: task.videoLink || ''
+              description: task.parentFriendlyDescription || '',
+              strategies: task.strategies || ''
             }))
           };
         })
@@ -270,8 +281,8 @@ const QuestionnaireForm: React.FC = () => {
         return {
           ...prev,
           milestones: validMilestones,
-          developmentalOverview: milestones[0]?.description || '',
-          ahaMoment: milestones[0]?.description || '' // Using description as aha moment for now
+          developmentalOverview: milestoneTasks[0]?.developmentalOverview || '',
+          ahaMoment: milestoneTasks[0]?.developmentalOverview || '' // Using developmental overview as aha moment for now
         };
       });
 
@@ -459,53 +470,36 @@ const QuestionnaireForm: React.FC = () => {
 
         // Create milestones and tasks
         for (const milestoneData of documentData.milestones) {
-          // Create milestone in old structure
-          const { data: milestone } = await client.models.Milestone.create({
-            kidProfileId,
-            title: milestoneData.name,
-            description: documentData.developmental_overview
-          });
-
           // Create milestone in new MilestoneTask structure
           const { data: milestoneTask } = await client.models.MilestoneTask.create({
             kidProfileId,
             title: milestoneData.name,
             type: 'MILESTONE',
-            developmentalOverview: documentData.developmental_overview,
+            developmentalOverview: documentData.developmental_overview, // This is correct - overview goes with milestone
+            parentFriendlyDescription: '', // Empty for milestones
+            strategies: '', // Empty for milestones
             status: 'NOT_STARTED',
             createdAt: new Date().toISOString(),
             updatedAt: new Date().toISOString()
           });
 
-          if (milestone && milestoneData.tasks) {
-            // Create tasks for old structure
-            const taskPromises = milestoneData.tasks.map((task: any) => 
-              client.models.Task.create({
-                milestoneId: milestone.id,
+          if (milestoneTask && milestoneData.tasks) {
+            // Create tasks for new MilestoneTask structure
+            const milestoneTaskPromises = milestoneData.tasks.map((task: any) => 
+              client.models.MilestoneTask.create({
+                kidProfileId,
                 title: task.name,
-                description: task.parent_friendly_description,
-                videoLink: task.home_friendly_strategies || ''
+                type: 'TASK',
+                parentId: milestoneTask.id,
+                developmentalOverview: '', // Empty for tasks
+                parentFriendlyDescription: task.parent_friendly_description,
+                strategies: task.home_friendly_strategies || '',
+                status: 'NOT_STARTED',
+                createdAt: new Date().toISOString(),
+                updatedAt: new Date().toISOString()
               })
             );
-            await Promise.all(taskPromises);
-
-            // Create tasks for new MilestoneTask structure
-            if (milestoneTask) {
-              const milestoneTaskPromises = milestoneData.tasks.map((task: any) => 
-                client.models.MilestoneTask.create({
-                  kidProfileId,
-                  title: task.name,
-                  type: 'TASK',
-                  parentId: milestoneTask.id,
-                  parentFriendlyDescription: task.parent_friendly_description,
-                  strategies: task.home_friendly_strategies || '',
-                  status: 'NOT_STARTED',
-                  createdAt: new Date().toISOString(),
-                  updatedAt: new Date().toISOString()
-                })
-              );
-              await Promise.all(milestoneTaskPromises);
-            }
+            await Promise.all(milestoneTaskPromises);
           }
         }
 
@@ -720,7 +714,7 @@ const QuestionnaireForm: React.FC = () => {
                       </div>
                     ))}
                   </div>
-                </div>
+              </div>
               ))}
             </div>
           )}
@@ -729,8 +723,8 @@ const QuestionnaireForm: React.FC = () => {
             <div className="aha-moment">
               <h3>Key Insight</h3>
               <p>{assessmentSummary.ahaMoment}</p>
-            </div>
-          )}
+          </div>
+        )}
 
           <h3>Assessment Overview</h3>
           <table className="summary-table">
@@ -780,10 +774,10 @@ const QuestionnaireForm: React.FC = () => {
             >
               Back to Profile
             </button>
-          </div>
-        </div>
-      </div>
-    );
+                </div>
+                      </div>
+                    </div>
+                  );
   }
 
   if (showPastAssessments) {
@@ -816,8 +810,8 @@ const QuestionnaireForm: React.FC = () => {
                       {expandedAssessments.has(assessment.date) ? '▼' : '▶'}
                     </span>
                   </h3>
-                </div>
-                
+              </div>
+
                 {expandedAssessments.has(assessment.date) && (
                   <div className="assessment-details">
                     {assessment.parentConcerns && (

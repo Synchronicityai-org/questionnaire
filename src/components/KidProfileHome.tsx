@@ -570,7 +570,7 @@ export function KidProfileHome() {
                       <p>Tools and strategies to enhance communication</p>
                     </div>
                   </div>
-                </div>
+            </div>
 
             <div className="community-section">
               <h3>Community Insights</h3>
