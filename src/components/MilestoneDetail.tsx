@@ -3,7 +3,6 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { generateClient } from 'aws-amplify/api';
 import type { Schema } from '../../amplify/data/resource';
 import styled from 'styled-components';
-import { ChatBubbleLeftRightIcon } from '@heroicons/react/24/outline';
 
 const client = generateClient<Schema>();
 
@@ -14,11 +13,6 @@ const Container = styled.div`
   background: #fff;
   border-radius: 18px;
   box-shadow: 0 4px 24px rgba(44,62,80,0.10);
-`;
-const Title = styled.h1`
-  font-size: 2.2rem;
-  color: #2C3E50;
-  margin-bottom: 0.5rem;
 `;
 const Description = styled.div`
   color: #64748B;
