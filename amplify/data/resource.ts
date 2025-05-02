@@ -186,6 +186,17 @@ const schema = a.schema({
     updatedAt: a.datetime(),
   })
   .authorization((allow) => [allow.owner(), allow.publicApiKey()]),
+
+  // Contact Form
+  ContactForm: a.model({
+    id: a.id(),
+    name: a.string().required(),
+    email: a.string().required(),
+    kidConcerns: a.string(),
+    feedback: a.string(),
+    createdAt: a.datetime().required(),
+  })
+  .authorization((allow) => [allow.owner(), allow.publicApiKey()]),
 });
 
 // == STEP 2: Define Authorization Modes ==
