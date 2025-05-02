@@ -40,12 +40,16 @@ interface Milestone {
   description: string;
   tasks: MilestoneTask[];
   aha_moment?: string;
+  parentFeedback?: string;
+  isEffective?: boolean | 'love' | 'neutral';
   createdAt: string;
   updatedAt: string;
 }
 
 interface MilestoneWithTasks extends Omit<Milestone, 'tasks'> {
   tasks: MilestoneTask[];
+  parentFeedback?: string;
+  isEffective?: boolean | 'love' | 'neutral';
 }
 
 interface MilestoneTaskResponse {
@@ -62,6 +66,8 @@ interface MilestoneTaskResponse {
     parentFeedback?: string | null;
     isEffective?: boolean | null;
     feedbackDate?: string | null;
+    milestoneFeedback?: string | null;
+    milestoneIsEffective?: boolean | 'love' | 'neutral' | null;
     createdAt: string | null;
     updatedAt: string | null;
     owner?: string | null;
@@ -454,9 +460,6 @@ const MilestoneTaskList: React.FC<{ kidProfileId: string }> = ({ kidProfileId })
   const [error, setError] = useState<string | null>(null);
   const [expandedMilestones, setExpandedMilestones] = useState<Set<string>>(new Set());
   const [kidProfile, setKidProfile] = useState<KidProfile | null>(null);
-  const [feedbackState, setFeedbackState] = useState<{ [taskId: string]: { parentFeedback: string; isEffective: boolean | 'love' | 'neutral' } }>({});
-  const [submittingFeedback, setSubmittingFeedback] = useState<string | null>(null);
-  const [modalTask, setModalTask] = useState<MilestoneTask | null>(null);
   const [milestoneFeedbackState, setMilestoneFeedbackState] = useState<{ [milestoneId: string]: { feedback: string; isEffective: boolean | 'love' | 'neutral' } }>({});
   const [milestoneFeedbackModal, setMilestoneFeedbackModal] = useState<string | null>(null);
   const [submittingMilestoneFeedback, setSubmittingMilestoneFeedback] = useState<string | null>(null);
@@ -638,63 +641,13 @@ const MilestoneTaskList: React.FC<{ kidProfileId: string }> = ({ kidProfileId })
     });
   };
 
-  const handleFeedbackChange = (taskId: string, field: 'parentFeedback' | 'isEffective', value: string | boolean) => {
-    setFeedbackState(prev => ({
-      ...prev,
-      [taskId]: {
-        ...prev[taskId],
-        [field]: value
-      }
-    }));
-  };
-
-  const openFeedbackModal = (task: MilestoneTask) => {
-    setModalTask(task);
-    setFeedbackState(prev => ({
-      ...prev,
-      [task.id]: {
-        parentFeedback: task.parentFeedback || '',
-        isEffective: typeof task.isEffective === 'boolean' ? task.isEffective : (task.isEffective || 'neutral')
-      }
-    }));
-  };
-
-  const closeFeedbackModal = () => {
-    setModalTask(null);
-  };
-
-  const handleSubmitFeedback = async (task: MilestoneTask) => {
-    setSubmittingFeedback(task.id);
-    try {
-      const feedback = feedbackState[task.id]?.parentFeedback || '';
-      const backendIsEffective = feedbackState[task.id]?.isEffective === true
-        ? true
-        : feedbackState[task.id]?.isEffective === false
-        ? false
-        : null;
-      await client.models.MilestoneTask.update({
-        id: task.id,
-        parentFeedback: feedback,
-        isEffective: backendIsEffective,
-        feedbackDate: new Date().toISOString(),
-      });
-      await fetchMilestoneTasks();
-      setFeedbackState(prev => ({ ...prev, [task.id]: { parentFeedback: '', isEffective: 'neutral' } }));
-      setModalTask(null);
-    } catch (err) {
-      alert('Failed to submit feedback.');
-    } finally {
-      setSubmittingFeedback(null);
-    }
-  };
-
   const openMilestoneFeedbackModal = (milestone: MilestoneWithTasks) => {
     setMilestoneFeedbackModal(milestone.id);
     setMilestoneFeedbackState(prev => ({
       ...prev,
       [milestone.id]: {
-        feedback: milestone.milestoneFeedback || '',
-        isEffective: typeof milestone.milestoneIsEffective === 'boolean' ? milestone.milestoneIsEffective : (milestone.milestoneIsEffective || 'neutral')
+        feedback: milestone.parentFeedback || '',
+        isEffective: typeof milestone.isEffective === 'boolean' ? milestone.isEffective : (milestone.isEffective || 'neutral')
       }
     }));
   };
@@ -718,9 +671,9 @@ const MilestoneTaskList: React.FC<{ kidProfileId: string }> = ({ kidProfileId })
       const isEffective = milestoneFeedbackState[milestone.id]?.isEffective;
       await client.models.MilestoneTask.update({
         id: milestone.id,
-        milestoneFeedback: feedback,
-        milestoneIsEffective: isEffective === true ? true : isEffective === false ? false : null,
-        milestoneFeedbackDate: new Date().toISOString(),
+        parentFeedback: feedback,
+        isEffective: isEffective === true ? true : isEffective === false ? false : null,
+        feedbackDate: new Date().toISOString(),
       });
       await fetchMilestoneTasks();
       setMilestoneFeedbackState(prev => ({ ...prev, [milestone.id]: { feedback: '', isEffective: 'neutral' } }));
@@ -908,79 +861,6 @@ const MilestoneTaskList: React.FC<{ kidProfileId: string }> = ({ kidProfileId })
           })}
         </MilestoneGrid>
       </CanvasArea>
-
-      {/* Feedback Modal */}
-      {modalTask && (
-        <ModalOverlay>
-          <ModalContent>
-            <ModalClose onClick={closeFeedbackModal} title="Close">&times;</ModalClose>
-            <h2>Feedback for: {modalTask.title}</h2>
-            <form
-              onSubmit={e => {
-                e.preventDefault();
-                handleSubmitFeedback(modalTask);
-              }}
-              style={{ marginTop: 16 }}
-            >
-              <div>
-                <label htmlFor={`parentFeedback-modal-${modalTask.id}`}>Your Feedback:</label>
-                <textarea
-                  id={`parentFeedback-modal-${modalTask.id}`}
-                  value={feedbackState[modalTask.id]?.parentFeedback || ''}
-                  onChange={e => handleFeedbackChange(modalTask.id, 'parentFeedback', e.target.value)}
-                  rows={8}
-                  style={{ width: '100%', marginTop: 4, minHeight: 160 }}
-                  required
-                />
-              </div>
-              <div style={{ marginTop: 18 }}>
-                <label>Was this task effective?</label>
-                <SmileyRow>
-                  <SmileyButton
-                    type="button"
-                    selected={feedbackState[modalTask.id]?.isEffective === 'love'}
-                    onClick={() => handleFeedbackChange(modalTask.id, 'isEffective', 'love')}
-                    title="Love it"
-                  >
-                    ❤️‍🔥
-                  </SmileyButton>
-                  <SmileyButton
-                    type="button"
-                    selected={feedbackState[modalTask.id]?.isEffective === true}
-                    onClick={() => handleFeedbackChange(modalTask.id, 'isEffective', true)}
-                    title="Happy"
-                  >
-                    😃
-                  </SmileyButton>
-                  <SmileyButton
-                    type="button"
-                    selected={feedbackState[modalTask.id]?.isEffective === 'neutral'}
-                    onClick={() => handleFeedbackChange(modalTask.id, 'isEffective', 'neutral')}
-                    title="Neutral"
-                  >
-                    😐
-                  </SmileyButton>
-                  <SmileyButton
-                    type="button"
-                    selected={feedbackState[modalTask.id]?.isEffective === false}
-                    onClick={() => handleFeedbackChange(modalTask.id, 'isEffective', false)}
-                    title="Unhappy"
-                  >
-                    🙁
-                  </SmileyButton>
-                </SmileyRow>
-              </div>
-              <button
-                type="submit"
-                disabled={submittingFeedback === modalTask.id}
-                style={{ marginTop: 20, width: '100%', background: '#64748B', color: 'white', fontWeight: 700, fontSize: 18, padding: '14px 0', border: 'none', borderRadius: 6, cursor: 'pointer', boxShadow: '0 2px 8px rgba(100,116,139,0.12)' }}
-              >
-                {submittingFeedback === modalTask.id ? 'Submitting...' : 'Submit Feedback'}
-              </button>
-            </form>
-          </ModalContent>
-        </ModalOverlay>
-      )}
 
       {/* Milestone Feedback Modal */}
       {milestoneFeedbackModal && (
