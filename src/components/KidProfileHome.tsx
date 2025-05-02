@@ -28,6 +28,12 @@ interface KidProfile {
   isDummy: boolean;
 }
 
+interface UserProfile {
+  id: string;
+  fName: string;
+  lName: string;
+}
+
 interface Milestone {
   id: string;
   title: string;
@@ -61,6 +67,7 @@ export function KidProfileHome() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const [profile, setProfile] = useState<KidProfile | null>(null);
+  const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [currentMilestone, setCurrentMilestone] = useState<Milestone | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isMilestoneLoading, setIsMilestoneLoading] = useState(false);
@@ -164,6 +171,22 @@ export function KidProfileHome() {
       } catch (err) {
         console.error('Error loading kid profile:', err);
         throw new Error('Failed to load kid profile data');
+      }
+
+      try {
+        const currentUser = await getCurrentUser();
+        if (currentUser?.userId) {
+          const { data: userData } = await client.models.User.get({ id: currentUser.userId });
+          if (userData?.fName) {
+            setUserProfile({
+              id: userData.id || '',
+              fName: userData.fName,
+              lName: userData.lName || ''
+            });
+          }
+        }
+      } catch (err) {
+        console.error('Error loading user profile:', err);
       }
 
       try {
@@ -454,7 +477,6 @@ export function KidProfileHome() {
             </div>
           </div>
         </div>
-        <p className="progress-note">Progress tracking will begin after your first assessment</p>
       </div>
     );
   };
@@ -497,7 +519,7 @@ export function KidProfileHome() {
       <div className="content-wrapper">
         <div className="welcome-section">
           <div className="welcome-text">
-            <h2>Welcome back{profile ? `, ${profile.name}` : ''}</h2>
+            <h2>Welcome back, {userProfile ? userProfile.fName : 'Parent'}</h2>
             <p>Let's start tracking development progress</p>
           </div>
           <div className="action-buttons">
@@ -523,12 +545,20 @@ export function KidProfileHome() {
             <div className="milestone-card">
               <div className="card-header">
                 <h3>Current Milestone</h3>
-                    <span className="trophy-icon">
-                      <TrophyIcon className="h-6 w-6 text-blue-600" />
-                    </span>
-                  </div>
-                  {renderMilestoneContent()}
+                <div className="header-actions">
+                  <button 
+                    className="view-all-button"
+                    onClick={() => navigate(`/milestone-tasks/${kidProfileId}`)}
+                  >
+                    View All Milestones
+                  </button>
+                  <span className="trophy-icon">
+                    <TrophyIcon className="h-6 w-6 text-blue-600" />
+                  </span>
+                </div>
               </div>
+              {renderMilestoneContent()}
+            </div>
                 {renderProgressSection()}
               </td>
               <td className="right-column">

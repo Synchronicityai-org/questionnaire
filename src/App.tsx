@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { BrowserRouter as Router, Routes, Route, useNavigate, Navigate } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, useNavigate, Navigate, useParams } from 'react-router-dom';
 import { getCurrentUser } from 'aws-amplify/auth';
 import { Hub } from '@aws-amplify/core';
 import { generateClient } from 'aws-amplify/data';
@@ -20,6 +20,7 @@ import { ParentConcernsForm } from './components/ParentConcernsForm';
 import VisualSchedules from './components/resources/VisualSchedules';
 import SensoryActivities from './components/resources/SensoryActivities';
 import { CommunicationTools } from './components/resources/CommunicationTools';
+import MilestoneTaskList from './components/MilestoneTaskList';
 import './App.css';
 
 
@@ -173,11 +174,24 @@ const AppContent: React.FC = () => {
               <QuestionnaireForm />
             </ProtectedRoute>
           } />
+          <Route path="/milestone-tasks/:kidProfileId" element={
+            <ProtectedRoute isAuthenticated={isAuthenticated}>
+              <MilestoneTaskListWrapper />
+            </ProtectedRoute>
+          } />
         </Routes>
       </main>
       <Footer />
     </div>
   );
+};
+
+const MilestoneTaskListWrapper = () => {
+  const { kidProfileId } = useParams();
+  if (!kidProfileId) {
+    return <div>Error: No kid profile ID provided</div>;
+  }
+  return <MilestoneTaskList kidProfileId={kidProfileId} />;
 };
 
 const App: React.FC = () => {

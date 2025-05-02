@@ -393,22 +393,7 @@ const QuestionnaireForm: React.FC = () => {
             aha_moment: documentData.aha_moment
           });
 
-          // First, delete existing milestone tasks for this kid profile
-          const existingMilestones = await client.models.MilestoneTask.list({
-            filter: {
-              kidProfileId: { eq: kidProfileId }
-            }
-          });
-
-          // Delete all existing milestone tasks
-          if (existingMilestones.data) {
-            const deletePromises = existingMilestones.data.map(milestone => 
-              client.models.MilestoneTask.delete({ id: milestone.id! })
-            );
-            await Promise.all(deletePromises);
-          }
-
-          // Create new milestone tasks
+          // Create new milestone tasks without deleting existing ones
           for (const milestoneData of documentData.milestones) {
             // Create milestone in new MilestoneTask structure
             const { data: milestoneTask } = await client.models.MilestoneTask.create({
