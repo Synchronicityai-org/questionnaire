@@ -10,7 +10,9 @@ import {
   StarIcon,
   BookOpenIcon,
   AcademicCapIcon,
-  HeartIcon
+  HeartIcon,
+  ChatBubbleLeftRightIcon,
+  EyeIcon
 } from '@heroicons/react/24/outline';
 
 const client = generateClient<Schema>();
@@ -24,6 +26,9 @@ interface MilestoneTask {
   strategies?: string;
   feedback?: string;
   effectiveness?: 'EFFECTIVE' | 'NOT_EFFECTIVE';
+  parentFeedback?: string;
+  isEffective?: boolean | 'love' | 'neutral';
+  feedbackDate?: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -137,34 +142,40 @@ const BackButton = styled.button`
 
 const MilestoneGrid = styled.div`
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-  gap: 1.5rem;
+  grid-template-columns: 1fr;
+  gap: 1.2rem;
   padding: 1rem 0;
 
-  @media (min-width: 768px) {
-    grid-template-columns: repeat(2, minmax(300px, 1fr));
+  @media (min-width: 600px) {
+    grid-template-columns: repeat(2, minmax(220px, 1fr));
   }
-
-  @media (min-width: 1200px) {
-    grid-template-columns: repeat(3, minmax(300px, 1fr));
+  @media (min-width: 1000px) {
+    grid-template-columns: repeat(3, minmax(220px, 1fr));
   }
 `;
 
 const MilestoneCard = styled.div<{ isExpanded: boolean }>`
   background: white;
-  border-radius: 16px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+  border-radius: 14px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.04);
   overflow: hidden;
   transition: all 0.3s ease;
   display: flex;
   flex-direction: column;
-  height: ${props => props.isExpanded ? 'auto' : '100px'};
   border: 1px solid #E2E8F0;
-  
-  &:hover {
-    transform: translateY(-4px);
-    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.1);
-  }
+  margin-bottom: 1rem;
+  width: 100%;
+  font-size: 1rem;
+  padding: 0;
+  ${props => props.isExpanded && `
+    z-index: 10;
+    position: relative;
+    box-shadow: 0 8px 32px rgba(44,62,80,0.18);
+    font-size: 1.15rem;
+    @media (max-width: 900px) {
+      font-size: 1rem;
+    }
+  `}
 `;
 
 const CardHeader = styled.div<{ progress: number }>`
@@ -177,6 +188,8 @@ const CardHeader = styled.div<{ progress: number }>`
   display: flex;
   flex-direction: column;
   justify-content: space-between;
+  border-radius: 14px 14px 0 0;
+  margin: 0;
 
   &::after {
     content: '';
@@ -220,38 +233,24 @@ const CardMeta = styled.div`
 `;
 
 const TasksContainer = styled.div<{ isExpanded: boolean }>`
-  padding: ${props => props.isExpanded ? '1.25rem' : '0'};
+  padding: ${props => props.isExpanded ? '1.5rem 0 0 0' : '0'};
   background: #FAFAFA;
   flex: 1;
-  overflow: hidden;
-  max-height: ${props => props.isExpanded ? '500px' : '0'};
+  overflow: visible;
+  max-height: none;
   transition: all 0.3s ease;
   opacity: ${props => props.isExpanded ? '1' : '0'};
-
-  &::-webkit-scrollbar {
-    width: 6px;
-  }
-
-  &::-webkit-scrollbar-track {
-    background: #F1F5F9;
-    border-radius: 3px;
-  }
-
-  &::-webkit-scrollbar-thumb {
-    background: #CBD5E1;
-    border-radius: 3px;
-    
-    &:hover {
-      background: #94A3B8;
-    }
-  }
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
 `;
 
 const TaskCard = styled.div<{ status: string }>`
   background: white;
-  border-radius: 8px; // Reduced border radius
-  padding: 0.75rem; // Reduced padding
-  margin-bottom: 0.75rem; // Reduced margin
+  border-radius: 8px;
+  padding: 1.5rem 1rem;
+  margin-bottom: 1.5rem;
+  min-height: 320px;
   transition: all 0.2s ease;
   border: 1px solid ${props => {
     switch (props.status.toLowerCase()) {
@@ -260,6 +259,11 @@ const TaskCard = styled.div<{ status: string }>`
       default: return '#E2E8F0';
     }
   }};
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  align-items: stretch;
+  box-sizing: border-box;
 
   &:hover {
     transform: translateX(4px);
@@ -362,6 +366,75 @@ const ActionButton = styled.button`
   }
 `;
 
+// Modal styles
+const ModalOverlay = styled.div`
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(44, 62, 80, 0.45);
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+`;
+const ModalContent = styled.div`
+  background: #fff;
+  border-radius: 16px;
+  padding: 2rem;
+  min-width: 350px;
+  max-width: 95vw;
+  box-shadow: 0 8px 32px rgba(44,62,80,0.18);
+  position: relative;
+`;
+const ModalClose = styled.button`
+  position: absolute;
+  top: 1rem;
+  right: 1.5rem;
+  background: none;
+  border: none;
+  font-size: 2rem;
+  color: #64748B;
+  cursor: pointer;
+  z-index: 10;
+  padding: 0 0.5rem;
+`;
+
+const SmileyRow = styled.div`
+  display: flex;
+  gap: 1.5rem;
+  margin-top: 12px;
+  margin-bottom: 12px;
+  align-items: center;
+  justify-content: flex-start;
+`;
+const SmileyButton = styled.button<{ selected: boolean }>`
+  background: none;
+  border: none;
+  font-size: 2.2rem;
+  cursor: pointer;
+  opacity: ${props => (props.selected ? 1 : 0.5)};
+  transition: opacity 0.2s;
+  outline: ${props => (props.selected ? '2px solid #357ABD' : 'none')};
+  border-radius: 50%;
+  padding: 0.2em 0.4em;
+`;
+
+const CollapseButton = styled.button`
+  margin: 2rem auto 0 auto;
+  display: block;
+  background: #E2E8F0;
+  color: #2C3E50;
+  font-weight: 600;
+  font-size: 1.1rem;
+  border: none;
+  border-radius: 8px;
+  padding: 0.75rem 2.5rem;
+  cursor: pointer;
+  transition: background 0.2s;
+  &:hover {
+    background: #CBD5E1;
+  }
+`;
+
 // Helper function to get milestone icon
 const getMilestoneIcon = (index: number) => {
   const icons = [StarIcon, BookOpenIcon, AcademicCapIcon, HeartIcon];
@@ -381,6 +454,12 @@ const MilestoneTaskList: React.FC<{ kidProfileId: string }> = ({ kidProfileId })
   const [error, setError] = useState<string | null>(null);
   const [expandedMilestones, setExpandedMilestones] = useState<Set<string>>(new Set());
   const [kidProfile, setKidProfile] = useState<KidProfile | null>(null);
+  const [feedbackState, setFeedbackState] = useState<{ [taskId: string]: { parentFeedback: string; isEffective: boolean | 'love' | 'neutral' } }>({});
+  const [submittingFeedback, setSubmittingFeedback] = useState<string | null>(null);
+  const [modalTask, setModalTask] = useState<MilestoneTask | null>(null);
+  const [milestoneFeedbackState, setMilestoneFeedbackState] = useState<{ [milestoneId: string]: { feedback: string; isEffective: boolean | 'love' | 'neutral' } }>({});
+  const [milestoneFeedbackModal, setMilestoneFeedbackModal] = useState<string | null>(null);
+  const [submittingMilestoneFeedback, setSubmittingMilestoneFeedback] = useState<string | null>(null);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -508,6 +587,9 @@ const MilestoneTaskList: React.FC<{ kidProfileId: string }> = ({ kidProfileId })
               strategies: item.strategies || '',
               feedback: item.feedback || '',
               effectiveness: item.effectiveness as MilestoneTask['effectiveness'],
+              parentFeedback: item.parentFeedback || '',
+              isEffective: item.isEffective,
+              feedbackDate: item.feedbackDate || '',
               createdAt: item.createdAt || new Date().toISOString(),
               updatedAt: item.updatedAt || new Date().toISOString()
             }));
@@ -554,6 +636,100 @@ const MilestoneTaskList: React.FC<{ kidProfileId: string }> = ({ kidProfileId })
       month: 'short',
       day: 'numeric'
     });
+  };
+
+  const handleFeedbackChange = (taskId: string, field: 'parentFeedback' | 'isEffective', value: string | boolean) => {
+    setFeedbackState(prev => ({
+      ...prev,
+      [taskId]: {
+        ...prev[taskId],
+        [field]: value
+      }
+    }));
+  };
+
+  const openFeedbackModal = (task: MilestoneTask) => {
+    setModalTask(task);
+    setFeedbackState(prev => ({
+      ...prev,
+      [task.id]: {
+        parentFeedback: task.parentFeedback || '',
+        isEffective: typeof task.isEffective === 'boolean' ? task.isEffective : (task.isEffective || 'neutral')
+      }
+    }));
+  };
+
+  const closeFeedbackModal = () => {
+    setModalTask(null);
+  };
+
+  const handleSubmitFeedback = async (task: MilestoneTask) => {
+    setSubmittingFeedback(task.id);
+    try {
+      const feedback = feedbackState[task.id]?.parentFeedback || '';
+      const backendIsEffective = feedbackState[task.id]?.isEffective === true
+        ? true
+        : feedbackState[task.id]?.isEffective === false
+        ? false
+        : null;
+      await client.models.MilestoneTask.update({
+        id: task.id,
+        parentFeedback: feedback,
+        isEffective: backendIsEffective,
+        feedbackDate: new Date().toISOString(),
+      });
+      await fetchMilestoneTasks();
+      setFeedbackState(prev => ({ ...prev, [task.id]: { parentFeedback: '', isEffective: 'neutral' } }));
+      setModalTask(null);
+    } catch (err) {
+      alert('Failed to submit feedback.');
+    } finally {
+      setSubmittingFeedback(null);
+    }
+  };
+
+  const openMilestoneFeedbackModal = (milestone: MilestoneWithTasks) => {
+    setMilestoneFeedbackModal(milestone.id);
+    setMilestoneFeedbackState(prev => ({
+      ...prev,
+      [milestone.id]: {
+        feedback: milestone.milestoneFeedback || '',
+        isEffective: typeof milestone.milestoneIsEffective === 'boolean' ? milestone.milestoneIsEffective : (milestone.milestoneIsEffective || 'neutral')
+      }
+    }));
+  };
+
+  const closeMilestoneFeedbackModal = () => setMilestoneFeedbackModal(null);
+
+  const handleMilestoneFeedbackChange = (milestoneId: string, field: 'feedback' | 'isEffective', value: string | boolean) => {
+    setMilestoneFeedbackState(prev => ({
+      ...prev,
+      [milestoneId]: {
+        ...prev[milestoneId],
+        [field]: value
+      }
+    }));
+  };
+
+  const handleSubmitMilestoneFeedback = async (milestone: MilestoneWithTasks) => {
+    setSubmittingMilestoneFeedback(milestone.id);
+    try {
+      const feedback = milestoneFeedbackState[milestone.id]?.feedback || '';
+      const isEffective = milestoneFeedbackState[milestone.id]?.isEffective;
+      await client.models.MilestoneTask.update({
+        id: milestone.id,
+        milestoneFeedback: feedback,
+        milestoneIsEffective: isEffective === true ? true : isEffective === false ? false : null,
+        milestoneFeedbackDate: new Date().toISOString(),
+      });
+      await fetchMilestoneTasks();
+      setMilestoneFeedbackState(prev => ({ ...prev, [milestone.id]: { feedback: '', isEffective: 'neutral' } }));
+      setMilestoneFeedbackModal(null);
+    } catch (err) {
+      alert('Failed to submit milestone feedback.');
+    } finally {
+      setSubmittingMilestoneFeedback(null);
+    }
   };
 
   console.log('Current state:', { loading, error, milestonesCount: milestones.length });
@@ -621,73 +797,263 @@ const MilestoneTaskList: React.FC<{ kidProfileId: string }> = ({ kidProfileId })
             const isExpanded = expandedMilestones.has(milestone.id);
 
             return (
-              <MilestoneCard key={milestone.id} isExpanded={isExpanded}>
+              <MilestoneCard key={milestone.id} isExpanded={isExpanded} style={{ cursor: 'pointer' }} onClick={e => {
+                if ((e.target as HTMLElement).closest('.expand-arrow')) return;
+                navigate(`/milestone/${milestone.id}`);
+              }}>
                 <CardHeader 
                   progress={progress}
-                  onClick={() => toggleMilestone(milestone.id)}
+                  onClick={e => {
+                    e.stopPropagation();
+                    toggleMilestone(milestone.id);
+                  }}
+                  style={isExpanded ? { cursor: 'default', fontSize: '1.5rem', padding: '2rem 1.5rem' } : {}}
                 >
                   <CardTitle>
                     <Icon />
                     <h3 title={milestone.title}>{milestone.title}</h3>
+                    <button
+                      style={{ background: 'none', border: 'none', marginLeft: 8, cursor: 'pointer', color: '#fff', display: 'flex', alignItems: 'center' }}
+                      title="Milestone Details"
+                      onClick={e => { e.stopPropagation(); navigate(`/milestone/${milestone.id}`); }}
+                    >
+                      <EyeIcon className="w-5 h-5" />
+                    </button>
+                    <button
+                      style={{ background: 'none', border: 'none', marginLeft: 8, cursor: 'pointer', color: '#fff', display: 'flex', alignItems: 'center' }}
+                      title="Give feedback on this milestone"
+                      onClick={e => { e.stopPropagation(); openMilestoneFeedbackModal(milestone); }}
+                    >
+                      <ChatBubbleLeftRightIcon className="w-5 h-5" />
+                    </button>
                   </CardTitle>
+                  {isExpanded && milestone.description && (
+                    <div style={{
+                      margin: '0.25rem 0 0.5rem 0',
+                      fontSize: '0.98rem',
+                      color: '#64748B',
+                      lineHeight: 1.4,
+                      fontWeight: 400,
+                      maxWidth: '90%'
+                    }}>
+                      {milestone.description}
+                    </div>
+                  )}
                   <CardMeta>
                     <span>Updated: {formatDate(milestone.updatedAt)}</span>
                     {isExpanded ? (
-                      <ChevronUpIcon className="w-5 h-5" />
+                      <ChevronUpIcon className="w-5 h-5 expand-arrow" />
                     ) : (
-                      <ChevronDownIcon className="w-5 h-5" />
+                      <ChevronDownIcon className="w-5 h-5 expand-arrow" />
                     )}
                   </CardMeta>
                 </CardHeader>
-
                 <TasksContainer isExpanded={isExpanded}>
-                  <ProgressIndicator>
-                    <span>{progress}% Complete</span>
-                    <div className="progress-bar">
-                      <div 
-                        className="progress" 
-                        style={{ width: `${progress}%` }}
-                      />
-                    </div>
-                  </ProgressIndicator>
-
-                  {milestone.tasks.map((task) => (
-                    <TaskCard key={task.id} status={task.status.toLowerCase()}>
-                      <TaskHeader>
-                        <TaskTitle>{task.title}</TaskTitle>
-                        <StatusBadge status={task.status.toLowerCase()}>
-                          {task.status.replace('_', ' ')}
-                        </StatusBadge>
-                      </TaskHeader>
-                      <TaskDescription>{task.description}</TaskDescription>
-                      
-                      {task.strategies && (
-                        <div className="task-strategies">
-                          <h6>Strategies</h6>
-                          <p>{task.strategies}</p>
+                  {isExpanded && (
+                    <>
+                      <ProgressIndicator>
+                        <span>{progress}% Complete</span>
+                        <div className="progress-bar">
+                          <div 
+                            className="progress" 
+                            style={{ width: `${progress}%` }}
+                          />
                         </div>
-                      )}
+                      </ProgressIndicator>
+                      {milestone.tasks.map((task) => (
+                        <TaskCard key={task.id} status={task.status.toLowerCase()}>
+                          <TaskHeader>
+                            <TaskTitle>{task.title}</TaskTitle>
+                            <StatusBadge status={task.status.toLowerCase()}>
+                              {task.status.replace('_', ' ')}
+                            </StatusBadge>
+                          </TaskHeader>
+                          <TaskDescription style={{ textAlign: 'left' }}>{task.description}</TaskDescription>
+                          
+                          {task.strategies && (
+                            <div className="task-strategies" style={{ textAlign: 'left' }}>
+                              <h6 style={{ margin: 0, fontWeight: 600 }}>Strategies</h6>
+                              <p style={{ margin: 0 }}>{task.strategies}</p>
+                            </div>
+                          )}
 
-                      {task.feedback && (
-                        <div className="task-feedback">
-                          <h6>Feedback</h6>
-                          <p>{task.feedback}</p>
-                        </div>
-                      )}
+                          {task.parentFeedback && (
+                            <div className="task-parent-feedback" style={{ textAlign: 'left' }}>
+                              <h6 style={{ margin: 0, fontWeight: 600 }}>Parent Feedback</h6>
+                              <p style={{ margin: 0 }}>{task.parentFeedback}</p>
+                            </div>
+                          )}
 
-                      {task.effectiveness && (
-                        <span className={`effectiveness ${task.effectiveness.toLowerCase()}`}>
-                          {task.effectiveness.replace('_', ' ')}
-                        </span>
-                      )}
-                    </TaskCard>
-                  ))}
+                          {typeof task.isEffective === 'boolean' && (
+                            <div className="task-effective-flag" style={{ textAlign: 'left' }}>
+                              <strong>Effective?:</strong> {task.isEffective ? 'Yes' : 'No'}
+                            </div>
+                          )}
+
+                          {task.feedbackDate && (
+                            <div className="task-feedback-date" style={{ textAlign: 'left' }}>
+                              <strong>Feedback Date:</strong> {formatDate(task.feedbackDate)}
+                            </div>
+                          )}
+                        </TaskCard>
+                      ))}
+                      <CollapseButton onClick={() => toggleMilestone(milestone.id)}>
+                        Collapse
+                      </CollapseButton>
+                    </>
+                  )}
                 </TasksContainer>
               </MilestoneCard>
             );
           })}
         </MilestoneGrid>
       </CanvasArea>
+
+      {/* Feedback Modal */}
+      {modalTask && (
+        <ModalOverlay>
+          <ModalContent>
+            <ModalClose onClick={closeFeedbackModal} title="Close">&times;</ModalClose>
+            <h2>Feedback for: {modalTask.title}</h2>
+            <form
+              onSubmit={e => {
+                e.preventDefault();
+                handleSubmitFeedback(modalTask);
+              }}
+              style={{ marginTop: 16 }}
+            >
+              <div>
+                <label htmlFor={`parentFeedback-modal-${modalTask.id}`}>Your Feedback:</label>
+                <textarea
+                  id={`parentFeedback-modal-${modalTask.id}`}
+                  value={feedbackState[modalTask.id]?.parentFeedback || ''}
+                  onChange={e => handleFeedbackChange(modalTask.id, 'parentFeedback', e.target.value)}
+                  rows={8}
+                  style={{ width: '100%', marginTop: 4, minHeight: 160 }}
+                  required
+                />
+              </div>
+              <div style={{ marginTop: 18 }}>
+                <label>Was this task effective?</label>
+                <SmileyRow>
+                  <SmileyButton
+                    type="button"
+                    selected={feedbackState[modalTask.id]?.isEffective === 'love'}
+                    onClick={() => handleFeedbackChange(modalTask.id, 'isEffective', 'love')}
+                    title="Love it"
+                  >
+                    ❤️‍🔥
+                  </SmileyButton>
+                  <SmileyButton
+                    type="button"
+                    selected={feedbackState[modalTask.id]?.isEffective === true}
+                    onClick={() => handleFeedbackChange(modalTask.id, 'isEffective', true)}
+                    title="Happy"
+                  >
+                    😃
+                  </SmileyButton>
+                  <SmileyButton
+                    type="button"
+                    selected={feedbackState[modalTask.id]?.isEffective === 'neutral'}
+                    onClick={() => handleFeedbackChange(modalTask.id, 'isEffective', 'neutral')}
+                    title="Neutral"
+                  >
+                    😐
+                  </SmileyButton>
+                  <SmileyButton
+                    type="button"
+                    selected={feedbackState[modalTask.id]?.isEffective === false}
+                    onClick={() => handleFeedbackChange(modalTask.id, 'isEffective', false)}
+                    title="Unhappy"
+                  >
+                    🙁
+                  </SmileyButton>
+                </SmileyRow>
+              </div>
+              <button
+                type="submit"
+                disabled={submittingFeedback === modalTask.id}
+                style={{ marginTop: 20, width: '100%', background: '#64748B', color: 'white', fontWeight: 700, fontSize: 18, padding: '14px 0', border: 'none', borderRadius: 6, cursor: 'pointer', boxShadow: '0 2px 8px rgba(100,116,139,0.12)' }}
+              >
+                {submittingFeedback === modalTask.id ? 'Submitting...' : 'Submit Feedback'}
+              </button>
+            </form>
+          </ModalContent>
+        </ModalOverlay>
+      )}
+
+      {/* Milestone Feedback Modal */}
+      {milestoneFeedbackModal && (
+        <ModalOverlay>
+          <ModalContent>
+            <ModalClose onClick={closeMilestoneFeedbackModal} title="Close">&times;</ModalClose>
+            <h2>Feedback for: {milestones.find(m => m.id === milestoneFeedbackModal)?.title}</h2>
+            <form
+              onSubmit={e => {
+                e.preventDefault();
+                handleSubmitMilestoneFeedback(milestones.find(m => m.id === milestoneFeedbackModal)!);
+              }}
+              style={{ marginTop: 16 }}
+            >
+              <div>
+                <label htmlFor={`milestoneFeedback-modal-${milestoneFeedbackModal}`}>Your Feedback:</label>
+                <textarea
+                  id={`milestoneFeedback-modal-${milestoneFeedbackModal}`}
+                  value={milestoneFeedbackState[milestoneFeedbackModal]?.feedback || ''}
+                  onChange={e => handleMilestoneFeedbackChange(milestoneFeedbackModal, 'feedback', e.target.value)}
+                  rows={6}
+                  style={{ width: '100%', marginTop: 4, minHeight: 120 }}
+                  required
+                />
+              </div>
+              <div style={{ marginTop: 12 }}>
+                <label>How do you feel about this milestone?</label>
+                <SmileyRow>
+                  <SmileyButton
+                    type="button"
+                    selected={milestoneFeedbackState[milestoneFeedbackModal]?.isEffective === 'love'}
+                    onClick={() => handleMilestoneFeedbackChange(milestoneFeedbackModal, 'isEffective', 'love')}
+                    title="Love it"
+                  >
+                    ❤️‍🔥
+                  </SmileyButton>
+                  <SmileyButton
+                    type="button"
+                    selected={milestoneFeedbackState[milestoneFeedbackModal]?.isEffective === true}
+                    onClick={() => handleMilestoneFeedbackChange(milestoneFeedbackModal, 'isEffective', true)}
+                    title="Happy"
+                  >
+                    😃
+                  </SmileyButton>
+                  <SmileyButton
+                    type="button"
+                    selected={milestoneFeedbackState[milestoneFeedbackModal]?.isEffective === 'neutral'}
+                    onClick={() => handleMilestoneFeedbackChange(milestoneFeedbackModal, 'isEffective', 'neutral')}
+                    title="Neutral"
+                  >
+                    😐
+                  </SmileyButton>
+                  <SmileyButton
+                    type="button"
+                    selected={milestoneFeedbackState[milestoneFeedbackModal]?.isEffective === false}
+                    onClick={() => handleMilestoneFeedbackChange(milestoneFeedbackModal, 'isEffective', false)}
+                    title="Unhappy"
+                  >
+                    🙁
+                  </SmileyButton>
+                </SmileyRow>
+              </div>
+              <button
+                type="submit"
+                disabled={submittingMilestoneFeedback === milestoneFeedbackModal}
+                style={{ marginTop: 20, width: '100%', background: '#64748B', color: 'white', fontWeight: 700, fontSize: 18, padding: '14px 0', border: 'none', borderRadius: 6, cursor: 'pointer', boxShadow: '0 2px 8px rgba(100,116,139,0.12)' }}
+              >
+                {submittingMilestoneFeedback === milestoneFeedbackModal ? 'Submitting...' : 'Submit Feedback'}
+              </button>
+            </form>
+          </ModalContent>
+        </ModalOverlay>
+      )}
     </Container>
   );
 };

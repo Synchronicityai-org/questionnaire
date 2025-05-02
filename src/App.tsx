@@ -21,6 +21,7 @@ import VisualSchedules from './components/resources/VisualSchedules';
 import SensoryActivities from './components/resources/SensoryActivities';
 import { CommunicationTools } from './components/resources/CommunicationTools';
 import MilestoneTaskList from './components/MilestoneTaskList';
+import MilestoneDetail from './components/MilestoneDetail';
 import './App.css';
 
 
@@ -179,6 +180,7 @@ const AppContent: React.FC = () => {
               <MilestoneTaskListWrapper />
             </ProtectedRoute>
           } />
+          <Route path="/milestone/:milestoneId" element={<ProtectedRoute isAuthenticated={isAuthenticated}><MilestoneDetail /></ProtectedRoute>} />
         </Routes>
       </main>
       <Footer />

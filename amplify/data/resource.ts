@@ -197,6 +197,8 @@ const schema = a.schema({
     createdAt: a.datetime().required(),
   })
   .authorization((allow) => [allow.owner(), allow.publicApiKey()]),
+
+  
 });
 
 // == STEP 2: Define Authorization Modes ==
