@@ -13,7 +13,7 @@ const gamePrompts = [
     promptText: 'What animal makes this sound?',
     promptOrder: 1,
     imageURL: 'https://images.unsplash.com/photo-1543852786-1cf6624b9987?w=800&auto=format&fit=crop&q=60',
-    soundURL: 'https://cdn.pixabay.com/download/audio/2022/01/18/audio_d0c6ff1bab.mp3?filename=lion-roar-01.mp3',
+    soundURL: 'https://www.myinstants.com/media/sounds/lion-roar.mp3',
     options: JSON.stringify(['Lion', 'Tiger', 'Bear', 'Elephant']),
     correctAnswer: 'Lion'
   },
@@ -22,7 +22,7 @@ const gamePrompts = [
     promptText: 'Listen carefully! Which animal is this?',
     promptOrder: 2,
     imageURL: 'https://images.unsplash.com/photo-1543466835-00a7907e9de1?w=800&auto=format&fit=crop&q=60',
-    soundURL: 'https://cdn.pixabay.com/download/audio/2022/03/15/audio_c8c8a73c3a.mp3?filename=dog-barking-01.mp3',
+    soundURL: 'https://www.myinstants.com/media/sounds/dog-barking.mp3',
     options: JSON.stringify(['Dog', 'Wolf', 'Fox', 'Coyote']),
     correctAnswer: 'Dog'
   },
@@ -31,7 +31,7 @@ const gamePrompts = [
     promptText: 'Can you guess this animal?',
     promptOrder: 3,
     imageURL: 'https://images.unsplash.com/photo-1514888286974-6c03e2ca1dba?w=800&auto=format&fit=crop&q=60',
-    soundURL: 'https://cdn.pixabay.com/download/audio/2022/01/18/audio_0625c1539a.mp3?filename=cat-meow-01.mp3',
+    soundURL: 'https://www.myinstants.com/media/sounds/cat-meow.mp3',
     options: JSON.stringify(['Cat', 'Lion', 'Tiger', 'Leopard']),
     correctAnswer: 'Cat'
   },
@@ -40,7 +40,7 @@ const gamePrompts = [
     promptText: 'Which animal makes this sound?',
     promptOrder: 4,
     imageURL: 'https://images.unsplash.com/photo-1557050543-4d5f4e07ef46?w=800&auto=format&fit=crop&q=60',
-    soundURL: 'https://cdn.pixabay.com/download/audio/2022/01/18/audio_8c3c8a73c3.mp3?filename=elephant-01.mp3',
+    soundURL: 'https://www.myinstants.com/media/sounds/elephant.mp3',
     options: JSON.stringify(['Elephant', 'Hippo', 'Rhino', 'Giraffe']),
     correctAnswer: 'Elephant'
   },
@@ -49,7 +49,7 @@ const gamePrompts = [
     promptText: 'Listen! What animal is this?',
     promptOrder: 5,
     imageURL: 'https://images.unsplash.com/photo-1535591273668-578e31182c4f?w=800&auto=format&fit=crop&q=60',
-    soundURL: 'https://cdn.pixabay.com/download/audio/2022/01/18/audio_9c3c8a73c3.mp3?filename=horse-01.mp3',
+    soundURL: 'https://www.myinstants.com/media/sounds/horse.mp3',
     options: JSON.stringify(['Horse', 'Donkey', 'Zebra', 'Mule']),
     correctAnswer: 'Horse'
   },
@@ -58,7 +58,7 @@ const gamePrompts = [
     promptText: 'Can you identify this animal sound?',
     promptOrder: 6,
     imageURL: 'https://images.unsplash.com/photo-1517849845537-4d257902454a?w=800&auto=format&fit=crop&q=60',
-    soundURL: 'https://cdn.pixabay.com/download/audio/2022/01/18/audio_7c3c8a73c3.mp3?filename=duck-01.mp3',
+    soundURL: 'https://www.myinstants.com/media/sounds/duck.mp3',
     options: JSON.stringify(['Duck', 'Goose', 'Chicken', 'Turkey']),
     correctAnswer: 'Duck'
   },
@@ -67,7 +67,7 @@ const gamePrompts = [
     promptText: 'What animal makes this sound?',
     promptOrder: 7,
     imageURL: 'https://images.unsplash.com/photo-1517849845537-4d257902454a?w=800&auto=format&fit=crop&q=60',
-    soundURL: 'https://cdn.pixabay.com/download/audio/2022/01/18/audio_6c3c8a73c3.mp3?filename=owl-01.mp3',
+    soundURL: 'https://www.myinstants.com/media/sounds/owl.mp3',
     options: JSON.stringify(['Owl', 'Eagle', 'Hawk', 'Falcon']),
     correctAnswer: 'Owl'
   },
@@ -76,7 +76,7 @@ const gamePrompts = [
     promptText: 'Listen carefully! Which animal is this?',
     promptOrder: 8,
     imageURL: 'https://images.unsplash.com/photo-1517849845537-4d257902454a?w=800&auto=format&fit=crop&q=60',
-    soundURL: 'https://cdn.pixabay.com/download/audio/2022/01/18/audio_5c3c8a73c3.mp3?filename=monkey-01.mp3',
+    soundURL: 'https://www.myinstants.com/media/sounds/monkey.mp3',
     options: JSON.stringify(['Monkey', 'Gorilla', 'Chimpanzee', 'Orangutan']),
     correctAnswer: 'Monkey'
   }
@@ -89,8 +89,11 @@ async function seedGamePrompts() {
     // First, check if we already have prompts
     const existingPrompts = await client.models.GamePrompt.list();
     if (existingPrompts.data && existingPrompts.data.length > 0) {
-      console.log('Game prompts already exist. Skipping seed...');
-      return;
+      console.log('Updating existing prompts...');
+      // Delete existing prompts
+      for (const prompt of existingPrompts.data) {
+        await client.models.GamePrompt.delete({ id: prompt.id });
+      }
     }
 
     // Create prompts
