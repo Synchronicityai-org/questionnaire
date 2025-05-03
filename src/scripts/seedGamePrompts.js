@@ -82,10 +82,53 @@ const gamePrompts = [
   }
 ];
 
+function validateGamePrompt(prompt) {
+  const errors = [];
+  
+  // Check required fields
+  if (!prompt.gameType) errors.push('gameType is required');
+  if (!prompt.promptText) errors.push('promptText is required');
+  if (!prompt.promptOrder) errors.push('promptOrder is required');
+  if (!prompt.imageURL) errors.push('imageURL is required');
+  if (!prompt.soundURL) errors.push('soundURL is required');
+  if (!prompt.options) errors.push('options is required');
+  if (!prompt.correctAnswer) errors.push('correctAnswer is required');
+
+  // Validate URLs
+  const urlRegex = /^https:\/\/.+/;
+  if (!urlRegex.test(prompt.imageURL)) errors.push('imageURL must be a valid HTTPS URL');
+  if (!urlRegex.test(prompt.soundURL)) errors.push('soundURL must be a valid HTTPS URL');
+
+  // Validate options
+  try {
+    const parsedOptions = typeof prompt.options === 'string' ? JSON.parse(prompt.options) : prompt.options;
+    if (!Array.isArray(parsedOptions)) errors.push('options must be an array');
+    if (!parsedOptions.includes(prompt.correctAnswer)) errors.push('correctAnswer must be one of the options');
+  } catch (e) {
+    errors.push('options must be valid JSON');
+  }
+
+  return errors;
+}
+
 async function seedGamePrompts() {
   try {
     console.log('Starting to seed game prompts...');
     
+    // Validate all prompts first
+    const validationErrors = gamePrompts.map((prompt, index) => {
+      const errors = validateGamePrompt(prompt);
+      if (errors.length > 0) {
+        return `Prompt ${index + 1} (${prompt.promptText}) has errors:\n${errors.join('\n')}`;
+      }
+      return null;
+    }).filter(Boolean);
+
+    if (validationErrors.length > 0) {
+      console.error('Validation failed:\n', validationErrors.join('\n\n'));
+      return;
+    }
+
     // First, check if we already have prompts
     const existingPrompts = await client.models.GamePrompt.list();
     if (existingPrompts.data && existingPrompts.data.length > 0) {

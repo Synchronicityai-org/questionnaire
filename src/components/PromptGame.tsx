@@ -147,10 +147,40 @@ const PromptGame: React.FC = () => {
   const [isCorrect, setIsCorrect] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
   const [audio, setAudio] = useState<HTMLAudioElement | null>(null);
+  const [imageLoading, setImageLoading] = useState(true);
+  const [audioLoading, setAudioLoading] = useState(false);
+  const [audioError, setAudioError] = useState<string | null>(null);
 
   useEffect(() => {
     fetchPrompts();
+    return () => {
+      // Cleanup audio on unmount
+      if (audio) {
+        audio.pause();
+        audio.src = '';
+      }
+    };
   }, []);
+
+  useEffect(() => {
+    // Reset states when moving to next question
+    setImageLoading(true);
+    setAudioError(null);
+    setAudioLoading(false);
+    if (audio) {
+      audio.pause();
+      audio.src = '';
+    }
+  }, [currentPromptIndex]);
+
+  const handleImageLoad = () => {
+    setImageLoading(false);
+  };
+
+  const handleImageError = () => {
+    setImageLoading(false);
+    setError('Failed to load image. Please try refreshing the page.');
+  };
 
   const fetchPrompts = async () => {
     try {
@@ -211,55 +241,38 @@ const PromptGame: React.FC = () => {
     const currentPrompt = prompts[currentPromptIndex];
     if (currentPrompt.soundURL) {
       try {
-        console.log('Loading audio from URL:', currentPrompt.soundURL);
+        setAudioLoading(true);
+        setAudioError(null);
+        
         const newAudio = new Audio(currentPrompt.soundURL);
         
-        // Add error handling for the audio element
         newAudio.onerror = (e) => {
           console.error('Error loading audio:', e);
-          console.error('Audio error details:', {
-            error: newAudio.error,
-            networkState: newAudio.networkState,
-            readyState: newAudio.readyState
+          setAudioError('Failed to load audio. Please try again.');
+          setIsPlaying(false);
+          setAudioLoading(false);
+        };
+
+        newAudio.oncanplaythrough = () => {
+          setAudioLoading(false);
+          setIsPlaying(true);
+          newAudio.play().catch(error => {
+            console.error('Error playing audio:', error);
+            setAudioError('Failed to play audio. Please try again.');
+            setIsPlaying(false);
           });
-          setError('Failed to load audio. Please try again.');
+        };
+
+        newAudio.onended = () => {
           setIsPlaying(false);
         };
 
-        // Add event listeners for debugging
-        newAudio.addEventListener('loadstart', () => console.log('Audio loading started'));
-        newAudio.addEventListener('canplay', () => console.log('Audio can play'));
-        newAudio.addEventListener('playing', () => console.log('Audio is playing'));
-        newAudio.addEventListener('ended', () => {
-          console.log('Audio playback ended');
-          setIsPlaying(false);
-        });
-        newAudio.addEventListener('stalled', () => console.log('Audio playback stalled'));
-        newAudio.addEventListener('suspend', () => console.log('Audio loading suspended'));
-        newAudio.addEventListener('waiting', () => console.log('Audio waiting for data'));
-
         setAudio(newAudio);
-        setIsPlaying(true);
-        
-        // Use play() with await to catch any playback errors
-        try {
-          console.log('Attempting to play audio...');
-          await newAudio.play();
-          console.log('Audio play() successful');
-        } catch (playError: any) {
-          console.error('Error playing audio:', playError);
-          console.error('Play error details:', {
-            name: playError.name,
-            message: playError.message,
-            stack: playError.stack
-          });
-          setError('Failed to play audio. Please try again.');
-          setIsPlaying(false);
-        }
       } catch (error) {
         console.error('Error creating audio element:', error);
-        setError('Failed to create audio element. Please try again.');
+        setAudioError('Failed to create audio element. Please try again.');
         setIsPlaying(false);
+        setAudioLoading(false);
       }
     }
   };
@@ -307,20 +320,28 @@ const PromptGame: React.FC = () => {
         <PromptText>{currentPrompt.promptText}</PromptText>
         
         {currentPrompt.imageURL && (
-          <PromptImage 
-            src={currentPrompt.imageURL} 
-            alt="Animal illustration"
-            loading="lazy"
-          />
+          <>
+            {imageLoading && <div>Loading image...</div>}
+            <PromptImage 
+              src={currentPrompt.imageURL} 
+              alt="Animal illustration"
+              loading="lazy"
+              onLoad={handleImageLoad}
+              onError={handleImageError}
+              style={{ display: imageLoading ? 'none' : 'block' }}
+            />
+          </>
         )}
 
         <ButtonGroup>
           <Button 
             onClick={handlePlaySound}
             variant="secondary"
-            disabled={isPlaying}
+            disabled={isPlaying || audioLoading}
           >
-            {isPlaying ? (
+            {audioLoading ? (
+              <>Loading sound...</>
+            ) : isPlaying ? (
               <>
                 <SpeakerXMarkIcon />
                 Playing...
@@ -334,6 +355,12 @@ const PromptGame: React.FC = () => {
           </Button>
         </ButtonGroup>
 
+        {audioError && (
+          <Feedback type="incorrect">
+            {audioError}
+          </Feedback>
+        )}
+
         <div style={{ marginTop: '2rem' }}>
           {currentPrompt.options?.map((option, index) => (
             <Button
@@ -341,6 +368,7 @@ const PromptGame: React.FC = () => {
               onClick={() => handleAnswer(option)}
               variant="secondary"
               style={{ margin: '0.5rem' }}
+              disabled={isPlaying || audioLoading}
             >
               {option}
             </Button>
