@@ -13,26 +13,14 @@ const LandingPage: React.FC = () => {
   return (
     <div className="landing-page">
       <section className="hero relative z-10">
-        <h1>Welcome to SynchronicityAI</h1>
-        <p>Empowering care teams through collaborative support</p>
+        <h1>Welcome to TinyWins.AI</h1>
+        <p>For the parents, by the parents</p>
         <div className="flex gap-4 justify-center mt-8 relative z-20 ml-16">
           <button 
-            className="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-all duration-300 cursor-pointer shadow-lg hover:shadow-xl hover:-translate-y-0.5 active:translate-y-0 active:shadow-md"
-            onClick={() => navigate('/demo')}
-          >
-            Try Demo
-          </button>
-          <button 
-            className="px-6 py-2 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 transition-all duration-300 cursor-pointer shadow-lg hover:shadow-xl hover:-translate-y-0.5 active:translate-y-0 active:shadow-md"
-            onClick={() => setIsAuthOpen(true)}
-          >
-            Sign In
-          </button>
-          <button 
-            className="px-6 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-all duration-300 cursor-pointer shadow-lg hover:shadow-xl hover:-translate-y-0.5 active:translate-y-0 active:shadow-md"
+            className="px-10 py-5 bg-green-600 text-white text-2xl rounded-lg hover:bg-green-700 transition-all duration-300 cursor-pointer shadow-lg hover:shadow-xl hover:-translate-y-0.5 active:translate-y-0 active:shadow-md font-bold"
             onClick={() => navigate('/contact')}
           >
-            Join Us
+            Join the Movement
           </button>
         </div>
       </section>

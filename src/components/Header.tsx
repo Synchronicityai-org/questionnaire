@@ -17,7 +17,7 @@ export function Header() {
     <>
       <header className="app-header">
         <div className="header-left">
-          <Link to="/" className="app-title">Synchronicity AI</Link>
+          <Link to="/" className="app-title">TinyWins.AI</Link>
         </div>
         <button 
           className={`burger-menu ${isMenuOpen ? 'active' : ''}`}

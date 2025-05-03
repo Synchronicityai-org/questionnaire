@@ -45,9 +45,67 @@ const ContactForm = () => {
   };
 
   return (
-    <div className="w-2/3 mx-auto p-4 sm:p-6 md:p-8">
-      <h2 className="text-3xl md:text-4xl font-bold mb-8 text-center">Join the Movement</h2>
-      <form onSubmit={handleSubmit} className="space-y-6">
+    <div className="w-full max-w-xl mx-auto p-2 sm:p-4 md:p-8">
+      <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold mb-4 text-center">Join the Movement</h2>
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 md:gap-6 mb-8 md:mb-12">
+        <img 
+          src="/resources/images/tinywins-hero-1.png" 
+          alt="TinyWins Movement" 
+          style={{
+            width: '100%',
+            height: '160px',
+            objectFit: 'cover',
+            borderRadius: '16px',
+            boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)'
+          }} 
+        />
+        <img 
+          src="/resources/images/tinywins-aha.png" 
+          alt="Aha Moment" 
+          style={{
+            width: '100%',
+            height: '160px',
+            objectFit: 'cover',
+            borderRadius: '16px',
+            boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)'
+          }} 
+        />
+        <img 
+          src="/resources/images/tinywins-flip.png" 
+          alt="Flipping the Script" 
+          style={{
+            width: '100%',
+            height: '160px',
+            objectFit: 'cover',
+            borderRadius: '16px',
+            boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)'
+          }} 
+        />
+        <img 
+          src="/resources/images/tinywins-synchronicity.png" 
+          alt="Synchronicity" 
+          style={{
+            width: '100%',
+            height: '160px',
+            objectFit: 'cover',
+            borderRadius: '16px',
+            boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)'
+          }} 
+        />
+      </div>
+      <img 
+        src="/resources/images/tinywins-hero.png" 
+        alt="TinyWins Hero" 
+        style={{
+          width: '100%',
+          maxWidth: '700px',
+          display: 'block',
+          margin: '0 auto 1.5rem auto',
+          borderRadius: '20px',
+          boxShadow: '0 6px 24px rgba(0,0,0,0.12)'
+        }}
+      />
+      <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-6">
         <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-4">
           <label htmlFor="name" className="w-full sm:w-1/5 text-base font-medium">Name</label>
           <input
@@ -98,12 +156,12 @@ const ContactForm = () => {
           />
         </div>
 
-        <div className="flex justify-center mt-8">
+        <div className="flex justify-center mt-6">
           <button
             type="submit"
-            className="w-full sm:w-auto px-8 py-3 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
+            className="w-full sm:w-auto px-8 py-3 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors text-lg font-bold"
           >
-            Submit
+            Join the Movement
           </button>
         </div>
       </form>
