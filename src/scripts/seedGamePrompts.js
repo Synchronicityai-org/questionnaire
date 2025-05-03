@@ -22,7 +22,7 @@ const gamePrompts = [
     promptText: 'Listen carefully! Which animal is this?',
     promptOrder: 2,
     imageURL: 'https://images.unsplash.com/photo-1543466835-00a7907e9de1?w=800&auto=format&fit=crop&q=60',
-    soundURL: 'https://www.myinstants.com/media/sounds/dog-barking.mp3',
+    soundURL: 'https://www.soundjay.com/animal/sounds/dog-1.mp3',
     options: JSON.stringify(['Dog', 'Wolf', 'Fox', 'Coyote']),
     correctAnswer: 'Dog'
   },
@@ -31,7 +31,7 @@ const gamePrompts = [
     promptText: 'Can you guess this animal?',
     promptOrder: 3,
     imageURL: 'https://images.unsplash.com/photo-1514888286974-6c03e2ca1dba?w=800&auto=format&fit=crop&q=60',
-    soundURL: 'https://www.myinstants.com/media/sounds/cat-meow.mp3',
+    soundURL: 'https://www.soundjay.com/animal/sounds/cat-1.mp3',
     options: JSON.stringify(['Cat', 'Lion', 'Tiger', 'Leopard']),
     correctAnswer: 'Cat'
   },
@@ -40,7 +40,7 @@ const gamePrompts = [
     promptText: 'Which animal makes this sound?',
     promptOrder: 4,
     imageURL: 'https://images.unsplash.com/photo-1557050543-4d5f4e07ef46?w=800&auto=format&fit=crop&q=60',
-    soundURL: 'https://www.myinstants.com/media/sounds/elephant.mp3',
+    soundURL: 'https://www.soundjay.com/animal/sounds/elephant-1.mp3',
     options: JSON.stringify(['Elephant', 'Hippo', 'Rhino', 'Giraffe']),
     correctAnswer: 'Elephant'
   },
@@ -49,7 +49,7 @@ const gamePrompts = [
     promptText: 'Listen! What animal is this?',
     promptOrder: 5,
     imageURL: 'https://images.unsplash.com/photo-1524704654690-b56c05c78a00?w=800&auto=format&fit=crop&q=60',
-    soundURL: 'https://www.myinstants.com/media/sounds/bubbles.mp3',
+    soundURL: 'https://www.soundjay.com/nature/sounds/water-1.mp3',
     options: JSON.stringify(['Clownfish', 'Goldfish', 'Angelfish', 'Guppy']),
     correctAnswer: 'Clownfish'
   },
@@ -58,7 +58,7 @@ const gamePrompts = [
     promptText: 'Can you identify this animal sound?',
     promptOrder: 6,
     imageURL: 'https://images.unsplash.com/photo-1570824104453-508955ab713e?w=800&auto=format&fit=crop&q=60',
-    soundURL: 'https://www.myinstants.com/media/sounds/dog-barking-2.mp3',
+    soundURL: 'https://www.soundjay.com/animal/sounds/dog-2.mp3',
     options: JSON.stringify(['Dog', 'Wolf', 'Fox', 'Coyote']),
     correctAnswer: 'Dog'
   },
@@ -67,7 +67,7 @@ const gamePrompts = [
     promptText: 'What animal makes this sound?',
     promptOrder: 7,
     imageURL: 'https://images.unsplash.com/photo-1543549790-8b5f4a028cfb?w=800&auto=format&fit=crop&q=60',
-    soundURL: 'https://www.myinstants.com/media/sounds/owl-hoot_1.mp3',
+    soundURL: 'https://www.soundjay.com/animal/sounds/owl-1.mp3',
     options: JSON.stringify(['Owl', 'Eagle', 'Hawk', 'Falcon']),
     correctAnswer: 'Owl'
   },
@@ -76,7 +76,7 @@ const gamePrompts = [
     promptText: 'Listen carefully! Which animal is this?',
     promptOrder: 8,
     imageURL: 'https://images.unsplash.com/photo-1517849845537-4d257902454a?w=800&auto=format&fit=crop&q=60',
-    soundURL: 'https://www.myinstants.com/media/sounds/monkey.mp3',
+    soundURL: 'https://www.soundjay.com/animal/sounds/monkey-1.mp3',
     options: JSON.stringify(['Monkey', 'Gorilla', 'Chimpanzee', 'Orangutan']),
     correctAnswer: 'Monkey'
   }

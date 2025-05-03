@@ -236,6 +236,7 @@ const PromptGame: React.FC = () => {
     if (audio) {
       audio.pause();
       audio.currentTime = 0;
+      setAudio(null);
     }
     
     const currentPrompt = prompts[currentPromptIndex];
@@ -244,33 +245,79 @@ const PromptGame: React.FC = () => {
         setAudioLoading(true);
         setAudioError(null);
         
-        const newAudio = new Audio(currentPrompt.soundURL);
+        // Create and configure new audio element
+        const newAudio = new Audio();
         
+        // Set up event listeners before setting source
         newAudio.onerror = (e) => {
           console.error('Error loading audio:', e);
-          setAudioError('Failed to load audio. Please try again.');
+          setAudioError('Failed to load audio. Please check your internet connection and try again.');
           setIsPlaying(false);
           setAudioLoading(false);
         };
 
         newAudio.oncanplaythrough = () => {
           setAudioLoading(false);
-          setIsPlaying(true);
-          newAudio.play().catch(error => {
-            console.error('Error playing audio:', error);
-            setAudioError('Failed to play audio. Please try again.');
+          // Try playing only after user interaction
+          try {
+            const playPromise = newAudio.play();
+            if (playPromise !== undefined) {
+              playPromise
+                .then(() => {
+                  setIsPlaying(true);
+                })
+                .catch(error => {
+                  console.error('Error playing audio:', error);
+                  if (error.name === 'NotAllowedError') {
+                    setAudioError('Please interact with the page first before playing sound.');
+                  } else {
+                    setAudioError('Failed to play sound. Please try again.');
+                  }
+                  setIsPlaying(false);
+                });
+            }
+          } catch (error) {
+            console.error('Error during play:', error);
+            setAudioError('Failed to play sound. Please try again.');
             setIsPlaying(false);
-          });
+          }
         };
 
         newAudio.onended = () => {
           setIsPlaying(false);
+          setAudio(null);
         };
 
+        // Add loading timeout
+        const timeoutId = setTimeout(() => {
+          if (audioLoading) {
+            setAudioError('Sound is taking too long to load. Please try again.');
+            setAudioLoading(false);
+            newAudio.src = '';
+          }
+        }, 10000); // 10 second timeout
+
+        // Set the source and load the audio
+        newAudio.src = currentPrompt.soundURL;
+        newAudio.load();
         setAudio(newAudio);
+
+        // Cleanup timeout on success
+        newAudio.oncanplaythrough = () => {
+          clearTimeout(timeoutId);
+          setAudioLoading(false);
+          newAudio.play()
+            .then(() => setIsPlaying(true))
+            .catch(error => {
+              console.error('Playback failed:', error);
+              setAudioError('Failed to play sound. Please try again.');
+              setIsPlaying(false);
+            });
+        };
+
       } catch (error) {
         console.error('Error creating audio element:', error);
-        setAudioError('Failed to create audio element. Please try again.');
+        setAudioError('Failed to create audio player. Please try again.');
         setIsPlaying(false);
         setAudioLoading(false);
       }
