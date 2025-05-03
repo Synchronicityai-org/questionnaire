@@ -28,6 +28,12 @@ const LandingPage: React.FC = () => {
           >
             Sign In
           </button>
+          <button 
+            className="px-6 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-all duration-300 cursor-pointer shadow-lg hover:shadow-xl hover:-translate-y-0.5 active:translate-y-0 active:shadow-md"
+            onClick={() => navigate('/contact')}
+          >
+            Join Us
+          </button>
         </div>
       </section>
       <section className="features">
