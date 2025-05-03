@@ -4,7 +4,6 @@ import { getCurrentUser } from 'aws-amplify/auth';
 import type { Schema } from '../../amplify/data/resource';
 import './KidProfileHome.css';
 import { AssessmentHistory } from './AssessmentHistory';
-import PromptGame from './PromptGame';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { 
   CalendarIcon, 
