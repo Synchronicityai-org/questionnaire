@@ -12,8 +12,8 @@ const gamePrompts = [
     gameType: 'Animal Sounds Quiz',
     promptText: 'What animal makes this sound?',
     promptOrder: 1,
-    imageURL: 'https://images.unsplash.com/photo-1543852786-1cf6624b9987?w=800&auto=format&fit=crop&q=60',
-    soundURL: 'https://www.myinstants.com/media/sounds/lion-roar-2.mp3',
+    imageURL: 'https://images.unsplash.com/photo-1546182990-dffeafbe841d?w=800&auto=format&fit=crop&q=60',
+    soundURL: 'https://assets.mixkit.co/active_storage/sfx/2136/2136.wav',
     options: JSON.stringify(['Lion', 'Tiger', 'Bear', 'Elephant']),
     correctAnswer: 'Lion'
   },
@@ -57,17 +57,17 @@ const gamePrompts = [
     gameType: 'Animal Sounds Quiz',
     promptText: 'Can you identify this animal sound?',
     promptOrder: 6,
-    imageURL: 'https://images.unsplash.com/photo-1517849845537-4d257902454a?w=800&auto=format&fit=crop&q=60',
-    soundURL: 'https://www.myinstants.com/media/sounds/duck.mp3',
-    options: JSON.stringify(['Duck', 'Goose', 'Chicken', 'Turkey']),
-    correctAnswer: 'Duck'
+    imageURL: 'https://images.unsplash.com/photo-1570824104453-508955ab713e?w=800&auto=format&fit=crop&q=60',
+    soundURL: 'https://www.myinstants.com/media/sounds/dog-barking-2.mp3',
+    options: JSON.stringify(['Dog', 'Wolf', 'Fox', 'Coyote']),
+    correctAnswer: 'Dog'
   },
   {
     gameType: 'Animal Sounds Quiz',
     promptText: 'What animal makes this sound?',
     promptOrder: 7,
-    imageURL: 'https://images.unsplash.com/photo-1517849845537-4d257902454a?w=800&auto=format&fit=crop&q=60',
-    soundURL: 'https://www.myinstants.com/media/sounds/owl.mp3',
+    imageURL: 'https://images.unsplash.com/photo-1543549790-8b5f4a028cfb?w=800&auto=format&fit=crop&q=60',
+    soundURL: 'https://www.myinstants.com/media/sounds/owl-hoot_1.mp3',
     options: JSON.stringify(['Owl', 'Eagle', 'Hawk', 'Falcon']),
     correctAnswer: 'Owl'
   },
