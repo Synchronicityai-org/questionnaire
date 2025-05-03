@@ -48,10 +48,10 @@ const gamePrompts = [
     gameType: 'Animal Sounds Quiz',
     promptText: 'Listen! What animal is this?',
     promptOrder: 5,
-    imageURL: 'https://images.unsplash.com/photo-1535591273668-578e31182c4f?w=800&auto=format&fit=crop&q=60',
-    soundURL: 'https://www.myinstants.com/media/sounds/horse.mp3',
-    options: JSON.stringify(['Horse', 'Donkey', 'Zebra', 'Mule']),
-    correctAnswer: 'Horse'
+    imageURL: 'https://images.unsplash.com/photo-1524704654690-b56c05c78a00?w=800&auto=format&fit=crop&q=60',
+    soundURL: 'https://www.myinstants.com/media/sounds/bubbles.mp3',
+    options: JSON.stringify(['Clownfish', 'Goldfish', 'Angelfish', 'Guppy']),
+    correctAnswer: 'Clownfish'
   },
   {
     gameType: 'Animal Sounds Quiz',

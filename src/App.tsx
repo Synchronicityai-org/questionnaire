@@ -22,6 +22,8 @@ import SensoryActivities from './components/resources/SensoryActivities';
 import { CommunicationTools } from './components/resources/CommunicationTools';
 import MilestoneTaskList from './components/MilestoneTaskList';
 import MilestoneDetail from './components/MilestoneDetail';
+import { GamesPage, Assessment } from './components/pages';
+import PromptGame from './components/PromptGame';
 import './App.css';
 
 
@@ -181,6 +183,9 @@ const AppContent: React.FC = () => {
             </ProtectedRoute>
           } />
           <Route path="/milestone/:milestoneId" element={<ProtectedRoute isAuthenticated={isAuthenticated}><MilestoneDetail /></ProtectedRoute>} />
+          <Route path="/games" element={<GamesPage />} />
+          <Route path="/games/animal-sounds" element={<PromptGame />} />
+          <Route path="/assessment" element={<Assessment />} />
         </Routes>
       </main>
       <Footer />

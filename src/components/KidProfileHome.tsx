@@ -128,11 +128,16 @@ const Sidebar = styled.div`
   grid-column: span 4;
   display: grid;
   gap: 2rem;
-  align-self: start;
-  position: sticky;
+  height: fit-content;
+
+  /* Remove position sticky and max-height to allow both cards to be visible */
+  /* position: sticky;
   top: 2rem;
-  max-height: calc(100vh - 4rem);
+  max-height: calc(100vh - 4rem); */
+  
+  /* Make scrolling smooth if needed */
   overflow-y: auto;
+  scroll-behavior: smooth;
 
   &::-webkit-scrollbar {
     display: none;
@@ -280,12 +285,42 @@ const Avatar = styled.div`
   box-shadow: 0 4px 6px rgba(31, 41, 55, 0.1);
 `;
 
-const GameSection = styled(Card)`
-  margin-top: 2rem;
-  h2 {
-    font-size: 1.5rem;
+const GameCard = styled(Card)`
+  cursor: pointer;
+  transition: all 0.2s ease;
+  background: white;
+  border-radius: 16px;
+  box-shadow: 0 4px 6px rgba(31, 41, 55, 0.04);
+  border: 1px solid rgba(226, 232, 240, 0.8);
+  
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 16px rgba(31, 41, 55, 0.1);
+  }
+
+  .game-icon {
+    width: 48px;
+    height: 48px;
+    background: linear-gradient(135deg, #60A5FA 0%, #34D399 100%);
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 1rem;
+  }
+
+  h3 {
+    font-size: 1.25rem;
     color: #1E293B;
-    margin: 0 0 1rem 0;
+    margin: 0 0 0.5rem 0;
+    font-weight: 600;
+  }
+
+  p {
+    color: #64748B;
+    margin: 0;
+    font-size: 0.9375rem;
+    line-height: 1.5;
   }
 `;
 
@@ -864,11 +899,6 @@ export function KidProfileHome() {
             </CardHeader>
             {renderProgressSection()}
           </Card>
-
-          <GameSection>
-            <h2>Interactive Learning Games</h2>
-            <PromptGame />
-          </GameSection>
         </MainContent>
 
         <Sidebar>
@@ -912,7 +942,7 @@ export function KidProfileHome() {
                   margin: '0 auto'
                 }}>Add team members to collaborate on your child's journey</p>
               </div>
-            ) : (
+            ) :
               teamMembers.map(member => (
                 <TeamMember key={member.id}>
                   <Avatar>{member.name.charAt(0)}</Avatar>
@@ -933,8 +963,18 @@ export function KidProfileHome() {
                   </div>
                 </TeamMember>
               ))
-            )}
+            }
           </Card>
+
+          <GameCard onClick={() => navigate('/games')}>
+            <div style={{ textAlign: 'center', padding: '1.5rem' }}>
+              <div className="game-icon">
+                <SparklesIcon style={{ color: 'white', width: 28, height: 28 }} />
+              </div>
+              <h3>Interactive Games</h3>
+              <p>Play fun learning games to develop skills</p>
+            </div>
+          </GameCard>
         </Sidebar>
       </DashboardGrid>
     </Container>
