@@ -13,7 +13,7 @@ const gamePrompts = [
     promptText: 'What animal makes this sound?',
     promptOrder: 1,
     imageURL: 'https://images.unsplash.com/photo-1546182990-dffeafbe841d?w=800&auto=format&fit=crop&q=60',
-    soundURL: 'https://assets.mixkit.co/active_storage/sfx/2136/2136.wav',
+    soundURL: 'https://www.soundjay.com/animal/sounds/lion-1.mp3',
     options: JSON.stringify(['Lion', 'Tiger', 'Bear', 'Elephant']),
     correctAnswer: 'Lion'
   },
