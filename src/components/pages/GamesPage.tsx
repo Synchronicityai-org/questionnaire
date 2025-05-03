@@ -1,6 +1,6 @@
 import { useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
-import { SparklesIcon, ArrowLeftIcon, CameraIcon, QuestionMarkCircleIcon } from '@heroicons/react/24/outline';
+import { SparklesIcon, ArrowLeftIcon, CameraIcon, QuestionMarkCircleIcon, BookOpenIcon } from '@heroicons/react/24/outline';
 
 const Container = styled.div`
   max-width: 1400px;
@@ -138,6 +138,13 @@ export function GamesPage() {
       description: 'Think about what happens next in different situations!',
       icon: <QuestionMarkCircleIcon style={{ color: 'white', width: 32, height: 32 }} />,
       path: '/games/what-happens-next'
+    },
+    {
+      id: 'complete-the-story',
+      title: 'Complete the Story',
+      description: 'Use your imagination to complete exciting story adventures!',
+      icon: <BookOpenIcon style={{ color: 'white', width: 32, height: 32 }} />,
+      path: '/games/complete-the-story'
     }
     // Add more games here as they are developed
   ];

@@ -26,6 +26,7 @@ import { GamesPage, Assessment } from './components/pages';
 import PromptGame from './components/PromptGame';
 import { ColorHunt } from './components/games/ColorHunt';
 import { WhatHappensNext } from './components/games/WhatHappensNext';
+import { CompleteTheStory } from './components/games/CompleteTheStory';
 import './App.css';
 
 
@@ -189,6 +190,7 @@ const AppContent: React.FC = () => {
           <Route path="/games/animal-sounds" element={<PromptGame />} />
           <Route path="/games/color-hunt" element={<ColorHunt />} />
           <Route path="/games/what-happens-next" element={<WhatHappensNext />} />
+          <Route path="/games/complete-the-story" element={<CompleteTheStory />} />
           <Route path="/assessment" element={<Assessment />} />
         </Routes>
       </main>
