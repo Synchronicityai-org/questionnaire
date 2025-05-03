@@ -4,6 +4,7 @@ import { getCurrentUser } from 'aws-amplify/auth';
 import type { Schema } from '../../amplify/data/resource';
 import './KidProfileHome.css';
 import { AssessmentHistory } from './AssessmentHistory';
+import PromptGame from './PromptGame';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { 
   CalendarIcon, 
@@ -277,6 +278,15 @@ const Avatar = styled.div`
   font-weight: 600;
   font-size: 1.25rem;
   box-shadow: 0 4px 6px rgba(31, 41, 55, 0.1);
+`;
+
+const GameSection = styled(Card)`
+  margin-top: 2rem;
+  h2 {
+    font-size: 1.5rem;
+    color: #1E293B;
+    margin: 0 0 1rem 0;
+  }
 `;
 
 interface KidProfile {
@@ -854,6 +864,11 @@ export function KidProfileHome() {
             </CardHeader>
             {renderProgressSection()}
           </Card>
+
+          <GameSection>
+            <h2>Interactive Learning Games</h2>
+            <PromptGame />
+          </GameSection>
         </MainContent>
 
         <Sidebar>

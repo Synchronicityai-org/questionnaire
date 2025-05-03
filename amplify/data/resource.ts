@@ -198,7 +198,15 @@ const schema = a.schema({
   })
   .authorization((allow) => [allow.owner(), allow.publicApiKey()]),
 
-  
+  GamePrompt: a.model({
+    id: a.id(),
+    gameType: a.string().required(),
+    promptText: a.string().required(),
+    promptOrder: a.integer().required(),
+    imageURL: a.string(),
+  })
+  .authorization((allow) => [allow.publicApiKey()]),
+
 });
 
 // == STEP 2: Define Authorization Modes ==
