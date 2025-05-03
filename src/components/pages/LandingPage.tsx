@@ -22,6 +22,12 @@ const LandingPage: React.FC = () => {
           >
             Join the Movement
           </button>
+          <button 
+            className="px-10 py-5 bg-blue-600 text-white text-2xl rounded-lg hover:bg-blue-700 transition-all duration-300 cursor-pointer shadow-lg hover:shadow-xl hover:-translate-y-0.5 active:translate-y-0 active:shadow-md font-bold"
+            onClick={() => setIsAuthOpen(true)}
+          >
+            Sign In
+          </button>
         </div>
       </section>
       <section className="features">
