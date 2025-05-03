@@ -202,7 +202,7 @@ const PromptGame: React.FC = () => {
     }, 2000);
   };
 
-  const handlePlaySound = () => {
+  const handlePlaySound = async () => {
     if (audio) {
       audio.pause();
       audio.currentTime = 0;
@@ -210,14 +210,41 @@ const PromptGame: React.FC = () => {
     
     const currentPrompt = prompts[currentPromptIndex];
     if (currentPrompt.soundURL) {
-      const newAudio = new Audio(currentPrompt.soundURL);
-      setAudio(newAudio);
-      newAudio.play();
-      setIsPlaying(true);
-      
-      newAudio.onended = () => {
+      try {
+        const newAudio = new Audio(currentPrompt.soundURL);
+        
+        // Add error handling for the audio element
+        newAudio.onerror = (e) => {
+          console.error('Error loading audio:', e);
+          setError('Failed to load audio. Please try again.');
+          setIsPlaying(false);
+        };
+
+        // Add event listeners for debugging
+        newAudio.addEventListener('loadstart', () => console.log('Audio loading started'));
+        newAudio.addEventListener('canplay', () => console.log('Audio can play'));
+        newAudio.addEventListener('playing', () => console.log('Audio is playing'));
+        newAudio.addEventListener('ended', () => {
+          console.log('Audio playback ended');
+          setIsPlaying(false);
+        });
+
+        setAudio(newAudio);
+        setIsPlaying(true);
+        
+        // Use play() with await to catch any playback errors
+        try {
+          await newAudio.play();
+        } catch (playError) {
+          console.error('Error playing audio:', playError);
+          setError('Failed to play audio. Please try again.');
+          setIsPlaying(false);
+        }
+      } catch (error) {
+        console.error('Error creating audio element:', error);
+        setError('Failed to create audio element. Please try again.');
         setIsPlaying(false);
-      };
+      }
     }
   };
 
