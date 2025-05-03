@@ -24,7 +24,16 @@ const client = generateClient<Schema>();
 const Container = styled.div`
   max-width: 1400px;
   margin: 0 auto;
-  padding: 2rem;
+  padding: 0.5rem;
+  @media (min-width: 430px) {
+    padding: 1rem;
+  }
+  @media (min-width: 640px) {
+    padding: 1.5rem;
+  }
+  @media (min-width: 1024px) {
+    padding: 2rem;
+  }
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   min-height: 100vh;
   background: linear-gradient(135deg, #EDF2F7 0%, #F7FAFC 100%);
@@ -32,12 +41,35 @@ const Container = styled.div`
 
 const Header = styled.div`
   display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 2.5rem;
-  padding: 2rem;
+  flex-direction: column;
+  gap: 0.75rem;
+  @media (min-width: 430px) {
+    gap: 1rem;
+  }
+  @media (min-width: 768px) {
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+  }
+  margin-bottom: 1rem;
+  @media (min-width: 430px) {
+    margin-bottom: 1.5rem;
+  }
+  @media (min-width: 1024px) {
+    margin-bottom: 2.5rem;
+  }
+  padding: 1rem;
+  @media (min-width: 430px) {
+    padding: 1.5rem;
+  }
+  @media (min-width: 768px) {
+    padding: 2rem;
+  }
   background-color: #FFFFFF;
-  border-radius: 24px;
+  border-radius: 16px;
+  @media (min-width: 430px) {
+    border-radius: 24px;
+  }
   box-shadow: 
     0 4px 6px rgba(31, 41, 55, 0.04),
     0 12px 16px rgba(31, 41, 55, 0.06);
@@ -58,7 +90,16 @@ const Header = styled.div`
 
 const HeaderContent = styled.div`
   h1 {
-    font-size: 2.75rem;
+    font-size: 1.5rem;
+    @media (min-width: 430px) {
+      font-size: 1.75rem;
+    }
+    @media (min-width: 640px) {
+      font-size: 2.25rem;
+    }
+    @media (min-width: 1024px) {
+      font-size: 2.75rem;
+    }
     color: #1E293B;
     margin: 0;
     font-weight: 800;
@@ -70,8 +111,20 @@ const HeaderContent = styled.div`
 
   p {
     color: #64748B;
-    margin: 0.75rem 0 0;
-    font-size: 1.25rem;
+    margin: 0.375rem 0 0;
+    @media (min-width: 430px) {
+      margin: 0.5rem 0 0;
+    }
+    font-size: 0.875rem;
+    @media (min-width: 430px) {
+      font-size: 1rem;
+    }
+    @media (min-width: 640px) {
+      font-size: 1.125rem;
+    }
+    @media (min-width: 1024px) {
+      font-size: 1.25rem;
+    }
     font-weight: 400;
   }
 `;
@@ -79,14 +132,26 @@ const HeaderContent = styled.div`
 const ActionButton = styled.button<{ variant?: 'primary' | 'secondary' }>`
   display: flex;
   align-items: center;
-  gap: 0.75rem;
-  padding: ${props => props.variant === 'primary' ? '1rem 2rem' : '0.875rem 1.5rem'};
+  gap: 0.5rem;
+  @media (min-width: 430px) {
+    gap: 0.75rem;
+  }
+  padding: ${props => props.variant === 'primary' ? '0.75rem 1.5rem' : '0.625rem 1.25rem'};
+  @media (min-width: 430px) {
+    padding: ${props => props.variant === 'primary' ? '1rem 2rem' : '0.875rem 1.5rem'};
+  }
   border: none;
-  border-radius: 16px;
+  border-radius: 12px;
+  @media (min-width: 430px) {
+    border-radius: 16px;
+  }
   background: ${props => props.variant === 'primary' ? 'linear-gradient(135deg, #60A5FA 0%, #34D399 100%)' : '#F8FAFC'};
   color: ${props => props.variant === 'primary' ? 'white' : '#1E293B'};
   font-weight: 600;
-  font-size: ${props => props.variant === 'primary' ? '1.125rem' : '1rem'};
+  font-size: ${props => props.variant === 'primary' ? '0.875rem' : '0.75rem'};
+  @media (min-width: 430px) {
+    font-size: ${props => props.variant === 'primary' ? '1.125rem' : '1rem'};
+  }
   cursor: pointer;
   transition: all 0.3s ease;
   box-shadow: ${props => props.variant === 'primary' 
@@ -104,29 +169,47 @@ const ActionButton = styled.button<{ variant?: 'primary' | 'secondary' }>`
   }
 
   svg {
-    width: ${props => props.variant === 'primary' ? '24px' : '20px'};
-    height: ${props => props.variant === 'primary' ? '24px' : '20px'};
+    width: ${props => props.variant === 'primary' ? '20px' : '16px'};
+    height: ${props => props.variant === 'primary' ? '20px' : '16px'};
+    @media (min-width: 430px) {
+      width: ${props => props.variant === 'primary' ? '24px' : '20px'};
+      height: ${props => props.variant === 'primary' ? '24px' : '20px'};
+    }
   }
 `;
 
 const DashboardGrid = styled.div`
   display: grid;
-  grid-template-columns: repeat(12, 1fr);
-  gap: 2rem;
+  grid-template-columns: 1fr;
+  gap: 1.5rem;
+  @media (min-width: 1024px) {
+    grid-template-columns: repeat(12, 1fr);
+    gap: 2rem;
+  }
   position: relative;
   margin-top: 1rem;
 `;
 
 const MainContent = styled.div`
-  grid-column: span 8;
+  @media (min-width: 1024px) {
+    grid-column: span 8;
+  }
   display: grid;
-  gap: 2rem;
+  gap: 1.5rem;
+  @media (min-width: 1024px) {
+    gap: 2rem;
+  }
 `;
 
 const Sidebar = styled.div`
-  grid-column: span 4;
+  @media (min-width: 1024px) {
+    grid-column: span 4;
+  }
   display: grid;
-  gap: 2rem;
+  gap: 1.5rem;
+  @media (min-width: 1024px) {
+    gap: 2rem;
+  }
   align-self: start;
   position: sticky;
   top: 2rem;
@@ -208,24 +291,61 @@ const CardHeader = styled.div`
 
 const StatsGrid = styled.div`
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 1.5rem;
-  margin-top: -1rem;
-  margin-bottom: 2rem;
+  grid-template-columns: 1fr;
+  gap: 0.75rem;
+  @media (min-width: 430px) {
+    gap: 1rem;
+  }
+  @media (min-width: 640px) {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  @media (min-width: 1024px) {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1.5rem;
+  }
+  margin-top: -0.75rem;
+  @media (min-width: 430px) {
+    margin-top: -1rem;
+  }
+  margin-bottom: 1rem;
+  @media (min-width: 430px) {
+    margin-bottom: 1.5rem;
+  }
+  @media (min-width: 1024px) {
+    margin-bottom: 2rem;
+  }
   position: relative;
   z-index: 1;
 `;
 
 const StatCard = styled.div`
   background: white;
-  border-radius: 16px;
-  padding: 1.5rem;
+  border-radius: 12px;
+  @media (min-width: 430px) {
+    border-radius: 16px;
+  }
+  padding: 1rem;
+  @media (min-width: 430px) {
+    padding: 1.25rem;
+  }
+  @media (min-width: 640px) {
+    padding: 1.5rem;
+  }
   text-align: center;
   box-shadow: 0 4px 6px rgba(31, 41, 55, 0.04);
   border: 1px solid rgba(226, 232, 240, 0.8);
 
   h3 {
-    font-size: 2.5rem;
+    font-size: 1.75rem;
+    @media (min-width: 430px) {
+      font-size: 2rem;
+    }
+    @media (min-width: 640px) {
+      font-size: 2.25rem;
+    }
+    @media (min-width: 1024px) {
+      font-size: 2.5rem;
+    }
     color: #1E293B;
     margin: 0;
     font-weight: 700;
@@ -236,9 +356,18 @@ const StatCard = styled.div`
   }
 
   p {
-    margin: 0.5rem 0 0;
+    margin: 0.375rem 0 0;
+    @media (min-width: 430px) {
+      margin: 0.5rem 0 0;
+    }
     color: #64748B;
-    font-size: 1rem;
+    font-size: 0.75rem;
+    @media (min-width: 430px) {
+      font-size: 0.875rem;
+    }
+    @media (min-width: 640px) {
+      font-size: 1rem;
+    }
     font-weight: 500;
   }
 `;

@@ -21,6 +21,7 @@ import VisualSchedules from './components/resources/VisualSchedules';
 import SensoryActivities from './components/resources/SensoryActivities';
 import { CommunicationTools } from './components/resources/CommunicationTools';
 import MilestoneTaskList from './components/MilestoneTaskList';
+import ContactForm from './components/ContactForm';
 import './App.css';
 
 
@@ -124,6 +125,7 @@ const AppContent: React.FC = () => {
       <main className="main-content">
         <Routes>
           <Route path="/" element={<LandingPage />} />
+          <Route path="/contact" element={<ContactForm />} />
           <Route path="/demo" element={<DemoDashboard />} />
           <Route path="/resources/visual-schedules" element={<VisualSchedules />} />
           <Route path="/resources/sensory-activities" element={<SensoryActivities />} />
