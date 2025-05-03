@@ -204,6 +204,9 @@ const schema = a.schema({
     promptText: a.string().required(),
     promptOrder: a.integer().required(),
     imageURL: a.string(),
+    soundURL: a.string(),
+    options: a.string(),
+    correctAnswer: a.string(),
   })
   .authorization((allow) => [allow.publicApiKey()]),
 
