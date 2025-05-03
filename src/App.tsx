@@ -24,6 +24,8 @@ import MilestoneTaskList from './components/MilestoneTaskList';
 import MilestoneDetail from './components/MilestoneDetail';
 import { GamesPage, Assessment } from './components/pages';
 import PromptGame from './components/PromptGame';
+import { ColorHunt } from './components/games/ColorHunt';
+import { WhatHappensNext } from './components/games/WhatHappensNext';
 import './App.css';
 
 
@@ -185,6 +187,8 @@ const AppContent: React.FC = () => {
           <Route path="/milestone/:milestoneId" element={<ProtectedRoute isAuthenticated={isAuthenticated}><MilestoneDetail /></ProtectedRoute>} />
           <Route path="/games" element={<GamesPage />} />
           <Route path="/games/animal-sounds" element={<PromptGame />} />
+          <Route path="/games/color-hunt" element={<ColorHunt />} />
+          <Route path="/games/what-happens-next" element={<WhatHappensNext />} />
           <Route path="/assessment" element={<Assessment />} />
         </Routes>
       </main>

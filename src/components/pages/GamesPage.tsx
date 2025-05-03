@@ -1,6 +1,6 @@
 import { useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
-import { SparklesIcon, ArrowLeftIcon } from '@heroicons/react/24/outline';
+import { SparklesIcon, ArrowLeftIcon, CameraIcon, QuestionMarkCircleIcon } from '@heroicons/react/24/outline';
 
 const Container = styled.div`
   max-width: 1400px;
@@ -124,6 +124,20 @@ export function GamesPage() {
       description: 'Listen to animal sounds and guess which animal made them!',
       icon: <SparklesIcon style={{ color: 'white', width: 32, height: 32 }} />,
       path: '/games/animal-sounds'
+    },
+    {
+      id: 'color-hunt',
+      title: 'Color Hunt',
+      description: 'Find and photograph objects matching the target color!',
+      icon: <CameraIcon style={{ color: 'white', width: 32, height: 32 }} />,
+      path: '/games/color-hunt'
+    },
+    {
+      id: 'what-happens-next',
+      title: 'What Happens Next?',
+      description: 'Think about what happens next in different situations!',
+      icon: <QuestionMarkCircleIcon style={{ color: 'white', width: 32, height: 32 }} />,
+      path: '/games/what-happens-next'
     }
     // Add more games here as they are developed
   ];
