@@ -1,6 +1,6 @@
 import { useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
-import { SparklesIcon, ArrowLeftIcon, CameraIcon, QuestionMarkCircleIcon, BookOpenIcon } from '@heroicons/react/24/outline';
+import { SparklesIcon, ArrowLeftIcon, CameraIcon, QuestionMarkCircleIcon, BookOpenIcon, UserIcon } from '@heroicons/react/24/outline';
 
 const Container = styled.div`
   max-width: 1400px;
@@ -119,11 +119,11 @@ export function GamesPage() {
 
   const games = [
     {
-      id: 'animal-sounds',
-      title: 'Animal Sounds Quiz',
-      description: 'Listen to animal sounds and guess which animal made them!',
-      icon: <SparklesIcon style={{ color: 'white', width: 32, height: 32 }} />,
-      path: '/games/animal-sounds'
+      id: 'copy-me',
+      title: 'Copy Me',
+      description: 'Listen and copy the poses shown in the images!',
+      icon: <UserIcon style={{ color: 'white', width: 32, height: 32 }} />,
+      path: '/games/copy-me'
     },
     {
       id: 'color-hunt',

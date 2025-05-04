@@ -28,6 +28,7 @@ import PromptGame from './components/PromptGame';
 import { ColorHunt } from './components/games/ColorHunt';
 import { WhatHappensNext } from './components/games/WhatHappensNext';
 import { CompleteTheStory } from './components/games/CompleteTheStory';
+import { CopyMe } from './components/games/CopyMe';
 import './App.css';
 
 
@@ -189,7 +190,7 @@ const AppContent: React.FC = () => {
           } />
           <Route path="/milestone/:milestoneId" element={<ProtectedRoute isAuthenticated={isAuthenticated}><MilestoneDetail /></ProtectedRoute>} />
           <Route path="/games" element={<GamesPage />} />
-          <Route path="/games/animal-sounds" element={<PromptGame />} />
+          <Route path="/games/copy-me" element={<CopyMe />} />
           <Route path="/games/color-hunt" element={<ColorHunt />} />
           <Route path="/games/what-happens-next" element={<WhatHappensNext />} />
           <Route path="/games/complete-the-story" element={<CompleteTheStory />} />
