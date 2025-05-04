@@ -84,6 +84,20 @@ const Progress = styled.div`
   font-weight: 500;
 `;
 
+const StartOverlay = styled.div`
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(255,255,255,0.95);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  z-index: 2;
+`;
+
 // Use the actual image filenames from the public/resources/images/copyme directory
 const images = [
   '/resources/images/copyme/Cheerful%20Boy%20with%20Vibrant%20Background.png',
@@ -102,75 +116,115 @@ const images = [
   '/resources/images/copyme/Tiny%20Wins%20Hero.png',
 ];
 
+// Encouraging phrases for subsequent images
+const encouragingPhrases = [
+  'Wow, great job! Now copy me again!',
+  'Hey, great! Copy me!',
+  "Awesome! Let's do another one - copy me!",
+  "You're doing amazing! Copy me!",
+  'Fantastic! Ready? Copy me!',
+  'Super work! Now, copy me again!',
+  'Excellent! Copy me!',
+  'You rock! Copy me!',
+  'Keep going! Copy me!'
+];
+
 export const CopyMe: React.FC = () => {
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
-  const [hasInteracted, setHasInteracted] = useState(false);
+  const [started, setStarted] = useState(false);
 
-  // Play the audio prompt
-  const playPrompt = () => {
+  // Play the MP3 or use TTS fallback with varied phrases
+  const playPrompt = (index: number) => {
     const audio = new Audio('/resources/audio/copy-me.mp3');
-    audio.play().catch(error => {
-      // Most browsers will block until user interacts
-      console.error('Error playing audio:', error);
-    });
+    let played = false;
+    audio.oncanplaythrough = () => {
+      if (!played) {
+        played = true;
+        audio.play().catch(() => {});
+      }
+    };
+    audio.onerror = () => {
+      if (!played) {
+        played = true;
+        let phrase = 'Copy me!';
+        if (index > 0) {
+          // Pick a random phrase for subsequent images
+          phrase = encouragingPhrases[Math.floor(Math.random() * encouragingPhrases.length)];
+        }
+        const msg = new window.SpeechSynthesisUtterance(phrase);
+        msg.lang = 'en-US';
+        msg.pitch = 1.4;
+        msg.rate = 1.1;
+        window.speechSynthesis.speak(msg);
+      }
+    };
+    audio.play().then(() => { played = true; }).catch(() => {});
   };
 
-  // Play sound on first mount if user has interacted
+  // Play prompt for images after the first, only when started
   useEffect(() => {
-    if (hasInteracted) {
-      playPrompt();
+    if (started && currentImageIndex > 0) {
+      playPrompt(currentImageIndex);
     }
-    // eslint-disable-next-line
-  }, [currentImageIndex, hasInteracted]);
+  }, [currentImageIndex, started]);
+
+  const handleStart = () => {
+    setStarted(true);
+    playPrompt(0);
+  };
 
   const handleNext = () => {
-    setHasInteracted(true);
     if (currentImageIndex < images.length - 1) {
       setCurrentImageIndex(prev => prev + 1);
-      playPrompt();
     }
   };
 
   const handlePrevious = () => {
-    setHasInteracted(true);
     if (currentImageIndex > 0) {
       setCurrentImageIndex(prev => prev - 1);
-      playPrompt();
-    }
-  };
-
-  // Optionally, play sound on first mount after first user interaction
-  const handleFirstInteraction = () => {
-    if (!hasInteracted) {
-      setHasInteracted(true);
-      playPrompt();
     }
   };
 
   return (
-    <Container onClick={handleFirstInteraction}>
+    <Container>
       <GameCard>
         <h2>Copy Me!</h2>
         <p>Listen to the prompt and copy the pose shown in the image</p>
-        
-        <ImageContainer>
+        <ImageContainer style={{ position: 'relative' }}>
           <PoseImage 
             src={images[currentImageIndex]} 
             alt={`Pose ${currentImageIndex + 1}`}
           />
+          {currentImageIndex === 0 && !started && (
+            <StartOverlay>
+              <h3>Ready to play?</h3>
+              <button style={{
+                padding: '1rem 2rem',
+                fontSize: '1.2rem',
+                borderRadius: '12px',
+                background: 'linear-gradient(135deg, #60A5FA 0%, #34D399 100%)',
+                color: 'white',
+                border: 'none',
+                cursor: 'pointer',
+                fontWeight: 700
+              }} onClick={handleStart}>
+                Start
+              </button>
+            </StartOverlay>
+          )}
         </ImageContainer>
 
         <ButtonGroup>
           <Button 
             onClick={handlePrevious}
-            disabled={currentImageIndex === 0}
+            disabled={currentImageIndex === 0 || !started}
           >
             <ArrowLeftIcon />
             Previous
           </Button>
           <Button 
             onClick={handleNext}
-            disabled={currentImageIndex === images.length - 1}
+            disabled={currentImageIndex === images.length - 1 || !started}
           >
             Next
             <ArrowRightIcon />
