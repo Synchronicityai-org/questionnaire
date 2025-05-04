@@ -17,7 +17,7 @@
   display: flex;
   flex-direction: column;
   align-items: flex-start;
-  margin:1.2rem;
+  margin: 1.2rem;
   border-radius: 20px;
 }
 
@@ -91,12 +91,14 @@
   display: flex;
   flex-direction: column;
   height: 100%;
+  align-items: center;
 }
 
 .feature-card img {
   width: 100%;
-  height: 200px;
-  object-fit: cover;
+  height: auto;
+  max-height: 200px;
+  object-fit: contain;
   border-radius: 4px;
   margin-bottom: 1rem;
 }
@@ -127,16 +129,22 @@
 @media (max-width: 768px) {
   .hero {
     padding-left: 5%;
+    height: auto;
+    min-height: 100vh;
+    background-position: center center;
+    background-size: cover;
+    margin: 0.5rem;
+    width: 95vw;
   }
   
   .hero h1 {
     font-size: 2rem;
-    margin: 1rem 3rem 0.25rem;
+    margin: 1rem 1rem 0.25rem;
   }
 
   .hero p {
     font-size: 1rem;
-    margin: 0 3rem 1.5rem;
+    margin: 0 1rem 1.5rem;
   }
 
   .hero .flex {
@@ -144,6 +152,7 @@
     gap: 1rem;
     margin-left: 0;
     align-items: center;
+    padding-bottom: 2rem;
   }
 
   .hero button {
@@ -155,5 +164,34 @@
 
   .feature-grid {
     grid-template-columns: 1fr;
+  }
+
+  .features {
+    width: 95vw;
+    margin: 0.5rem;
+    padding: 2rem 1rem;
+  }
+
+  .feature-card {
+    padding: 1rem;
+    margin-bottom: 1rem;
+  }
+
+  .feature-card img {
+    width: 100%;
+    height: auto;
+    max-height: 250px;
+    object-fit: contain;
+  }
+
+  .feature-card h3 {
+    font-size: 1.1rem;
+    margin: 0.75rem 0;
+    text-align: center;
+  }
+
+  .feature-card p {
+    font-size: 0.9rem;
+    text-align: center;
   }
 }
