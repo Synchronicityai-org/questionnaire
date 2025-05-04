@@ -720,7 +720,7 @@ const MilestoneTaskList: React.FC<{ kidProfileId: string }> = ({ kidProfileId })
           </BackButton>
         </Header>
         <div className="no-milestones">
-          <p>No milestones found. Complete an assessment to generate milestones for {kidProfile?.name}.</p>
+          <p>No milestones found.Complete an assessment to generate milestones for {kidProfile?.name}.</p>
           <ActionButton onClick={() => navigate(`/questionnaire/${kidProfileId}`)}>
             Take Assessment
           </ActionButton>
