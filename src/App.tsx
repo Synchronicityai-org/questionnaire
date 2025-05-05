@@ -24,7 +24,6 @@ import MilestoneTaskList from './components/MilestoneTaskList';
 import ContactForm from './components/ContactForm';
 import MilestoneDetail from './components/MilestoneDetail';
 import { GamesPage, Assessment } from './components/pages';
-import PromptGame from './components/PromptGame';
 import { ColorHunt } from './components/games/ColorHunt';
 import { WhatHappensNext } from './components/games/WhatHappensNext';
 import { CompleteTheStory } from './components/games/CompleteTheStory';
