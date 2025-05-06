@@ -98,6 +98,18 @@ const StartOverlay = styled.div`
   z-index: 2;
 `;
 
+const CountdownTimer = styled.div`
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  background: rgba(0, 0, 0, 0.6);
+  color: white;
+  padding: 8px 16px;
+  border-radius: 20px;
+  font-size: 1.2rem;
+  font-weight: bold;
+`;
+
 // Use the actual image filenames from the public/resources/images/copyme directory
 const images = [
   '/resources/images/copyme/Cheerful%20Boy%20with%20Vibrant%20Background.png',
@@ -132,6 +144,8 @@ const encouragingPhrases = [
 export const CopyMe: React.FC = () => {
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [started, setStarted] = useState(false);
+  const [countdown, setCountdown] = useState(7);
+  const [isPaused, setIsPaused] = useState(false);
 
   // Play the MP3 or use TTS fallback with varied phrases
   const playPrompt = (index: number) => {
@@ -161,6 +175,26 @@ export const CopyMe: React.FC = () => {
     audio.play().then(() => { played = true; }).catch(() => {});
   };
 
+  // Auto-advance timer
+  useEffect(() => {
+    let timer: NodeJS.Timeout;
+    
+    if (started && !isPaused && currentImageIndex < images.length - 1) {
+      if (countdown > 0) {
+        timer = setInterval(() => {
+          setCountdown(prev => prev - 1);
+        }, 1000);
+      } else {
+        handleNext();
+        setCountdown(7);
+      }
+    }
+
+    return () => {
+      if (timer) clearInterval(timer);
+    };
+  }, [started, countdown, currentImageIndex, isPaused]);
+
   // Play prompt for images after the first, only when started
   useEffect(() => {
     if (started && currentImageIndex > 0) {
@@ -171,18 +205,25 @@ export const CopyMe: React.FC = () => {
   const handleStart = () => {
     setStarted(true);
     playPrompt(0);
+    setCountdown(7);
   };
 
   const handleNext = () => {
     if (currentImageIndex < images.length - 1) {
       setCurrentImageIndex(prev => prev + 1);
+      setCountdown(7);
     }
   };
 
   const handlePrevious = () => {
     if (currentImageIndex > 0) {
       setCurrentImageIndex(prev => prev - 1);
+      setCountdown(7);
     }
+  };
+
+  const togglePause = () => {
+    setIsPaused(prev => !prev);
   };
 
   return (
@@ -195,6 +236,11 @@ export const CopyMe: React.FC = () => {
             src={images[currentImageIndex]} 
             alt={`Pose ${currentImageIndex + 1}`}
           />
+          {started && !isPaused && countdown > 0 && (
+            <CountdownTimer>
+              {countdown}
+            </CountdownTimer>
+          )}
           {currentImageIndex === 0 && !started && (
             <StartOverlay>
               <h3>Ready to play?</h3>
@@ -221,6 +267,15 @@ export const CopyMe: React.FC = () => {
           >
             <ArrowLeftIcon />
             Previous
+          </Button>
+          <Button
+            onClick={togglePause}
+            disabled={!started || currentImageIndex === images.length - 1}
+            style={{
+              background: isPaused ? '#EF4444' : '#10B981'
+            }}
+          >
+            {isPaused ? 'Resume' : 'Pause'}
           </Button>
           <Button 
             onClick={handleNext}
