@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { BrowserRouter as Router, Routes, Route, useNavigate, Navigate } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, useNavigate, Navigate, useParams } from 'react-router-dom';
 import { getCurrentUser } from 'aws-amplify/auth';
 import { Hub } from '@aws-amplify/core';
 import { generateClient } from 'aws-amplify/data';
@@ -20,6 +20,14 @@ import { ParentConcernsForm } from './components/ParentConcernsForm';
 import VisualSchedules from './components/resources/VisualSchedules';
 import SensoryActivities from './components/resources/SensoryActivities';
 import { CommunicationTools } from './components/resources/CommunicationTools';
+import MilestoneTaskList from './components/MilestoneTaskList';
+import ContactForm from './components/ContactForm';
+import MilestoneDetail from './components/MilestoneDetail';
+import { GamesPage, Assessment } from './components/pages';
+import { ColorHunt } from './components/games/ColorHunt';
+import { WhatHappensNext } from './components/games/WhatHappensNext';
+import { CompleteTheStory } from './components/games/CompleteTheStory';
+import { CopyMe } from './components/games/CopyMe';
 import './App.css';
 
 
@@ -123,6 +131,7 @@ const AppContent: React.FC = () => {
       <main className="main-content">
         <Routes>
           <Route path="/" element={<LandingPage />} />
+          <Route path="/contact" element={<ContactForm />} />
           <Route path="/demo" element={<DemoDashboard />} />
           <Route path="/resources/visual-schedules" element={<VisualSchedules />} />
           <Route path="/resources/sensory-activities" element={<SensoryActivities />} />
@@ -173,11 +182,31 @@ const AppContent: React.FC = () => {
               <QuestionnaireForm />
             </ProtectedRoute>
           } />
+          <Route path="/milestone-tasks/:kidProfileId" element={
+            <ProtectedRoute isAuthenticated={isAuthenticated}>
+              <MilestoneTaskListWrapper />
+            </ProtectedRoute>
+          } />
+          <Route path="/milestone/:milestoneId" element={<ProtectedRoute isAuthenticated={isAuthenticated}><MilestoneDetail /></ProtectedRoute>} />
+          <Route path="/games" element={<GamesPage />} />
+          <Route path="/games/copy-me" element={<CopyMe />} />
+          <Route path="/games/color-hunt" element={<ColorHunt />} />
+          <Route path="/games/what-happens-next" element={<WhatHappensNext />} />
+          <Route path="/games/complete-the-story" element={<CompleteTheStory />} />
+          <Route path="/assessment" element={<Assessment />} />
         </Routes>
       </main>
       <Footer />
     </div>
   );
+};
+
+const MilestoneTaskListWrapper = () => {
+  const { kidProfileId } = useParams();
+  if (!kidProfileId) {
+    return <div>Error: No kid profile ID provided</div>;
+  }
+  return <MilestoneTaskList kidProfileId={kidProfileId} />;
 };
 
 const App: React.FC = () => {

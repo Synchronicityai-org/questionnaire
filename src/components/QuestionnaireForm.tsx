@@ -156,27 +156,38 @@ const QuestionnaireForm: React.FC = () => {
   const fetchMilestones = async () => {
     if (!kidProfileId) return;
     try {
-      const { data: milestones } = await client.models.Milestone.list({
+      // First fetch all milestone type records
+      const { data: milestoneTasks } = await client.models.MilestoneTask.list({
         filter: {
-          kidProfileId: { eq: kidProfileId }
+          and: [
+            { kidProfileId: { eq: kidProfileId } },
+            { type: { eq: 'MILESTONE' } }
+          ]
         }
       });
 
-      // For each milestone, fetch its tasks
+      // For each milestone, fetch its associated tasks
       const milestonesWithTasks = await Promise.all(
-        milestones.map(async (milestone) => {
+        milestoneTasks.map(async (milestone) => {
           if (!milestone.id) return null;
-          const { data: tasks } = await client.models.Task.list({
+          
+          // Fetch tasks associated with this milestone
+          const { data: tasks } = await client.models.MilestoneTask.list({
             filter: {
-              milestoneId: { eq: milestone.id }
+              and: [
+                { kidProfileId: { eq: kidProfileId } },
+                { type: { eq: 'TASK' } },
+                { parentId: { eq: milestone.id } }
+              ]
             }
           });
+
           return {
             name: milestone.title || '',
             tasks: tasks.map(task => ({
               name: task.title || '',
-              description: task.description || '',
-              strategies: task.videoLink || ''
+              description: task.parentFriendlyDescription || '',
+              strategies: task.strategies || ''
             }))
           };
         })
@@ -191,8 +202,8 @@ const QuestionnaireForm: React.FC = () => {
         return {
           ...prev,
           milestones: validMilestones,
-          developmentalOverview: milestones[0]?.description || '',
-          ahaMoment: milestones[0]?.description || '' // Using description as aha moment for now
+          developmentalOverview: milestoneTasks[0]?.developmentalOverview || '',
+          ahaMoment: milestoneTasks[0]?.developmentalOverview || '' // Using developmental overview as aha moment for now
         };
       });
 
@@ -382,22 +393,7 @@ const QuestionnaireForm: React.FC = () => {
             aha_moment: documentData.aha_moment
           });
 
-          // First, delete existing milestone tasks for this kid profile
-          const existingMilestones = await client.models.MilestoneTask.list({
-            filter: {
-              kidProfileId: { eq: kidProfileId }
-            }
-          });
-
-          // Delete all existing milestone tasks
-          if (existingMilestones.data) {
-            const deletePromises = existingMilestones.data.map(milestone => 
-              client.models.MilestoneTask.delete({ id: milestone.id! })
-            );
-            await Promise.all(deletePromises);
-          }
-
-          // Create new milestone tasks
+          // Create new milestone tasks without deleting existing ones
           for (const milestoneData of documentData.milestones) {
             // Create milestone in new MilestoneTask structure
             const { data: milestoneTask } = await client.models.MilestoneTask.create({
@@ -666,10 +662,10 @@ const QuestionnaireForm: React.FC = () => {
             >
               Back to Profile
             </button>
-          </div>
-        </div>
-      </div>
-    );
+                </div>
+                      </div>
+                    </div>
+                  );
   }
 
   if (showPastAssessments) {
@@ -702,8 +698,8 @@ const QuestionnaireForm: React.FC = () => {
                       {expandedAssessments.has(assessment.date) ? '▼' : '▶'}
                     </span>
                   </h3>
-                </div>
-                
+              </div>
+
                 {expandedAssessments.has(assessment.date) && (
                   <div className="assessment-details">
                     {assessment.parentConcerns && (

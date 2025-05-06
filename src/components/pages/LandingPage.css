@@ -17,7 +17,7 @@
   display: flex;
   flex-direction: column;
   align-items: flex-start;
-  margin:1.2rem;
+  margin: 1.2rem;
   border-radius: 20px;
 }
 
@@ -38,22 +38,25 @@
   color: white;
   text-shadow: 2px 2px 4px rgba(0, 123, 255, 0.8),
                4px 4px 8px rgba(0, 123, 255, 0.6);
-  margin: 40px 0;
+  margin: 40px 0 0.5rem 0;
   position: relative;
   z-index: 2;
   text-align: left;
-  margin: 1rem 3rem;
+  margin: 1rem 3rem 0.5rem;
 }
 
 .hero p {
-  font-size: 1.2rem;
-  color: white;
+  font-size: 1.5rem;
+  color: rgba(255, 255, 255, 0.9);
   max-width: 600px;
-  margin: 1rem 3rem;
+  margin: 0 3rem 2rem;
   position: relative;
   z-index: 2;
   text-align: left;
-  text-align: center;
+  font-weight: 400;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  opacity: 0.9;
 }
 
 .features {
@@ -88,12 +91,14 @@
   display: flex;
   flex-direction: column;
   height: 100%;
+  align-items: center;
 }
 
 .feature-card img {
   width: 100%;
-  height: 200px;
-  object-fit: cover;
+  height: auto;
+  max-height: 200px;
+  object-fit: contain;
   border-radius: 4px;
   margin-bottom: 1rem;
 }
@@ -124,17 +129,69 @@
 @media (max-width: 768px) {
   .hero {
     padding-left: 5%;
+    height: auto;
+    min-height: 100vh;
+    background-position: center center;
+    background-size: cover;
+    margin: 0.5rem;
+    width: 95vw;
   }
   
   .hero h1 {
     font-size: 2rem;
+    margin: 1rem 1rem 0.25rem;
   }
 
   .hero p {
-    font-size: 1.2rem;
+    font-size: 1rem;
+    margin: 0 1rem 1.5rem;
+  }
+
+  .hero .flex {
+    flex-direction: column;
+    gap: 1rem;
+    margin-left: 0;
+    align-items: center;
+    padding-bottom: 2rem;
+  }
+
+  .hero button {
+    width: 100%;
+    max-width: 300px;
+    font-size: 1.5rem;
+    padding: 0.75rem 1.5rem;
   }
 
   .feature-grid {
     grid-template-columns: 1fr;
+  }
+
+  .features {
+    width: 95vw;
+    margin: 0.5rem;
+    padding: 2rem 1rem;
+  }
+
+  .feature-card {
+    padding: 1rem;
+    margin-bottom: 1rem;
+  }
+
+  .feature-card img {
+    width: 100%;
+    height: auto;
+    max-height: 250px;
+    object-fit: contain;
+  }
+
+  .feature-card h3 {
+    font-size: 1.1rem;
+    margin: 0.75rem 0;
+    text-align: center;
+  }
+
+  .feature-card p {
+    font-size: 0.9rem;
+    text-align: center;
   }
 }

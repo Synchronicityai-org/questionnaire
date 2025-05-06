@@ -107,11 +107,38 @@
   justify-content: space-between;
   align-items: center;
   margin-bottom: 1rem;
+  padding: 0.5rem 0;
+}
+
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.view-all-button {
+  background-color: #f3f4f6;
+  color: #4b5563;
+  border: 1px solid #e5e7eb;
+  padding: 0.5rem 1rem;
+  border-radius: 0.375rem;
+  font-size: 0.875rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  white-space: nowrap;
+  display: inline-flex;
+  align-items: center;
+}
+
+.view-all-button:hover {
+  background-color: #e5e7eb;
+  color: #1f2937;
 }
 
 .card-header h3 {
   margin: 0;
   color: #202124;
+  font-size: 1.25rem;
 }
 
 .trophy-icon {

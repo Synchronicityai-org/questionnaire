@@ -9,7 +9,7 @@ export function LandingPage({ onDemoClick }: LandingPageProps) {
   return (
     <div className="landing-page">
       <div className="hero-section">
-        <h1>Welcome to Synchronicity AI</h1>
+        <h1>Welcome to TinyWins.AI</h1>
         <p className="subtitle">Empowering families through collaborative care and intelligent support</p>
         <div className="cta-buttons">
           <Link to="/register" className="cta-button primary">
@@ -21,7 +21,7 @@ export function LandingPage({ onDemoClick }: LandingPageProps) {
         </div>
       </div>
       <div className="features-section">
-        <h2>Why Choose Synchronicity AI?</h2>
+        <h2>Why Choose TinyWins.AI?</h2>
         <div className="features-grid">
           <div className="feature-card">
             <h3>Collaborative Care</h3>
