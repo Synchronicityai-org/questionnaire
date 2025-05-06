@@ -1,6 +1,6 @@
 import { useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
-import { SparklesIcon, ArrowLeftIcon, CameraIcon, QuestionMarkCircleIcon, BookOpenIcon, UserIcon } from '@heroicons/react/24/outline';
+import { ArrowLeftIcon, CameraIcon, QuestionMarkCircleIcon, BookOpenIcon, UserIcon } from '@heroicons/react/24/outline';
 
 const Container = styled.div`
   max-width: 1400px;

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
-import { ArrowRightIcon, ArrowLeftIcon, SpeakerWaveIcon } from '@heroicons/react/24/outline';
+import { ArrowLeftIcon, ArrowRightIcon } from '@heroicons/react/24/outline';
 
 const Container = styled.div`
   max-width: 800px;

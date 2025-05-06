@@ -9,6 +9,7 @@ interface UserInfo {
   fName: string;
   lName: string;
   phoneNumber: string;
+  termsAccepted: boolean;
 }
 
 const RegistrationForm: React.FC = () => {
@@ -19,7 +20,8 @@ const RegistrationForm: React.FC = () => {
     password: '',
     fName: '',
     lName: '',
-    phoneNumber: ''
+    phoneNumber: '',
+    termsAccepted: false
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -27,6 +29,11 @@ const RegistrationForm: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
+
+    if (!userInfo.termsAccepted) {
+      setError('Please accept the Terms & Conditions to continue.');
+      return;
+    }
 
     try {
       setIsSubmitting(true);
@@ -117,6 +124,21 @@ const RegistrationForm: React.FC = () => {
             required
             disabled={isSubmitting}
           />
+        </div>
+
+        <div className="form-group checkbox-group">
+          <label className="checkbox-label">
+            <input
+              type="checkbox"
+              checked={userInfo.termsAccepted}
+              onChange={(e) => setUserInfo(prev => ({ ...prev, termsAccepted: e.target.checked }))}
+              required
+              disabled={isSubmitting}
+            />
+            <span>
+              I accept the <a href="/terms" target="_blank" rel="noopener noreferrer">Terms & Conditions</a> and <a href="/privacy" target="_blank" rel="noopener noreferrer">Privacy Policy</a> *
+            </span>
+          </label>
         </div>
 
         <button 

@@ -1,7 +1,9 @@
-import { generateClient } from '@aws-amplify/data';
-import type { Schema } from '../amplify/data/resource';
+import { generateClient } from 'aws-amplify/api';
+import { type Schema } from '../../amplify/data/resource';
 
-const client = generateClient<Schema>();
+const client = generateClient<Schema>({
+  authMode: 'apiKey'
+});
 
 // Animal Sounds Quiz feature has been removed
 const gamePrompts: any[] = [];
