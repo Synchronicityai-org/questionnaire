@@ -194,7 +194,7 @@ const MilestoneDetail: React.FC = () => {
   };
 
   useEffect(() => {
-    const handleClick = (e: MouseEvent) => {
+    const handleClick = () => {
       if (milestoneStatusMenuOpen) setMilestoneStatusMenuOpen(false);
       if (taskStatusMenuOpen) setTaskStatusMenuOpen(null);
     };
@@ -247,8 +247,7 @@ const MilestoneDetail: React.FC = () => {
                   minWidth: 120
                 }}
                 title="Change milestone status"
-                onClick={e => {
-                  e.stopPropagation();
+                onClick={() => {
                   setMilestoneStatusMenuOpen(v => !v);
                 }}
               >
@@ -333,8 +332,7 @@ const MilestoneDetail: React.FC = () => {
                     gap: 4
                   }}
                   title={milestoneStatus === 'NOT_STARTED' ? 'Start the milestone first' : 'Change task status'}
-                  onClick={e => {
-                    e.stopPropagation();
+                  onClick={() => {
                     if (milestoneStatus === 'NOT_STARTED') return;
                     setTaskStatusMenuOpen(taskStatusMenuOpen === task.id ? null : task.id);
                   }}

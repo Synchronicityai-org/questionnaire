@@ -18,7 +18,6 @@ import {
   ArrowPathIcon,
   ClockIcon
 } from '@heroicons/react/24/outline';
-import { useMediaQuery } from 'react-responsive';
 
 const client = generateClient<Schema>();
 
@@ -513,7 +512,6 @@ const MilestoneTaskList: React.FC<{ kidProfileId: string }> = ({ kidProfileId })
   const [menuPosition, setMenuPosition] = useState<{ top: number; left: number } | null>(null);
   const menuButtonRefs = useRef<{ [key: string]: HTMLButtonElement | null }>({});
   const navigate = useNavigate();
-  const isMobile = useMediaQuery({ maxWidth: 600 });
 
   useEffect(() => {
     if (!kidProfileId) {
