@@ -103,6 +103,7 @@ const MilestoneDetail: React.FC = () => {
           limit: 100
         });
         setTasks(taskList || []);
+        console.log('Fetched tasks for milestone', milestoneId, taskList);
       } catch (err) {
         setError('Failed to load milestone.');
       } finally {
@@ -161,8 +162,18 @@ const MilestoneDetail: React.FC = () => {
       </MilestoneHeader>
       {tasks.map(task => (
         <TaskCard key={task.id}>
-          <h3 style={{ textAlign: 'left' }}>{task.title}</h3>
-          <div style={{ color: '#64748B', marginBottom: 8, textAlign: 'left' }}>{task.strategies}</div>
+          <h3 style={{ textAlign: 'left', marginBottom: 4 }}>{task.title}</h3>
+          {task.parentFriendlyDescription && (
+            <div style={{ color: '#64748B', marginBottom: 8, textAlign: 'left' }}>
+              {task.parentFriendlyDescription}
+            </div>
+          )}
+          {task.strategies && (
+            <div className="task-strategies" style={{ textAlign: 'left', marginBottom: 12 }}>
+              <h6 style={{ margin: 0, fontWeight: 600 }}>Strategies</h6>
+              <p style={{ margin: 0 }}>{task.strategies}</p>
+            </div>
+          )}
           {/* Show previously submitted feedback */}
           {task.parentFeedback && (
             <div style={{ marginBottom: 8, color: '#357ABD', fontStyle: 'italic' }}>

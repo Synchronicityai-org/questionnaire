@@ -463,6 +463,12 @@ const MilestoneTaskList: React.FC<{ kidProfileId: string }> = ({ kidProfileId })
   const [milestoneFeedbackState, setMilestoneFeedbackState] = useState<{ [milestoneId: string]: { feedback: string; isEffective: boolean | 'love' | 'neutral' } }>({});
   const [milestoneFeedbackModal, setMilestoneFeedbackModal] = useState<string | null>(null);
   const [submittingMilestoneFeedback, setSubmittingMilestoneFeedback] = useState<string | null>(null);
+  const [addMilestoneModal, setAddMilestoneModal] = useState(false);
+  const [newMilestone, setNewMilestone] = useState({ title: '', description: '' });
+  const [submittingNewMilestone, setSubmittingNewMilestone] = useState(false);
+  const [addTaskModal, setAddTaskModal] = useState<{ open: boolean; milestoneId: string | null }>({ open: false, milestoneId: null });
+  const [newTask, setNewTask] = useState({ title: '', description: '', strategies: '' });
+  const [submittingNewTask, setSubmittingNewTask] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -685,6 +691,56 @@ const MilestoneTaskList: React.FC<{ kidProfileId: string }> = ({ kidProfileId })
     }
   };
 
+  const handleAddMilestone = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setSubmittingNewMilestone(true);
+    try {
+      await client.models.MilestoneTask.create({
+        kidProfileId,
+        type: 'MILESTONE',
+        title: newMilestone.title,
+        developmentalOverview: newMilestone.description,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      });
+      await fetchMilestoneTasks();
+      setNewMilestone({ title: '', description: '' });
+      setAddMilestoneModal(false);
+    } catch (err) {
+      alert('Failed to create milestone. Please try again.');
+    } finally {
+      setSubmittingNewMilestone(false);
+    }
+  };
+
+  const handleAddTask = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!addTaskModal.milestoneId) return;
+    setSubmittingNewTask(true);
+    const payload: any = {
+      kidProfileId,
+      type: 'TASK',
+      title: newTask.title,
+      parentId: addTaskModal.milestoneId,
+      parentFriendlyDescription: newTask.description,
+      strategies: newTask.strategies,
+      status: 'NOT_STARTED',
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    };
+    console.log('Creating task with payload:', payload);
+    try {
+      await client.models.MilestoneTask.create(payload);
+      await fetchMilestoneTasks();
+      setNewTask({ title: '', description: '', strategies: '' });
+      setAddTaskModal({ open: false, milestoneId: null });
+    } catch (err) {
+      alert('Failed to create task. Please try again.');
+    } finally {
+      setSubmittingNewTask(false);
+    }
+  };
+
   console.log('Current state:', { loading, error, milestonesCount: milestones.length });
 
   if (loading) {
@@ -714,13 +770,18 @@ const MilestoneTaskList: React.FC<{ kidProfileId: string }> = ({ kidProfileId })
             <h1>{kidProfile?.name}'s Developmental Milestones</h1>
             <p>Track and monitor developmental progress</p>
           </HeaderContent>
-          <BackButton onClick={() => navigate(-1)}>
-            <ArrowLeftIcon />
-            Back
-          </BackButton>
+          <div style={{ display: 'flex', gap: '1rem' }}>
+            <ActionButton onClick={() => setAddMilestoneModal(true)}>
+              Add Milestone
+            </ActionButton>
+            <BackButton onClick={() => navigate(-1)}>
+              <ArrowLeftIcon />
+              Back
+            </BackButton>
+          </div>
         </Header>
         <div className="no-milestones">
-          <p>No milestones found.Complete an assessment to generate milestones for {kidProfile?.name}.</p>
+          <p>No milestones found. Complete an assessment to generate milestones for {kidProfile?.name}.</p>
           <ActionButton onClick={() => navigate(`/questionnaire/${kidProfileId}`)}>
             Take Assessment
           </ActionButton>
@@ -736,10 +797,15 @@ const MilestoneTaskList: React.FC<{ kidProfileId: string }> = ({ kidProfileId })
           <h1>{kidProfile?.name}'s Developmental Milestones</h1>
           <p>Track and monitor developmental progress</p>
         </HeaderContent>
-        <BackButton onClick={() => navigate(-1)}>
-          <ArrowLeftIcon />
-          Back
-        </BackButton>
+        <div style={{ display: 'flex', gap: '1rem' }}>
+          <ActionButton onClick={() => setAddMilestoneModal(true)}>
+            Add Milestone
+          </ActionButton>
+          <BackButton onClick={() => navigate(-1)}>
+            <ArrowLeftIcon />
+            Back
+          </BackButton>
+        </div>
       </Header>
 
       <CanvasArea>
@@ -813,6 +879,9 @@ const MilestoneTaskList: React.FC<{ kidProfileId: string }> = ({ kidProfileId })
                           />
                         </div>
                       </ProgressIndicator>
+                      <ActionButton style={{ marginBottom: 16, width: 'fit-content' }} onClick={e => { e.stopPropagation(); setAddTaskModal({ open: true, milestoneId: milestone.id }); }}>
+                        + Add Task/Strategy
+                      </ActionButton>
                       {milestone.tasks.map((task) => (
                         <TaskCard key={task.id} status={task.status.toLowerCase()}>
                           <TaskHeader>
@@ -861,6 +930,50 @@ const MilestoneTaskList: React.FC<{ kidProfileId: string }> = ({ kidProfileId })
           })}
         </MilestoneGrid>
       </CanvasArea>
+
+      {/* Add Milestone Modal */}
+      {addMilestoneModal && (
+        <ModalOverlay>
+          <ModalContent>
+            <ModalClose onClick={() => setAddMilestoneModal(false)} title="Close">&times;</ModalClose>
+            <h2>Add New Milestone</h2>
+            <form
+              onSubmit={handleAddMilestone}
+              style={{ marginTop: 16 }}
+            >
+              <div>
+                <label htmlFor="milestoneTitle">Title:</label>
+                <input
+                  id="milestoneTitle"
+                  type="text"
+                  value={newMilestone.title}
+                  onChange={e => setNewMilestone(prev => ({ ...prev, title: e.target.value }))}
+                  style={{ width: '100%', marginTop: 4, padding: '8px', borderRadius: '4px', border: '1px solid #E2E8F0' }}
+                  required
+                />
+              </div>
+              <div style={{ marginTop: 12 }}>
+                <label htmlFor="milestoneDescription">Description:</label>
+                <textarea
+                  id="milestoneDescription"
+                  value={newMilestone.description}
+                  onChange={e => setNewMilestone(prev => ({ ...prev, description: e.target.value }))}
+                  rows={6}
+                  style={{ width: '100%', marginTop: 4, minHeight: 120, padding: '8px', borderRadius: '4px', border: '1px solid #E2E8F0' }}
+                  required
+                />
+              </div>
+              <button
+                type="submit"
+                disabled={submittingNewMilestone}
+                style={{ marginTop: 20, width: '100%', background: '#64748B', color: 'white', fontWeight: 700, fontSize: 18, padding: '14px 0', border: 'none', borderRadius: 6, cursor: 'pointer', boxShadow: '0 2px 8px rgba(100,116,139,0.12)' }}
+              >
+                {submittingNewMilestone ? 'Creating...' : 'Create Milestone'}
+              </button>
+            </form>
+          </ModalContent>
+        </ModalOverlay>
+      )}
 
       {/* Milestone Feedback Modal */}
       {milestoneFeedbackModal && (
@@ -929,6 +1042,57 @@ const MilestoneTaskList: React.FC<{ kidProfileId: string }> = ({ kidProfileId })
                 style={{ marginTop: 20, width: '100%', background: '#64748B', color: 'white', fontWeight: 700, fontSize: 18, padding: '14px 0', border: 'none', borderRadius: 6, cursor: 'pointer', boxShadow: '0 2px 8px rgba(100,116,139,0.12)' }}
               >
                 {submittingMilestoneFeedback === milestoneFeedbackModal ? 'Submitting...' : 'Submit Feedback'}
+              </button>
+            </form>
+          </ModalContent>
+        </ModalOverlay>
+      )}
+
+      {/* Add Task Modal */}
+      {addTaskModal.open && (
+        <ModalOverlay>
+          <ModalContent>
+            <ModalClose onClick={() => setAddTaskModal({ open: false, milestoneId: null })} title="Close">&times;</ModalClose>
+            <h2>Add New Task/Strategy</h2>
+            <form onSubmit={handleAddTask} style={{ marginTop: 16 }}>
+              <div>
+                <label htmlFor="taskTitle">Title:</label>
+                <input
+                  id="taskTitle"
+                  type="text"
+                  value={newTask.title}
+                  onChange={e => setNewTask(prev => ({ ...prev, title: e.target.value }))}
+                  style={{ width: '100%', marginTop: 4, padding: '8px', borderRadius: '4px', border: '1px solid #E2E8F0' }}
+                  required
+                />
+              </div>
+              <div style={{ marginTop: 12 }}>
+                <label htmlFor="taskDescription">Description:</label>
+                <textarea
+                  id="taskDescription"
+                  value={newTask.description}
+                  onChange={e => setNewTask(prev => ({ ...prev, description: e.target.value }))}
+                  rows={4}
+                  style={{ width: '100%', marginTop: 4, minHeight: 80, padding: '8px', borderRadius: '4px', border: '1px solid #E2E8F0' }}
+                  required
+                />
+              </div>
+              <div style={{ marginTop: 12 }}>
+                <label htmlFor="taskStrategies">Strategies:</label>
+                <textarea
+                  id="taskStrategies"
+                  value={newTask.strategies}
+                  onChange={e => setNewTask(prev => ({ ...prev, strategies: e.target.value }))}
+                  rows={3}
+                  style={{ width: '100%', marginTop: 4, minHeight: 60, padding: '8px', borderRadius: '4px', border: '1px solid #E2E8F0' }}
+                />
+              </div>
+              <button
+                type="submit"
+                disabled={submittingNewTask}
+                style={{ marginTop: 20, width: '100%', background: '#64748B', color: 'white', fontWeight: 700, fontSize: 18, padding: '14px 0', border: 'none', borderRadius: 6, cursor: 'pointer', boxShadow: '0 2px 8px rgba(100,116,139,0.12)' }}
+              >
+                {submittingNewTask ? 'Creating...' : 'Create Task/Strategy'}
               </button>
             </form>
           </ModalContent>
