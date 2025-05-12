@@ -25,6 +25,7 @@ const schema = a.schema({
     taskFeedbacks: a.hasMany("TaskFeedback", "userId"),
     teamAccessRequests: a.hasMany("TeamAccessRequest", "userId"),
     status: a.enum(["ACTIVE", "PENDING", "INACTIVE"]),
+    admin: a.boolean().default(false),
   })
   .authorization((allow) => [allow.owner(), allow.publicApiKey()]),
 
@@ -178,7 +179,7 @@ const schema = a.schema({
     developmentalOverview: a.string(),
     parentFriendlyDescription: a.string(),
     strategies: a.string(),
-    status: a.enum(['NOT_STARTED', 'IN_PROGRESS', 'COMPLETED']),
+    status: a.enum(['NOT_STARTED', 'IN_PROGRESS', 'COMPLETED', 'ARCHIVED']),
     parentFeedback: a.string(),
     isEffective: a.boolean(),
     feedbackDate: a.datetime(),
