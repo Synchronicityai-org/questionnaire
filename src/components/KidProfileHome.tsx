@@ -473,7 +473,7 @@ interface MilestoneTask {
   title: string;
   type: 'MILESTONE' | 'TASK';
   parentId?: string;
-  status: 'NOT_STARTED' | 'IN_PROGRESS' | 'COMPLETED';
+  status: 'NOT_STARTED' | 'IN_PROGRESS' | 'COMPLETED' | 'ARCHIVED';
   parentFriendlyDescription?: string;
   strategies?: string;
   developmentalOverview?: string;
@@ -493,7 +493,7 @@ interface TeamMember {
   name: string;
   role: string;
   imageUrl?: string;
-  status: 'ACTIVE' | 'PENDING' | 'INACTIVE';
+  status: 'ACTIVE' | 'PENDING' | 'INACTIVE' | 'ARCHIVED';
 }
 
 export function KidProfileHome() {
@@ -713,7 +713,7 @@ export function KidProfileHome() {
             id: member.id || '',
             name: member.name || '',
             role: member.role || 'MEMBER',
-            status: (member.status as 'ACTIVE' | 'PENDING' | 'INACTIVE') || 'PENDING',
+            status: (member.status as 'ACTIVE' | 'PENDING' | 'INACTIVE' | 'ARCHIVED') || 'PENDING',
             imageUrl: member.imageUrl
         }));
         

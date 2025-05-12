@@ -26,7 +26,7 @@ interface MilestoneTask {
   type: 'TASK';
   title: string;
   description: string;
-  status: 'NOT_STARTED' | 'IN_PROGRESS' | 'COMPLETED';
+  status: 'NOT_STARTED' | 'IN_PROGRESS' | 'COMPLETED' | 'ARCHIVED';
   strategies?: string;
   feedback?: string;
   effectiveness?: 'EFFECTIVE' | 'NOT_EFFECTIVE';
@@ -797,7 +797,7 @@ const MilestoneTaskList: React.FC<{ kidProfileId: string }> = ({ kidProfileId })
     }
   };
 
-  const handleMilestoneStatusChange = async (milestoneId: string, newStatus: 'NOT_STARTED' | 'IN_PROGRESS' | 'COMPLETED') => {
+  const handleMilestoneStatusChange = async (milestoneId: string, newStatus: 'NOT_STARTED' | 'IN_PROGRESS' | 'COMPLETED' | 'ARCHIVED') => {
     try {
       await client.models.MilestoneTask.update({
         id: milestoneId,

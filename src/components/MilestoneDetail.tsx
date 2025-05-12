@@ -99,7 +99,7 @@ const MilestoneDetail: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [feedbackState, setFeedbackState] = useState<{ [taskId: string]: { parentFeedback: string; isEffective: boolean | 'love' | 'neutral' } }>({});
   const [submittingFeedback, setSubmittingFeedback] = useState<string | null>(null);
-  const [milestoneStatus, setMilestoneStatus] = useState<'NOT_STARTED' | 'IN_PROGRESS' | 'COMPLETED'>('NOT_STARTED');
+  const [milestoneStatus, setMilestoneStatus] = useState<'NOT_STARTED' | 'IN_PROGRESS' | 'COMPLETED' | 'ARCHIVED'>('NOT_STARTED');
   const [milestoneStatusMenuOpen, setMilestoneStatusMenuOpen] = useState(false);
   const [taskStatusMenuOpen, setTaskStatusMenuOpen] = useState<string | null>(null);
   const milestoneStatusButtonRef = useRef<HTMLButtonElement | null>(null);
@@ -165,7 +165,7 @@ const MilestoneDetail: React.FC = () => {
     }
   };
 
-  const handleMilestoneStatusChange = async (newStatus: 'NOT_STARTED' | 'IN_PROGRESS' | 'COMPLETED') => {
+  const handleMilestoneStatusChange = async (newStatus: 'NOT_STARTED' | 'IN_PROGRESS' | 'COMPLETED' | 'ARCHIVED') => {
     if (!milestone) return;
     try {
       await client.models.MilestoneTask.update({
@@ -180,7 +180,7 @@ const MilestoneDetail: React.FC = () => {
     }
   };
 
-  const handleTaskStatusChange = async (taskId: string, newStatus: 'NOT_STARTED' | 'IN_PROGRESS' | 'COMPLETED') => {
+  const handleTaskStatusChange = async (taskId: string, newStatus: 'NOT_STARTED' | 'IN_PROGRESS' | 'COMPLETED' | 'ARCHIVED') => {
     try {
       await client.models.MilestoneTask.update({
         id: taskId,
@@ -227,6 +227,7 @@ const MilestoneDetail: React.FC = () => {
               <option value="NOT_STARTED">Not Started</option>
               <option value="IN_PROGRESS">In Progress</option>
               <option value="COMPLETED">Completed</option>
+              <option value="ARCHIVED">Archived</option>
             </select>
           ) : (
             <div style={{ position: 'relative', display: 'inline-block' }}>
@@ -270,7 +271,7 @@ const MilestoneDetail: React.FC = () => {
                   flexDirection: 'column',
                   gap: 0
                 }}>
-                  {['NOT_STARTED', 'IN_PROGRESS', 'COMPLETED'].map(status => (
+                  {['NOT_STARTED', 'IN_PROGRESS', 'COMPLETED', 'ARCHIVED'].map(status => (
                     <button
                       key={status}
                       onClick={() => { handleMilestoneStatusChange(status as any); setMilestoneStatusMenuOpen(false); }}
@@ -312,6 +313,7 @@ const MilestoneDetail: React.FC = () => {
                 <option value="NOT_STARTED">Not Started</option>
                 <option value="IN_PROGRESS">In Progress</option>
                 <option value="COMPLETED">Completed</option>
+                <option value="ARCHIVED">Archived</option>
               </select>
             ) : (
               <div style={{ position: 'relative', display: 'inline-block', marginLeft: 8 }}>
@@ -357,7 +359,7 @@ const MilestoneDetail: React.FC = () => {
                     flexDirection: 'column',
                     gap: 0
                   }}>
-                    {['NOT_STARTED', 'IN_PROGRESS', 'COMPLETED'].map(status => (
+                    {['NOT_STARTED', 'IN_PROGRESS', 'COMPLETED', 'ARCHIVED'].map(status => (
                       <button
                         key={status}
                         onClick={() => { handleTaskStatusChange(task.id, status as any); setTaskStatusMenuOpen(null); }}
