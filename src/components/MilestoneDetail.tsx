@@ -1,8 +1,10 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { generateClient } from 'aws-amplify/api';
 import type { Schema } from '../../amplify/data/resource';
 import styled from 'styled-components';
+import { useMediaQuery } from 'react-responsive';
+import { ChevronDownIcon } from '@heroicons/react/24/outline';
 
 const client = generateClient<Schema>();
 
@@ -79,6 +81,14 @@ const SmileyButton = styled.button<{ selected: boolean }>`
   border-radius: 50%;
   padding: 0.2em 0.4em;
 `;
+const TaskHeader = styled.div`
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+`;
+const TaskTitle = styled.h3`
+  margin-bottom: 4px;
+`;
 
 const MilestoneDetail: React.FC = () => {
   const { milestoneId } = useParams<{ milestoneId: string }>();
@@ -89,6 +99,12 @@ const MilestoneDetail: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [feedbackState, setFeedbackState] = useState<{ [taskId: string]: { parentFeedback: string; isEffective: boolean | 'love' | 'neutral' } }>({});
   const [submittingFeedback, setSubmittingFeedback] = useState<string | null>(null);
+  const [milestoneStatus, setMilestoneStatus] = useState<'NOT_STARTED' | 'IN_PROGRESS' | 'COMPLETED'>('NOT_STARTED');
+  const [milestoneStatusMenuOpen, setMilestoneStatusMenuOpen] = useState(false);
+  const [taskStatusMenuOpen, setTaskStatusMenuOpen] = useState<string | null>(null);
+  const milestoneStatusButtonRef = useRef<HTMLButtonElement | null>(null);
+  const taskStatusButtonRefs = useRef<{ [key: string]: HTMLButtonElement | null }>({});
+  const isMobile = useMediaQuery({ maxWidth: 600 });
 
   useEffect(() => {
     if (!milestoneId) return;
@@ -104,6 +120,7 @@ const MilestoneDetail: React.FC = () => {
         });
         setTasks(taskList || []);
         console.log('Fetched tasks for milestone', milestoneId, taskList);
+        if (data && data.status) setMilestoneStatus(data.status);
       } catch (err) {
         setError('Failed to load milestone.');
       } finally {
@@ -148,6 +165,45 @@ const MilestoneDetail: React.FC = () => {
     }
   };
 
+  const handleMilestoneStatusChange = async (newStatus: 'NOT_STARTED' | 'IN_PROGRESS' | 'COMPLETED') => {
+    if (!milestone) return;
+    try {
+      await client.models.MilestoneTask.update({
+        id: milestone.id,
+        status: newStatus,
+        updatedAt: new Date().toISOString(),
+      });
+      setMilestone((prev: any) => ({ ...prev, status: newStatus, updatedAt: new Date().toISOString() }));
+      setMilestoneStatus(newStatus);
+    } catch (err) {
+      alert('Failed to update milestone status.');
+    }
+  };
+
+  const handleTaskStatusChange = async (taskId: string, newStatus: 'NOT_STARTED' | 'IN_PROGRESS' | 'COMPLETED') => {
+    try {
+      await client.models.MilestoneTask.update({
+        id: taskId,
+        status: newStatus,
+        updatedAt: new Date().toISOString(),
+      });
+      setTasks(prev => prev.map(t => t.id === taskId ? { ...t, status: newStatus, updatedAt: new Date().toISOString() } : t));
+    } catch (err) {
+      alert('Failed to update task status.');
+    }
+  };
+
+  useEffect(() => {
+    const handleClick = (e: MouseEvent) => {
+      if (milestoneStatusMenuOpen) setMilestoneStatusMenuOpen(false);
+      if (taskStatusMenuOpen) setTaskStatusMenuOpen(null);
+    };
+    if (milestoneStatusMenuOpen || taskStatusMenuOpen) {
+      window.addEventListener('click', handleClick);
+      return () => window.removeEventListener('click', handleClick);
+    }
+  }, [milestoneStatusMenuOpen, taskStatusMenuOpen]);
+
   if (loading) return <Container>Loading...</Container>;
   if (error) return <Container>{error}</Container>;
   if (!milestone) return <Container>Milestone not found.</Container>;
@@ -155,14 +211,180 @@ const MilestoneDetail: React.FC = () => {
   return (
     <Container>
       <BackButton onClick={() => navigate(-1)}>← Back to Milestones</BackButton>
-      <MilestoneHeader>
-        <MilestoneTitle>{milestone.title}</MilestoneTitle>
-        <MilestoneMeta>Updated: {milestone.updatedAt ? new Date(milestone.updatedAt).toLocaleDateString() : ''}</MilestoneMeta>
-        {milestone.description && <Description style={{ color: '#e0e7ef', margin: 0 }}>{milestone.description}</Description>}
+      <MilestoneHeader style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <div>
+          <MilestoneTitle>{milestone.title}</MilestoneTitle>
+          <MilestoneMeta>Updated: {milestone.updatedAt ? new Date(milestone.updatedAt).toLocaleDateString() : ''}</MilestoneMeta>
+          {milestone.description && <Description style={{ color: '#e0e7ef', margin: 0 }}>{milestone.description}</Description>}
+        </div>
+        <div>
+          {isMobile ? (
+            <select
+              value={milestoneStatus}
+              onChange={e => handleMilestoneStatusChange(e.target.value as any)}
+              style={{ borderRadius: 6, padding: 6, fontWeight: 600 }}
+            >
+              <option value="NOT_STARTED">Not Started</option>
+              <option value="IN_PROGRESS">In Progress</option>
+              <option value="COMPLETED">Completed</option>
+            </select>
+          ) : (
+            <div style={{ position: 'relative', display: 'inline-block' }}>
+              <button
+                ref={milestoneStatusButtonRef}
+                style={{
+                  background: '#E2E8F0',
+                  color: '#1E293B',
+                  border: 'none',
+                  borderRadius: 6,
+                  padding: '6px 16px',
+                  fontWeight: 600,
+                  fontSize: 14,
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 6,
+                  cursor: 'pointer',
+                  minWidth: 120
+                }}
+                title="Change milestone status"
+                onClick={e => {
+                  e.stopPropagation();
+                  setMilestoneStatusMenuOpen(v => !v);
+                }}
+              >
+                {milestoneStatus.replace('_', ' ')}
+                <ChevronDownIcon className="w-4 h-4" />
+              </button>
+              {milestoneStatusMenuOpen && (
+                <div style={{
+                  position: 'absolute',
+                  top: '110%',
+                  right: 0,
+                  background: '#fff',
+                  color: '#1E293B',
+                  borderRadius: 8,
+                  boxShadow: '0 4px 16px rgba(44,62,80,0.12)',
+                  zIndex: 1000,
+                  minWidth: 140,
+                  padding: '0.5rem 0',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: 0
+                }}>
+                  {['NOT_STARTED', 'IN_PROGRESS', 'COMPLETED'].map(status => (
+                    <button
+                      key={status}
+                      onClick={() => { handleMilestoneStatusChange(status as any); setMilestoneStatusMenuOpen(false); }}
+                      style={{
+                        background: milestoneStatus === status ? '#4A90E2' : 'transparent',
+                        color: milestoneStatus === status ? '#fff' : '#1E293B',
+                        border: 'none',
+                        borderRadius: 0,
+                        padding: '0.75rem 1.5rem',
+                        textAlign: 'left',
+                        fontWeight: 600,
+                        fontSize: 14,
+                        cursor: 'pointer',
+                        width: '100%'
+                      }}
+                      aria-pressed={milestoneStatus === status}
+                    >
+                      {status.replace('_', ' ')}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+        </div>
       </MilestoneHeader>
       {tasks.map(task => (
         <TaskCard key={task.id}>
-          <h3 style={{ textAlign: 'left', marginBottom: 4 }}>{task.title}</h3>
+          <TaskHeader>
+            <TaskTitle>{task.title}</TaskTitle>
+            {isMobile ? (
+              <select
+                value={task.status}
+                onChange={e => handleTaskStatusChange(task.id, e.target.value as any)}
+                disabled={milestoneStatus === 'NOT_STARTED'}
+                style={{ borderRadius: 12, padding: '2px 8px', fontWeight: 600, fontSize: 13 }}
+                title={milestoneStatus === 'NOT_STARTED' ? 'Start the milestone first' : ''}
+              >
+                <option value="NOT_STARTED">Not Started</option>
+                <option value="IN_PROGRESS">In Progress</option>
+                <option value="COMPLETED">Completed</option>
+              </select>
+            ) : (
+              <div style={{ position: 'relative', display: 'inline-block', marginLeft: 8 }}>
+                <button
+                  ref={el => (taskStatusButtonRefs.current[task.id] = el)}
+                  style={{
+                    background: task.status === 'COMPLETED' ? '#4A90E2' : task.status === 'IN_PROGRESS' ? '#FFEDD5' : '#E2E8F0',
+                    color: task.status === 'COMPLETED' ? '#fff' : task.status === 'IN_PROGRESS' ? '#9A3412' : '#475569',
+                    border: 'none',
+                    borderRadius: 12,
+                    padding: '2px 12px',
+                    fontWeight: 600,
+                    fontSize: 13,
+                    cursor: milestoneStatus === 'NOT_STARTED' ? 'not-allowed' : 'pointer',
+                    opacity: milestoneStatus === 'NOT_STARTED' ? 0.5 : 1,
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 4
+                  }}
+                  title={milestoneStatus === 'NOT_STARTED' ? 'Start the milestone first' : 'Change task status'}
+                  onClick={e => {
+                    e.stopPropagation();
+                    if (milestoneStatus === 'NOT_STARTED') return;
+                    setTaskStatusMenuOpen(taskStatusMenuOpen === task.id ? null : task.id);
+                  }}
+                  disabled={milestoneStatus === 'NOT_STARTED'}
+                >
+                  {task.status.replace('_', ' ')}
+                  <ChevronDownIcon className="w-4 h-4" />
+                </button>
+                {taskStatusMenuOpen === task.id && (
+                  <div style={{
+                    position: 'absolute',
+                    top: '110%',
+                    right: 0,
+                    background: '#fff',
+                    color: '#1E293B',
+                    borderRadius: 8,
+                    boxShadow: '0 4px 16px rgba(44,62,80,0.12)',
+                    zIndex: 1000,
+                    minWidth: 120,
+                    padding: '0.5rem 0',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: 0
+                  }}>
+                    {['NOT_STARTED', 'IN_PROGRESS', 'COMPLETED'].map(status => (
+                      <button
+                        key={status}
+                        onClick={() => { handleTaskStatusChange(task.id, status as any); setTaskStatusMenuOpen(null); }}
+                        style={{
+                          background: task.status === status ? '#4A90E2' : 'transparent',
+                          color: task.status === status ? '#fff' : '#1E293B',
+                          border: 'none',
+                          borderRadius: 0,
+                          padding: '0.75rem 1.5rem',
+                          textAlign: 'left',
+                          fontWeight: 600,
+                          fontSize: 13,
+                          cursor: 'pointer',
+                          width: '100%'
+                        }}
+                        aria-pressed={task.status === status}
+                      >
+                        {status.replace('_', ' ')}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+          </TaskHeader>
           {task.parentFriendlyDescription && (
             <div style={{ color: '#64748B', marginBottom: 8, textAlign: 'left' }}>
               {task.parentFriendlyDescription}

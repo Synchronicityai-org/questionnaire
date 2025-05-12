@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { generateClient } from 'aws-amplify/api';
 import type { Schema } from '../../amplify/data/resource';
@@ -12,8 +12,13 @@ import {
   AcademicCapIcon,
   HeartIcon,
   ChatBubbleLeftRightIcon,
-  EyeIcon
+  EyeIcon,
+  EllipsisVerticalIcon,
+  CheckCircleIcon,
+  ArrowPathIcon,
+  ClockIcon
 } from '@heroicons/react/24/outline';
+import { useMediaQuery } from 'react-responsive';
 
 const client = generateClient<Schema>();
 
@@ -50,6 +55,7 @@ interface MilestoneWithTasks extends Omit<Milestone, 'tasks'> {
   tasks: MilestoneTask[];
   parentFeedback?: string;
   isEffective?: boolean | 'love' | 'neutral';
+  status: 'NOT_STARTED' | 'IN_PROGRESS' | 'COMPLETED' | 'ARCHIVED';
 }
 
 interface MilestoneTaskResponse {
@@ -441,6 +447,40 @@ const CollapseButton = styled.button`
   }
 `;
 
+// Define a shared style object for dropdown menus
+const dropdownMenuStyle = {
+  position: 'fixed' as const,
+  background: '#fff',
+  color: '#1E293B',
+  borderRadius: 8,
+  boxShadow: '0 4px 16px rgba(44,62,80,0.12)',
+  zIndex: 1000,
+  minWidth: 160,
+  padding: '0.5rem 0',
+  display: 'flex' as const,
+  flexDirection: 'column' as const,
+  gap: 0,
+  fontFamily: 'Inter, sans-serif',
+  fontSize: 15,
+  fontWeight: 600,
+};
+const dropdownMenuItemStyle = (selected: boolean) => ({
+  background: selected ? '#4A90E2' : 'transparent',
+  color: selected ? '#fff' : '#1E293B',
+  border: 'none',
+  borderRadius: 0,
+  padding: '0.75rem 1.5rem',
+  textAlign: 'left' as const,
+  fontWeight: 600,
+  fontSize: 15,
+  cursor: 'pointer',
+  width: '100%',
+  display: 'flex' as const,
+  alignItems: 'center' as const,
+  gap: 10,
+  transition: 'background 0.15s',
+});
+
 // Helper function to get milestone icon
 const getMilestoneIcon = (index: number) => {
   const icons = [StarIcon, BookOpenIcon, AcademicCapIcon, HeartIcon];
@@ -469,7 +509,11 @@ const MilestoneTaskList: React.FC<{ kidProfileId: string }> = ({ kidProfileId })
   const [addTaskModal, setAddTaskModal] = useState<{ open: boolean; milestoneId: string | null }>({ open: false, milestoneId: null });
   const [newTask, setNewTask] = useState({ title: '', description: '', strategies: '' });
   const [submittingNewTask, setSubmittingNewTask] = useState(false);
+  const [menuOpen, setMenuOpen] = useState<string | null>(null);
+  const [menuPosition, setMenuPosition] = useState<{ top: number; left: number } | null>(null);
+  const menuButtonRefs = useRef<{ [key: string]: HTMLButtonElement | null }>({});
   const navigate = useNavigate();
+  const isMobile = useMediaQuery({ maxWidth: 600 });
 
   useEffect(() => {
     if (!kidProfileId) {
@@ -479,6 +523,19 @@ const MilestoneTaskList: React.FC<{ kidProfileId: string }> = ({ kidProfileId })
     fetchKidProfile();
     fetchMilestoneTasks();
   }, [kidProfileId]);
+
+  useEffect(() => {
+    const handleClick = () => {
+      if (menuOpen) {
+        setMenuOpen(null);
+        setMenuPosition(null);
+      }
+    };
+    if (menuOpen) {
+      window.addEventListener('click', handleClick);
+      return () => window.removeEventListener('click', handleClick);
+    }
+  }, [menuOpen]);
 
   const fetchKidProfile = async () => {
     if (!kidProfileId) {
@@ -551,6 +608,7 @@ const MilestoneTaskList: React.FC<{ kidProfileId: string }> = ({ kidProfileId })
           type: 'MILESTONE' as const,
           title: item.title || '',
           description: item.description || '',
+          status: (item.status as MilestoneTask['status']) || 'NOT_STARTED',
           createdAt: item.createdAt || new Date().toISOString(),
           updatedAt: item.updatedAt || new Date().toISOString()
         }));
@@ -741,6 +799,19 @@ const MilestoneTaskList: React.FC<{ kidProfileId: string }> = ({ kidProfileId })
     }
   };
 
+  const handleMilestoneStatusChange = async (milestoneId: string, newStatus: 'NOT_STARTED' | 'IN_PROGRESS' | 'COMPLETED') => {
+    try {
+      await client.models.MilestoneTask.update({
+        id: milestoneId,
+        status: newStatus,
+        updatedAt: new Date().toISOString(),
+      });
+      setMilestones(prev => prev.map(m => m.id === milestoneId ? { ...m, status: newStatus, updatedAt: new Date().toISOString() } : m));
+    } catch (err) {
+      alert('Failed to update milestone status.');
+    }
+  };
+
   console.log('Current state:', { loading, error, milestonesCount: milestones.length });
 
   if (loading) {
@@ -830,21 +901,117 @@ const MilestoneTaskList: React.FC<{ kidProfileId: string }> = ({ kidProfileId })
                 >
                   <CardTitle>
                     <Icon />
-                    <h3 title={milestone.title}>{milestone.title}</h3>
+                    <h3 title={milestone.title} style={{ flex: 1, minWidth: 0 }}>{milestone.title}</h3>
+                    {/* Status Emoji Icon */}
                     <button
-                      style={{ background: 'none', border: 'none', marginLeft: 8, cursor: 'pointer', color: '#fff', display: 'flex', alignItems: 'center' }}
-                      title="Milestone Details"
-                      onClick={e => { e.stopPropagation(); navigate(`/milestone/${milestone.id}`); }}
+                      ref={el => { if (milestone.id) menuButtonRefs.current[milestone.id + '-status'] = el; }}
+                      style={{
+                        background: 'none',
+                        border: 'none',
+                        cursor: 'pointer',
+                        fontSize: 24,
+                        lineHeight: 1,
+                        padding: 0,
+                        marginLeft: 8,
+                        color: '#fff',
+                        position: 'relative',
+                        top: '-2px',
+                        display: 'flex',
+                        alignItems: 'center',
+                      }}
+                      title={
+                        milestone.status === 'NOT_STARTED' ? 'Not Started' :
+                        milestone.status === 'IN_PROGRESS' ? 'In Progress' :
+                        milestone.status === 'COMPLETED' ? 'Completed' : ''
+                      }
+                      onClick={e => {
+                        e.stopPropagation();
+                        if (menuOpen === milestone.id + '-status') {
+                          setMenuOpen(null);
+                          setMenuPosition(null);
+                        } else {
+                          const rect = milestone.id ? menuButtonRefs.current[milestone.id + '-status']?.getBoundingClientRect() : undefined;
+                          if (rect) {
+                            setMenuPosition({ top: rect.bottom + window.scrollY, left: rect.right - 160 });
+                          }
+                          setMenuOpen(milestone.id + '-status');
+                        }
+                      }}
                     >
-                      <EyeIcon className="w-5 h-5" />
+                      {milestone.status === 'NOT_STARTED' && <ClockIcon className="w-5 h-5" />}
+                      {milestone.status === 'IN_PROGRESS' && <ArrowPathIcon className="w-5 h-5" />}
+                      {milestone.status === 'COMPLETED' && <CheckCircleIcon className="w-5 h-5" />}
+                      <ChevronDownIcon className="w-4 h-4" style={{ marginLeft: 2, color: '#fff', width: 16, height: 16, verticalAlign: 'middle' }} />
                     </button>
+                    {menuOpen === milestone.id + '-status' && menuPosition && (
+                      <div style={{ ...dropdownMenuStyle, top: menuPosition.top, left: menuPosition.left }}>
+                        {[
+                          { status: 'NOT_STARTED', label: 'Not Started', icon: <ClockIcon className="w-5 h-5" /> },
+                          { status: 'IN_PROGRESS', label: 'In Progress', icon: <ArrowPathIcon className="w-5 h-5" /> },
+                          { status: 'COMPLETED', label: 'Completed', icon: <CheckCircleIcon className="w-5 h-5" /> }
+                        ].map(opt => (
+                          <button
+                            key={opt.status}
+                            onClick={e => { e.stopPropagation(); handleMilestoneStatusChange(milestone.id, opt.status as any); setMenuOpen(null); }}
+                            style={dropdownMenuItemStyle(milestone.status === opt.status)}
+                            aria-pressed={milestone.status === opt.status}
+                            onMouseOver={e => (e.currentTarget.style.background = '#4A90E2')}
+                            onMouseOut={e => (e.currentTarget.style.background = milestone.status === opt.status ? '#4A90E2' : 'transparent')}
+                          >
+                            <span style={{ display: 'flex', alignItems: 'center', marginRight: 10 }}>{opt.icon}</span> {opt.label}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                    {/* Kebab Menu */}
                     <button
-                      style={{ background: 'none', border: 'none', marginLeft: 8, cursor: 'pointer', color: '#fff', display: 'flex', alignItems: 'center' }}
-                      title="Give feedback on this milestone"
-                      onClick={e => { e.stopPropagation(); openMilestoneFeedbackModal(milestone); }}
+                      ref={el => { if (milestone.id) menuButtonRefs.current[milestone.id] = el; }}
+                      style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#fff', display: 'flex', alignItems: 'center', marginLeft: 8 }}
+                      title="More actions"
+                      onClick={e => {
+                        e.stopPropagation();
+                        if (menuOpen === milestone.id) {
+                          setMenuOpen(null);
+                          setMenuPosition(null);
+                        } else {
+                          const rect = milestone.id ? menuButtonRefs.current[milestone.id]?.getBoundingClientRect() : undefined;
+                          if (rect) {
+                            setMenuPosition({ top: rect.bottom + window.scrollY, left: rect.right - 160 });
+                          }
+                          setMenuOpen(milestone.id);
+                        }
+                      }}
                     >
-                      <ChatBubbleLeftRightIcon className="w-5 h-5" />
+                      <EllipsisVerticalIcon className="w-5 h-5" />
                     </button>
+                    {menuOpen === milestone.id && menuPosition && (
+                      <div style={{ ...dropdownMenuStyle, top: menuPosition.top, left: menuPosition.left }}>
+                        <button
+                          style={dropdownMenuItemStyle(false)}
+                          onClick={() => { navigate(`/milestone/${milestone.id}`); setMenuOpen(null); setMenuPosition(null); }}
+                          onMouseOver={e => (e.currentTarget.style.background = '#E2E8F0')}
+                          onMouseOut={e => (e.currentTarget.style.background = 'transparent')}
+                        >
+                          <EyeIcon className="w-5 h-5" /> View Details
+                        </button>
+                        <button
+                          style={dropdownMenuItemStyle(false)}
+                          onClick={() => { openMilestoneFeedbackModal(milestone); setMenuOpen(null); setMenuPosition(null); }}
+                          onMouseOver={e => (e.currentTarget.style.background = '#E2E8F0')}
+                          onMouseOut={e => (e.currentTarget.style.background = 'transparent')}
+                        >
+                          <ChatBubbleLeftRightIcon className="w-5 h-5" /> Give Feedback
+                        </button>
+                        <button
+                          style={dropdownMenuItemStyle(false)}
+                          onClick={() => { setAddTaskModal({ open: true, milestoneId: milestone.id }); setMenuOpen(null); setMenuPosition(null); }}
+                          onMouseOver={e => (e.currentTarget.style.background = '#E2E8F0')}
+                          onMouseOut={e => (e.currentTarget.style.background = 'transparent')}
+                        >
+                          <BookOpenIcon className="w-5 h-5" /> Add Task/Strategy
+                        </button>
+                      </div>
+                    )}
                   </CardTitle>
                   {isExpanded && milestone.description && (
                     <div style={{
@@ -879,9 +1046,6 @@ const MilestoneTaskList: React.FC<{ kidProfileId: string }> = ({ kidProfileId })
                           />
                         </div>
                       </ProgressIndicator>
-                      <ActionButton style={{ marginBottom: 16, width: 'fit-content' }} onClick={e => { e.stopPropagation(); setAddTaskModal({ open: true, milestoneId: milestone.id }); }}>
-                        + Add Task/Strategy
-                      </ActionButton>
                       {milestone.tasks.map((task) => (
                         <TaskCard key={task.id} status={task.status.toLowerCase()}>
                           <TaskHeader>
