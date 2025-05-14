@@ -509,6 +509,7 @@ export function KidProfileHome() {
   const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
   const [showHistory, setShowHistory] = useState(false);
   const [isManageTeamLoading, setIsManageTeamLoading] = useState(false);
+  const [latestMilestones, setLatestMilestones] = useState<Milestone[]>([]);
 
   // Reset states when kidProfileId changes
   useEffect(() => {
@@ -730,84 +731,96 @@ export function KidProfileHome() {
   };
 
   const fetchCurrentMilestone = async () => {
-    if (!kidProfileId) {
-      console.log('No kid profile ID, skipping milestone fetch');
-      return;
-    }
-    
+    if (!kidProfileId) return;
     try {
       setIsMilestoneLoading(true);
-      console.log('Fetching current milestone for kid profile:', kidProfileId);
       
-      const milestoneResponse = await client.models.MilestoneTask.list({
-        filter: {
-          kidProfileId: { eq: kidProfileId },
-          type: { eq: 'MILESTONE' }
-        }
-      });
-
-      if (milestoneResponse?.data?.[0]) {
-        const milestone = milestoneResponse.data[0];
-        
-        if (!milestone.id) {
-          console.error('Milestone ID is missing');
-          return;
-        }
-
-        const { data: tasks } = await client.models.MilestoneTask.list({
+      // Fetch ALL milestones for this kid, using pagination
+      let allMilestones: any[] = [];
+      let nextToken: string | undefined = undefined;
+      do {
+        const response = await client.models.MilestoneTask.list({
           filter: {
             kidProfileId: { eq: kidProfileId },
-            type: { eq: 'TASK' },
-            parentId: { eq: milestone.id }
-          }
+            type: { eq: 'MILESTONE' }
+          },
+          nextToken
+        });
+        allMilestones = allMilestones.concat(response.data || []);
+        nextToken = response.nextToken;
+      } while (nextToken);
+
+      const milestones = (allMilestones || [])
+        .filter((m): m is NonNullable<typeof m> & { id: string } => 
+          m && typeof m.id === 'string' && m.id !== '' && m.kidProfileId === kidProfileId
+        )
+        .sort((a, b) => {
+          // Sort by createdAt DESC to match MilestoneTaskList
+          const aTime = new Date(a.createdAt || 0).getTime();
+          const bTime = new Date(b.createdAt || 0).getTime();
+          return bTime - aTime;
         });
 
-        // Filter and transform tasks
-        const validTasks = (tasks || [])
-          .filter((task): task is NonNullable<typeof task> => 
-            task !== null && 
-            task.id !== null && 
-            task.id !== '' &&
-            typeof task.kidProfileId === 'string' &&
-            task.type === 'TASK'
-          )
-          .map(task => {
-            if (!task.id) return null; // TypeScript guard
-            
-            const milestoneTask: MilestoneTask = {
-              id: task.id,
-              title: task.title || '',
-              type: 'TASK',
-              parentId: task.parentId || undefined,
-              status: task.status || 'NOT_STARTED',
-              parentFriendlyDescription: task.parentFriendlyDescription || undefined,
-              strategies: task.strategies || undefined,
-              developmentalOverview: task.developmentalOverview || undefined,
-              kidProfileId: task.kidProfileId
-            };
-            return milestoneTask;
-          })
-          .filter((task): task is MilestoneTask => task !== null);
+      // Debug: log all sorted milestones for this kid
+      console.log('Sorted milestones:', milestones.map(m => ({
+        id: m.id,
+        title: m.title,
+        createdAt: m.createdAt,
+        developmentalOverview: m.developmentalOverview
+      })));
 
-        setCurrentMilestone({
+      // Take only the latest 2 milestones
+      const latestMilestones = milestones.slice(0, 2);
+
+      const milestonesWithTasks = await Promise.all(latestMilestones.map(async (milestone) => {
+        // Fetch ALL tasks for this milestone, using pagination
+        let allTasks: any[] = [];
+        let nextTaskToken: string | undefined = undefined;
+        do {
+          const taskResponse = await client.models.MilestoneTask.list({
+            filter: {
+              kidProfileId: { eq: kidProfileId },
+              type: { eq: 'TASK' },
+              parentId: { eq: milestone.id }
+            },
+            nextToken: nextTaskToken
+          });
+          allTasks = allTasks.concat(taskResponse.data || []);
+          nextTaskToken = taskResponse.nextToken;
+        } while (nextTaskToken);
+
+        const validTasks = (allTasks || [])
+          .filter((task): task is NonNullable<typeof task> & { id: string } => 
+            task && typeof task.id === 'string' && task.id !== ''
+          )
+          .map(task => ({
+            id: task.id,
+            title: task.title || '',
+            type: 'TASK' as const,
+            parentId: task.parentId || undefined,
+            status: task.status || 'NOT_STARTED',
+            parentFriendlyDescription: task.parentFriendlyDescription || undefined,
+            strategies: task.strategies || undefined,
+            developmentalOverview: task.developmentalOverview || undefined,
+            kidProfileId: task.kidProfileId || '',
+          }));
+
+        const milestoneData: Milestone = {
           id: milestone.id,
           title: milestone.title || '',
           description: milestone.developmentalOverview || '',
           tasks: validTasks,
           aha_moment: milestone.developmentalOverview || undefined
-        });
+        };
+        return milestoneData;
+      }));
 
-        console.log('Current milestone and tasks:', {
-          milestone: milestone,
-          tasks: validTasks
-        });
-      } else {
-        console.log('No milestone found for kid profile');
-        setCurrentMilestone(null);
-      }
+      setCurrentMilestone(milestonesWithTasks[0] || null);
+      setLatestMilestones(milestonesWithTasks);
     } catch (error) {
-      console.error('Error fetching current milestone:', error);
+      console.error('Error fetching milestones:', error);
       setCurrentMilestone(null);
+      setLatestMilestones([]);
     } finally {
       setIsMilestoneLoading(false);
     }
@@ -831,8 +844,7 @@ export function KidProfileHome() {
         </div>
       );
     }
-
-    if (!currentMilestone) {
+    if (!latestMilestones || latestMilestones.length === 0) {
       return (
         <div className="empty-state">
           <div className="empty-state-icon">
@@ -851,35 +863,55 @@ export function KidProfileHome() {
         </div>
       );
     }
-
+    // Only show the latest 2 milestones in the UI
+    const displayMilestones = latestMilestones.slice(0, 2);
+    // Always use the first milestone's overview if available
+    const latestOverview = displayMilestones[0]?.description;
+    // Debug: log what is being rendered
+    console.log('Rendering milestone IDs:', displayMilestones.map(m => m.id));
     return (
-      <div className="milestone-content">
-        {currentMilestone.description && (
-          <div className="overview-section">
-            <h4 className="section-title">Developmental Overview</h4>
-            <p className="overview-text">{currentMilestone.description}</p>
+      <div className="milestone-content" style={{ textAlign: 'left', maxWidth: 800, margin: '0 auto' }}>
+        {latestOverview && (
+          <div style={{ marginBottom: 32 }}>
+            <h3 style={{ fontSize: 22, fontWeight: 700, marginBottom: 8, color: '#1E293B', letterSpacing: '-0.01em' }}>Developmental Overview</h3>
+            <div style={{ background: '#F8FAFC', borderRadius: 12, padding: 18, fontSize: 16, color: '#334155', border: '1px solid #E2E8F0' }}>{latestOverview}</div>
           </div>
         )}
-
-        <div className="tasks-list">
-          {currentMilestone.tasks.map((task) => (
-            <div key={task.id} className="task-card">
-              <div className="task-header">
-                <h5 className="task-title">{task.title || 'Untitled Task'}</h5>
-                <span className="status-badge pending">{task.status}</span>
-              </div>
-              {task.parentFriendlyDescription && (
-                <p className="task-description">{task.parentFriendlyDescription}</p>
-              )}
-              {task.strategies && (
-                <div className="task-strategy">
-                  <h6 className="strategy-title">Home Strategy:</h6>
-                  <p className="strategy-text">{task.strategies}</p>
-                </div>
-              )}
+        {displayMilestones.map((milestone, idx) => (
+          <div key={milestone.id} style={{ marginBottom: 40, background: '#fff', borderRadius: 16, boxShadow: '0 2px 8px rgba(31,41,55,0.06)', padding: 24, border: '1px solid #E2E8F0' }}>
+            <div style={{ display: 'flex', alignItems: 'center', marginBottom: 8 }}>
+              <span style={{ fontWeight: 700, color: '#3B82F6', fontSize: 15, marginRight: 10 }}>Milestone {idx + 1}:</span>
+              <h4 style={{ fontSize: 20, fontWeight: 700, margin: 0, color: '#0F172A', letterSpacing: '-0.01em' }}>{milestone.title}</h4>
             </div>
-          ))}
-        </div>
+            {milestone.description && (
+              <div style={{ marginBottom: 18, color: '#64748B', fontSize: 15 }}>{milestone.description}</div>
+            )}
+            <div style={{ marginTop: 10 }}>
+              <div style={{ fontWeight: 600, fontSize: 16, color: '#475569', marginBottom: 8 }}>Tasks</div>
+              {milestone.tasks.length === 0 && (
+                <div style={{ color: '#64748B', fontStyle: 'italic', marginBottom: 12 }}>No tasks for this milestone.</div>
+              )}
+              {milestone.tasks.map((task, tIdx) => (
+                <div key={task.id} style={{ marginBottom: 24, padding: 16, background: '#F1F5F9', borderRadius: 10, border: '1px solid #E2E8F0' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', marginBottom: 4 }}>
+                    <span style={{ fontWeight: 600, color: '#10B981', fontSize: 14, marginRight: 8 }}>Task {tIdx + 1}:</span>
+                    <span style={{ fontWeight: 600, fontSize: 16, color: '#1E293B' }}>{task.title || 'Untitled Task'}</span>
+                    <span style={{ marginLeft: 'auto', fontSize: 13, color: '#64748B', background: '#E0E7EF', borderRadius: 8, padding: '2px 10px', fontWeight: 500 }}>{task.status.replace('_', ' ')}</span>
+                  </div>
+                  {task.parentFriendlyDescription && (
+                    <div style={{ color: '#334155', fontSize: 15, marginBottom: 8 }}>{task.parentFriendlyDescription}</div>
+                  )}
+                  {task.strategies && (
+                    <div style={{ marginTop: 8, padding: 10, background: '#fff', borderRadius: 8, border: '1px solid #E2E8F0' }}>
+                      <span style={{ fontWeight: 600, color: '#6366F1', fontSize: 14, marginBottom: 4, display: 'block' }}>Strategy</span>
+                      <span style={{ color: '#334155', fontSize: 15 }}>{task.strategies}</span>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        ))}
       </div>
     );
   };
