@@ -737,9 +737,10 @@ export function KidProfileHome() {
       
       // Fetch ALL milestones for this kid, using pagination
       let allMilestones: any[] = [];
+      let response: { data?: any[]; nextToken?: string | null };
       let nextToken: string | undefined = undefined;
       do {
-        const response = await client.models.MilestoneTask.list({
+        response = await client.models.MilestoneTask.list({
           filter: {
             kidProfileId: { eq: kidProfileId },
             type: { eq: 'MILESTONE' }
@@ -747,7 +748,7 @@ export function KidProfileHome() {
           nextToken
         });
         allMilestones = allMilestones.concat(response.data || []);
-        nextToken = response.nextToken;
+        nextToken = response.nextToken ?? undefined;
       } while (nextToken);
 
       const milestones = (allMilestones || [])
@@ -775,9 +776,10 @@ export function KidProfileHome() {
       const milestonesWithTasks = await Promise.all(latestMilestones.map(async (milestone) => {
         // Fetch ALL tasks for this milestone, using pagination
         let allTasks: any[] = [];
+        let taskResponse: { data?: any[]; nextToken?: string | null };
         let nextTaskToken: string | undefined = undefined;
         do {
-          const taskResponse = await client.models.MilestoneTask.list({
+          taskResponse = await client.models.MilestoneTask.list({
             filter: {
               kidProfileId: { eq: kidProfileId },
               type: { eq: 'TASK' },
@@ -786,7 +788,7 @@ export function KidProfileHome() {
             nextToken: nextTaskToken
           });
           allTasks = allTasks.concat(taskResponse.data || []);
-          nextTaskToken = taskResponse.nextToken;
+          nextTaskToken = taskResponse.nextToken ?? undefined;
         } while (nextTaskToken);
 
         const validTasks = (allTasks || [])
