@@ -35,6 +35,7 @@ interface MilestoneTask {
   feedbackDate?: string;
   createdAt: string;
   updatedAt: string;
+  parentFriendlyDescription?: string;
 }
 
 interface Milestone {
@@ -96,6 +97,9 @@ const Container = styled.div`
   font-family: 'Inter', sans-serif;
   min-height: 100vh;
   background: #F8FAFC;
+  @media (max-width: 768px) {
+    padding: 1rem;
+  }
 `;
 
 const CanvasArea = styled.div`
@@ -104,6 +108,11 @@ const CanvasArea = styled.div`
   box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
   padding: 2rem;
   margin-top: 2rem;
+  @media (max-width: 768px) {
+    padding: 1rem;
+    border-radius: 14px;
+    margin-top: 1rem;
+  }
 `;
 
 const Header = styled.div`
@@ -111,6 +120,12 @@ const Header = styled.div`
   justify-content: space-between;
   align-items: center;
   margin-bottom: 2rem;
+  @media (max-width: 768px) {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1rem;
+    margin-bottom: 1rem;
+  }
 `;
 
 const HeaderContent = styled.div`
@@ -201,7 +216,6 @@ const CardHeader = styled.div<{ progress: number }>`
   justify-content: space-between;
   border-radius: 14px 14px 0 0;
   margin: 0;
-
   &::after {
     content: '';
     position: absolute;
@@ -212,6 +226,10 @@ const CardHeader = styled.div<{ progress: number }>`
     background: #FFD93D;
     transition: width 0.3s ease;
   }
+  @media (max-width: 600px) {
+    padding: 1rem;
+    min-height: 70px;
+  }
 `;
 
 const CardTitle = styled.div`
@@ -219,12 +237,10 @@ const CardTitle = styled.div`
   align-items: center;
   gap: 1rem;
   margin-bottom: 0.5rem;
-
   svg {
     width: 24px;
     height: 24px;
   }
-
   h3 {
     margin: 0;
     font-size: 1.25rem;
@@ -232,6 +248,9 @@ const CardTitle = styled.div`
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+    @media (max-width: 600px) {
+      font-size: 1rem;
+    }
   }
 `;
 
@@ -381,7 +400,7 @@ const ActionButton = styled.button`
 const ModalOverlay = styled.div`
   position: fixed;
   top: 0; left: 0; right: 0; bottom: 0;
-  background: rgba(44, 62, 80, 0.45);
+  background: rgba(30, 41, 59, 0.45);
   z-index: 1000;
   display: flex;
   align-items: center;
@@ -389,24 +408,29 @@ const ModalOverlay = styled.div`
 `;
 const ModalContent = styled.div`
   background: #fff;
-  border-radius: 16px;
-  padding: 2rem;
-  min-width: 350px;
-  max-width: 95vw;
-  box-shadow: 0 8px 32px rgba(44,62,80,0.18);
+  border-radius: 18px;
+  max-width: 600px;
+  width: 100%;
+  padding: 2rem 2rem 1.5rem 2rem;
+  box-shadow: 0 8px 32px rgba(30,41,59,0.18);
   position: relative;
+  @media (max-width: 700px) {
+    max-width: 95vw;
+    padding: 1rem 0.5rem 1rem 0.5rem;
+    border-radius: 10px;
+  }
+  max-height: 90vh;
+  overflow-y: auto;
 `;
-const ModalClose = styled.button`
+const CloseButton = styled.button`
   position: absolute;
-  top: 1rem;
-  right: 1.5rem;
+  top: 1.2rem;
+  right: 1.2rem;
   background: none;
   border: none;
-  font-size: 2rem;
+  font-size: 1.8rem;
   color: #64748B;
   cursor: pointer;
-  z-index: 10;
-  padding: 0 0.5rem;
 `;
 
 const SmileyRow = styled.div`
@@ -512,6 +536,11 @@ const MilestoneTaskList: React.FC<{ kidProfileId: string }> = ({ kidProfileId })
   const [menuPosition, setMenuPosition] = useState<{ top: number; left: number } | null>(null);
   const menuButtonRefs = useRef<{ [key: string]: HTMLButtonElement | null }>({});
   const navigate = useNavigate();
+  const [openMilestone, setOpenMilestone] = useState<MilestoneWithTasks | null>(null);
+  const [feedbackState, setFeedbackState] = useState<{
+    [taskId: string]: { parentFeedback?: string; isEffective?: boolean | 'love' | 'neutral' }
+  }>({});
+  const [submittingFeedback, setSubmittingFeedback] = useState<string | null>(null);
 
   useEffect(() => {
     if (!kidProfileId) {
@@ -656,7 +685,8 @@ const MilestoneTaskList: React.FC<{ kidProfileId: string }> = ({ kidProfileId })
               isEffective: item.isEffective,
               feedbackDate: item.feedbackDate || '',
               createdAt: item.createdAt || new Date().toISOString(),
-              updatedAt: item.updatedAt || new Date().toISOString()
+              updatedAt: item.updatedAt || new Date().toISOString(),
+              parentFriendlyDescription: item.parentFriendlyDescription || '',
             }));
 
           console.log('Tasks for milestone', milestone.id, ':', tasks);
@@ -810,6 +840,31 @@ const MilestoneTaskList: React.FC<{ kidProfileId: string }> = ({ kidProfileId })
     }
   };
 
+  const handleFeedbackChange = (
+    taskId: string,
+    field: 'parentFeedback' | 'isEffective',
+    value: string | boolean | 'love' | 'neutral'
+  ) => {
+    setFeedbackState(prev => ({
+      ...prev,
+      [taskId]: {
+        ...prev[taskId],
+        [field]: value
+      }
+    }));
+  };
+
+  const handleSubmitFeedback = async (task: MilestoneTask) => {
+    setSubmittingFeedback(task.id);
+    try {
+      // Implement feedback submission logic here (API call)
+      // ...
+      setFeedbackState(prev => ({ ...prev, [task.id]: { parentFeedback: '', isEffective: 'neutral' } }));
+    } finally {
+      setSubmittingFeedback(null);
+    }
+  };
+
   console.log('Current state:', { loading, error, milestonesCount: milestones.length });
 
   if (loading) {
@@ -887,7 +942,7 @@ const MilestoneTaskList: React.FC<{ kidProfileId: string }> = ({ kidProfileId })
             return (
               <MilestoneCard key={milestone.id} isExpanded={isExpanded} style={{ cursor: 'pointer' }} onClick={e => {
                 if ((e.target as HTMLElement).closest('.expand-arrow')) return;
-                navigate(`/milestone/${milestone.id}`);
+                setOpenMilestone(milestone);
               }}>
                 <CardHeader 
                   progress={progress}
@@ -986,7 +1041,7 @@ const MilestoneTaskList: React.FC<{ kidProfileId: string }> = ({ kidProfileId })
                       <div style={{ ...dropdownMenuStyle, top: menuPosition.top, left: menuPosition.left }}>
                         <button
                           style={dropdownMenuItemStyle(false)}
-                          onClick={() => { navigate(`/milestone/${milestone.id}`); setMenuOpen(null); setMenuPosition(null); }}
+                          onClick={() => { setOpenMilestone(milestone); setMenuOpen(null); setMenuPosition(null); }}
                           onMouseOver={e => (e.currentTarget.style.background = '#E2E8F0')}
                           onMouseOut={e => (e.currentTarget.style.background = 'transparent')}
                         >
@@ -1097,7 +1152,7 @@ const MilestoneTaskList: React.FC<{ kidProfileId: string }> = ({ kidProfileId })
       {addMilestoneModal && (
         <ModalOverlay>
           <ModalContent>
-            <ModalClose onClick={() => setAddMilestoneModal(false)} title="Close">&times;</ModalClose>
+            <CloseButton onClick={() => setAddMilestoneModal(false)} title="Close">&times;</CloseButton>
             <h2>Add New Milestone</h2>
             <form
               onSubmit={handleAddMilestone}
@@ -1141,7 +1196,7 @@ const MilestoneTaskList: React.FC<{ kidProfileId: string }> = ({ kidProfileId })
       {milestoneFeedbackModal && (
         <ModalOverlay>
           <ModalContent>
-            <ModalClose onClick={closeMilestoneFeedbackModal} title="Close">&times;</ModalClose>
+            <CloseButton onClick={closeMilestoneFeedbackModal} title="Close">&times;</CloseButton>
             <h2>Feedback for: {milestones.find(m => m.id === milestoneFeedbackModal)?.title}</h2>
             <form
               onSubmit={e => {
@@ -1214,7 +1269,7 @@ const MilestoneTaskList: React.FC<{ kidProfileId: string }> = ({ kidProfileId })
       {addTaskModal.open && (
         <ModalOverlay>
           <ModalContent>
-            <ModalClose onClick={() => setAddTaskModal({ open: false, milestoneId: null })} title="Close">&times;</ModalClose>
+            <CloseButton onClick={() => setAddTaskModal({ open: false, milestoneId: null })} title="Close">&times;</CloseButton>
             <h2>Add New Task/Strategy</h2>
             <form onSubmit={handleAddTask} style={{ marginTop: 16 }}>
               <div>
@@ -1257,6 +1312,76 @@ const MilestoneTaskList: React.FC<{ kidProfileId: string }> = ({ kidProfileId })
                 {submittingNewTask ? 'Creating...' : 'Create Task/Strategy'}
               </button>
             </form>
+          </ModalContent>
+        </ModalOverlay>
+      )}
+
+      {/* Modal for milestone detail */}
+      {openMilestone && (
+        <ModalOverlay onClick={() => setOpenMilestone(null)}>
+          <ModalContent onClick={e => e.stopPropagation()}>
+            <CloseButton onClick={() => setOpenMilestone(null)}>&times;</CloseButton>
+            <h2 style={{ marginBottom: 12 }}>{openMilestone.title}</h2>
+            {openMilestone.description && (
+              <div style={{ marginBottom: 18, color: '#64748B', fontSize: 15 }}>{openMilestone.description}</div>
+            )}
+            <div style={{ fontWeight: 600, fontSize: 16, color: '#475569', marginBottom: 8 }}>Tasks</div>
+            {openMilestone.tasks.length === 0 && (
+              <div style={{ color: '#64748B', fontStyle: 'italic', marginBottom: 12 }}>No tasks for this milestone.</div>
+            )}
+            {openMilestone.tasks.map((task, tIdx) => (
+              <div key={task.id} style={{ marginBottom: 24, padding: 16, background: '#F1F5F9', borderRadius: 10, border: '1px solid #E2E8F0' }}>
+                <div style={{ display: 'flex', alignItems: 'center', marginBottom: 4 }}>
+                  <span style={{ fontWeight: 600, color: '#10B981', fontSize: 14, marginRight: 8 }}>Task {tIdx + 1}:</span>
+                  <span style={{ fontWeight: 600, fontSize: 16, color: '#1E293B' }}>{task.title || 'Untitled Task'}</span>
+                  <span style={{ marginLeft: 'auto', fontSize: 13, color: '#64748B', background: '#E0E7EF', borderRadius: 8, padding: '2px 10px', fontWeight: 500 }}>{task.status.replace('_', ' ')}</span>
+                </div>
+                {task.parentFriendlyDescription && (
+                  <div style={{ color: '#334155', fontSize: 15, marginBottom: 8 }}>{task.parentFriendlyDescription}</div>
+                )}
+                {task.strategies && (
+                  <div style={{ marginTop: 8, padding: 10, background: '#fff', borderRadius: 8, border: '1px solid #E2E8F0' }}>
+                    <span style={{ fontWeight: 600, color: '#6366F1', fontSize: 14, marginBottom: 4, display: 'block' }}>Strategy</span>
+                    <span style={{ color: '#334155', fontSize: 15 }}>{task.strategies}</span>
+                  </div>
+                )}
+                {/* Feedback form */}
+                <form
+                  onSubmit={e => {
+                    e.preventDefault();
+                    handleSubmitFeedback(task);
+                  }}
+                  style={{ marginTop: 12, background: '#f6f8fa', padding: 12, borderRadius: 8, textAlign: 'left' }}
+                >
+                  <div>
+                    <label htmlFor={`parentFeedback-${task.id}`}>Your Feedback:</label>
+                    <textarea
+                      id={`parentFeedback-${task.id}`}
+                      value={feedbackState[task.id]?.parentFeedback || ''}
+                      onChange={e => handleFeedbackChange(task.id, 'parentFeedback', e.target.value)}
+                      rows={3}
+                      style={{ width: '100%', marginTop: 4, minHeight: 60 }}
+                    />
+                  </div>
+                  <div style={{ marginTop: 8 }}>
+                    <label>Was this task effective?</label>
+                    <div style={{ display: 'flex', gap: 12, marginTop: 4 }}>
+                      <button type="button" style={{ fontSize: 20, background: 'none', border: 'none', cursor: 'pointer', opacity: feedbackState[task.id]?.isEffective === 'love' ? 1 : 0.5 }} onClick={() => handleFeedbackChange(task.id, 'isEffective', 'love')}>❤️</button>
+                      <button type="button" style={{ fontSize: 20, background: 'none', border: 'none', cursor: 'pointer', opacity: feedbackState[task.id]?.isEffective === true ? 1 : 0.5 }} onClick={() => handleFeedbackChange(task.id, 'isEffective', true)}>😃</button>
+                      <button type="button" style={{ fontSize: 20, background: 'none', border: 'none', cursor: 'pointer', opacity: feedbackState[task.id]?.isEffective === 'neutral' ? 1 : 0.5 }} onClick={() => handleFeedbackChange(task.id, 'isEffective', 'neutral')}>😐</button>
+                      <button type="button" style={{ fontSize: 20, background: 'none', border: 'none', cursor: 'pointer', opacity: feedbackState[task.id]?.isEffective === false ? 1 : 0.5 }} onClick={() => handleFeedbackChange(task.id, 'isEffective', false)}>🙁</button>
+                    </div>
+                  </div>
+                  <button
+                    type="submit"
+                    disabled={submittingFeedback === task.id}
+                    style={{ marginTop: 12, background: '#64748B', color: 'white', fontWeight: 700, fontSize: 16, padding: '10px 0', border: 'none', borderRadius: 6, cursor: 'pointer', width: '100%' }}
+                  >
+                    {submittingFeedback === task.id ? 'Submitting...' : 'Submit Feedback'}
+                  </button>
+                </form>
+              </div>
+            ))}
           </ModalContent>
         </ModalOverlay>
       )}
