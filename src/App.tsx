@@ -28,6 +28,9 @@ import { ColorHunt } from './components/games/ColorHunt';
 import { WhatHappensNext } from './components/games/WhatHappensNext';
 import { CompleteTheStory } from './components/games/CompleteTheStory';
 import { CopyMe } from './components/games/CopyMe';
+import AdminDashboard from './components/pages/AdminDashboard';
+import AdminMilestoneView from './components/pages/AdminMilestoneView';
+import AdminKidMilestones from './components/pages/AdminKidMilestones';
 import './App.css';
 
 
@@ -80,6 +83,11 @@ const AppContent: React.FC = () => {
       
       if (!userResponse.data) {
         navigate('/profile-setup');
+        return;
+      }
+
+      if (userResponse.data.role === 'ADMIN' || userResponse.data.role === 'SME') {
+        navigate('/admin-dashboard');
         return;
       }
 
@@ -194,6 +202,9 @@ const AppContent: React.FC = () => {
           <Route path="/games/what-happens-next" element={<WhatHappensNext />} />
           <Route path="/games/complete-the-story" element={<CompleteTheStory />} />
           <Route path="/assessment" element={<Assessment />} />
+          <Route path="/admin-dashboard" element={<ProtectedRoute isAuthenticated={isAuthenticated}><AdminDashboard /></ProtectedRoute>} />
+          <Route path="/admin/milestones/:kidProfileId" element={<AdminMilestoneView />} />
+          <Route path="/admin/kid-milestones/:kidId" element={<AdminKidMilestones />} />
         </Routes>
       </main>
       <Footer />

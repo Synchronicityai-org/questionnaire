@@ -41,13 +41,25 @@ The Developmental Matrix (DLM) is the heart of our application, serving as a com
 - **Parent-Caregiver Focus**: Designed to help parents and caregivers track and understand their child's development
 - **Comprehensive Coverage**: Covers a wide range of developmental areas
 
+### Roles & Permissions
+- **PARENT/CAREGIVER**: Can only view and interact with their own child's data.
+- **DOCTOR**: May be part of a specific kid's team and can only see data for kids they are assigned to. Cannot access or manage the global DLM or feedback unless also an ADMIN/SME.
+- **ADMIN/SME (Subject Matter Expert)**: Superusers with global access. Can view and manage all feedback, the entire DLM, and sync feedback or add new milestones/tasks to the DLM.
+
+### DLM Update & Feedback Workflow
+- **Feedback from parents/caregivers** is collected via MilestoneTask objects.
+- **ADMIN/SME** users review feedback and can update DLM ratings (upvotes/downvotes) or add new milestones/tasks to the DLM.
+- **DOCTOR** users can only review and interact with feedback for kids they are assigned to, not the global DLM.
+- All DLM entries are considered active/approved once created or updated by ADMIN/SME.
+
 ### Development Notes
 - The DLM should be treated as a core asset of the application
 - Any updates to the DLM should be carefully tested to ensure relationship integrity
 - The AI prediction system relies heavily on the accuracy and completeness of the DLM
+- Only ADMIN/SME can make global changes to the DLM and feedback
 
 ### Future Considerations
-- Regular updates to the DLM based on new research
+- Regular updates to the DLM based on new research and reviewed feedback
 - Expansion of milestone relationships
 - Enhancement of AI prediction algorithms
 - Integration with additional developmental assessment tools
