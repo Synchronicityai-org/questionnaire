@@ -19,7 +19,7 @@ const schema = a.schema({
     password: a.string(),
     address: a.string(),
     dob: a.date(),
-    role: a.enum(["PARENT", "CAREGIVER", "CLINICIAN", "ADMIN", "SME"]),
+    role: a.enum(["PARENT", "CAREGIVER", "CLINICIAN", "ADMIN", "SME", "DOCTOR"]),
     kidProfiles: a.hasMany("KidProfile", "parentId"),
     teamMemberships: a.hasMany("TeamMember", "userId"),
     taskFeedbacks: a.hasMany("TaskFeedback", "userId"),
