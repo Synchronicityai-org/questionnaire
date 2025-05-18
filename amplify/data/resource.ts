@@ -171,6 +171,7 @@ const schema = a.schema({
 
   MilestoneTask: a.model({
     id: a.id(),
+    externalId: a.string().required(),
     kidProfileId: a.string().required(),
     KidProfile: a.belongsTo("KidProfile", "kidProfileId"),
     title: a.string().required(),
@@ -213,6 +214,7 @@ const schema = a.schema({
 
   DLMEntry: a.model({
     id: a.id(), // Unique DLM ID (from JSONL or generated)
+    externalId: a.string().required(),
     title: a.string().required(),
     description: a.string(),
     relationships: a.string(), // JSON or structured string of relationships

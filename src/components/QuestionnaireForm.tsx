@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { generateClient } from 'aws-amplify/api';
 import type { Schema } from '../../amplify/data/resource';
 import './QuestionnaireForm.css';
+import crypto from 'crypto';
 
 const client = generateClient<Schema>();
 
@@ -403,7 +404,8 @@ const QuestionnaireForm: React.FC = () => {
               developmentalOverview: documentData.developmental_overview,
               status: 'NOT_STARTED',
               createdAt: new Date().toISOString(),
-              updatedAt: new Date().toISOString()
+              updatedAt: new Date().toISOString(),
+              externalId: milestoneData.id || crypto.randomUUID()
             });
 
             if (milestoneTask) {
@@ -418,7 +420,8 @@ const QuestionnaireForm: React.FC = () => {
                   strategies: task.home_friendly_strategies || '',
                   status: 'NOT_STARTED',
                   createdAt: new Date().toISOString(),
-                  updatedAt: new Date().toISOString()
+                  updatedAt: new Date().toISOString(),
+                  externalId: task.id || crypto.randomUUID()
                 })
               );
               await Promise.all(milestoneTaskPromises);

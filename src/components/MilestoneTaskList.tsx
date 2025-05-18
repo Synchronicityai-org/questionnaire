@@ -18,6 +18,7 @@ import {
   ArrowPathIcon,
   ClockIcon
 } from '@heroicons/react/24/outline';
+import crypto from 'crypto';
 
 const client = generateClient<Schema>();
 
@@ -787,7 +788,8 @@ const MilestoneTaskList: React.FC<{ kidProfileId: string }> = ({ kidProfileId })
         title: newMilestone.title,
         developmentalOverview: newMilestone.description,
         createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString()
+        updatedAt: new Date().toISOString(),
+        externalId: crypto.randomUUID(),
       });
       await fetchMilestoneTasks();
       setNewMilestone({ title: '', description: '' });
@@ -812,7 +814,8 @@ const MilestoneTaskList: React.FC<{ kidProfileId: string }> = ({ kidProfileId })
       strategies: newTask.strategies,
       status: 'NOT_STARTED',
       createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString()
+      updatedAt: new Date().toISOString(),
+      externalId: crypto.randomUUID(),
     };
     console.log('Creating task with payload:', payload);
     try {
