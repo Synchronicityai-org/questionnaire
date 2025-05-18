@@ -211,6 +211,22 @@ const schema = a.schema({
   })
   .authorization((allow) => [allow.publicApiKey()]),
 
+  DLMEntry: a.model({
+    id: a.id(), // Unique DLM ID (from JSONL or generated)
+    title: a.string().required(),
+    description: a.string(),
+    relationships: a.string(), // JSON or structured string of relationships
+    dlmRating: a.float().default(0), // Effectiveness score, updated via review
+    feedbackCount: a.integer().default(0), // Number of feedback entries
+    lastFeedback: a.string(), // Most recent feedback summary
+    reviewedBy: a.id(), // Reference to User (doctor/admin)
+    reviewedAt: a.datetime(),
+    createdBy: a.id(), // Who created this DLM entry (admin/doctor)
+    createdAt: a.datetime().required(),
+    updatedAt: a.datetime(),
+  })
+  .authorization((allow) => [allow.owner(), allow.groups(["ADMIN", "DOCTOR"]), allow.publicApiKey()]),
+
 });
 
 // == STEP 2: Define Authorization Modes ==

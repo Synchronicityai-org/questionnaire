@@ -1,25 +1,62 @@
-## AWS Amplify React+Vite Starter Template
+# Developmental Milestone Questionnaire Application
 
-This repository provides a starter template for creating applications using React+Vite and AWS Amplify, emphasizing easy setup for authentication, API, and database capabilities.
+## Core Concept: Developmental Matrix (DLM)
 
-## Overview
+The Developmental Matrix (DLM) is the heart of our application, serving as a comprehensive knowledge base for developmental milestones and their relationships. This matrix powers our AI-driven milestone prediction system.
 
-This template equips you with a foundational React application integrated with AWS Amplify, streamlined for scalability and performance. It is ideal for developers looking to jumpstart their project with pre-configured AWS services like Cognito, AppSync, and DynamoDB.
+### DLM Structure
+- **Format**: JSONL (JSON Lines) file
+- **Content**: 
+  - ~308 developmental milestones
+  - ~1000 relationships between milestones
+  - Each milestone can have pre/post relationships with other milestones
+  - Forms an interconnected network of developmental progressions
 
-## Features
+### Application Flow
+1. **User Input**
+   - Parents/caregivers log in to the application
+   - Complete questionnaires about their child
+   - Input specific concerns about their child's development
 
-- **Authentication**: Setup with Amazon Cognito for secure user authentication.
-- **API**: Ready-to-use GraphQL endpoint with AWS AppSync.
-- **Database**: Real-time database powered by Amazon DynamoDB.
+2. **AI Processing**
+   - The system uses the DLM to analyze the input
+   - Considers the relationships between milestones
+   - Generates appropriate milestone predictions
 
-## Deploying to AWS
+3. **Output**
+   - Provides predicted milestones based on the child's current development
+   - Shows relationships between milestones
+   - Offers guidance for developmental progress
 
-For detailed instructions on deploying your application, refer to the [deployment section](https://docs.amplify.aws/react/start/quickstart/#deploy-a-fullstack-app-to-aws) of our documentation.
+### Technical Implementation
+- The DLM is used to create a graph-like structure of milestones
+- Each milestone can be:
+  - A prerequisite for other milestones
+  - A subsequent milestone to others
+  - Part of multiple developmental pathways
 
-## Security
+### Key Features
+- **Interconnected Milestones**: Each milestone is part of a larger developmental network
+- **AI-Driven Predictions**: Uses the DLM to make informed predictions about developmental progress
+- **Parent-Caregiver Focus**: Designed to help parents and caregivers track and understand their child's development
+- **Comprehensive Coverage**: Covers a wide range of developmental areas
 
-See [CONTRIBUTING](CONTRIBUTING.md#security-issue-notifications) for more information.
+### Development Notes
+- The DLM should be treated as a core asset of the application
+- Any updates to the DLM should be carefully tested to ensure relationship integrity
+- The AI prediction system relies heavily on the accuracy and completeness of the DLM
+
+### Future Considerations
+- Regular updates to the DLM based on new research
+- Expansion of milestone relationships
+- Enhancement of AI prediction algorithms
+- Integration with additional developmental assessment tools
+
+## Getting Started
+[Additional setup and development instructions can be added here]
+
+## Contributing
+[Guidelines for contributing to the project can be added here]
 
 ## License
-
-This library is licensed under the MIT-0 License. See the LICENSE file.
+[License information can be added here]
