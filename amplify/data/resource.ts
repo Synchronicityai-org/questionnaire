@@ -293,7 +293,12 @@ const schema = a.schema({
     blogPost: a.belongsTo("BlogPost", "blogPostId"),
     milestoneTaskId: a.id().required(),
     milestoneTask: a.belongsTo("MilestoneTask", "milestoneTaskId"),
-  }),
+  })
+  .authorization((allow) => [
+    allow.publicApiKey().to(["read"]),
+    allow.owner(),
+    allow.groups(["ADMIN"]),
+  ]),
 
 });
 
