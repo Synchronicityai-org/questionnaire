@@ -278,6 +278,7 @@ const schema = a.schema({
     isFlagged: a.boolean().default(false),
     parentId: a.id(), // For nested comments
     parent: a.belongsTo("BlogComment", "parentId"),
+    replies: a.hasMany("BlogComment", "parentId"),
   })
   .authorization((allow) => [
     allow.publicApiKey().to(["read"]),
