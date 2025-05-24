@@ -31,6 +31,9 @@ import { CopyMe } from './components/games/CopyMe';
 import AdminDashboard from './components/pages/AdminDashboard';
 import AdminMilestoneView from './components/pages/AdminMilestoneView';
 import AdminKidMilestones from './components/pages/AdminKidMilestones';
+import BlogList from './components/blog/BlogList';
+import CreateBlogPost from './components/blog/CreateBlogPost';
+import BlogPostView from './components/blog/BlogPostView';
 import './App.css';
 
 
@@ -205,6 +208,9 @@ const AppContent: React.FC = () => {
           <Route path="/admin-dashboard" element={<ProtectedRoute isAuthenticated={isAuthenticated}><AdminDashboard /></ProtectedRoute>} />
           <Route path="/admin/milestones/:kidProfileId" element={<AdminMilestoneView />} />
           <Route path="/admin/kid-milestones/:kidId" element={<AdminKidMilestones />} />
+          <Route path="/blog" element={<BlogList />} />
+          <Route path="/blog/create" element={<CreateBlogPost />} />
+          <Route path="/blog/:id" element={<BlogPostView />} />
         </Routes>
       </main>
       <Footer />

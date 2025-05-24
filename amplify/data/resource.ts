@@ -230,6 +230,58 @@ const schema = a.schema({
   })
   .authorization((allow) => [allow.owner(), allow.groups(["ADMIN", "DOCTOR"]), allow.publicApiKey()]),
 
+  // Blog Post Model
+  BlogPost: a.model({
+    id: a.id(),
+    title: a.string().required(),
+    slug: a.string().required(), // SEO-friendly unique slug
+    content: a.string().required(),
+    summary: a.string(), // Short summary for SEO/social
+    authorId: a.id().required(),
+    author: a.belongsTo("User", "authorId"),
+    authorName: a.string(),
+    authorAvatar: a.string(),
+    createdAt: a.datetime().required(),
+    updatedAt: a.datetime(),
+    status: a.enum(["DRAFT", "PUBLISHED", "FLAGGED", "DELETED"]),
+    isPublic: a.boolean().default(false),
+    images: a.string().array(),
+    tags: a.string().array(),
+    relatedMilestones: a.hasMany("Milestone", "blogPostId"),
+    likes: a.integer().default(0),
+    isFlagged: a.boolean().default(false),
+    flaggedReason: a.string(),
+    shareUrl: a.string(),
+    ogImage: a.string(),
+    comments: a.hasMany("BlogComment", "blogPostId"),
+  })
+  .authorization((allow) => [
+    allow.publicApiKey().to(["read"]),
+    allow.owner(),
+    allow.groups(["ADMIN"]),
+  ]),
+
+  // Blog Comment Model
+  BlogComment: a.model({
+    id: a.id(),
+    blogPostId: a.id().required(),
+    blogPost: a.belongsTo("BlogPost", "blogPostId"),
+    authorId: a.id().required(),
+    author: a.belongsTo("User", "authorId"),
+    authorName: a.string(),
+    content: a.string().required(),
+    createdAt: a.datetime().required(),
+    likes: a.integer().default(0),
+    isFlagged: a.boolean().default(false),
+    parentId: a.id(), // For nested comments
+    parent: a.belongsTo("BlogComment", "parentId"),
+  })
+  .authorization((allow) => [
+    allow.publicApiKey().to(["read"]),
+    allow.owner(),
+    allow.groups(["ADMIN"]),
+  ]),
+
 });
 
 // == STEP 2: Define Authorization Modes ==
