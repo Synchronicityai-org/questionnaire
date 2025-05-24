@@ -187,6 +187,7 @@ const schema = a.schema({
     feedbackDate: a.datetime(),
     createdAt: a.datetime(),
     updatedAt: a.datetime(),
+    blogPostMilestoneTasks: a.hasMany("BlogPostMilestoneTask", "milestoneTaskId"),
   })
   .authorization((allow) => [allow.owner(), allow.publicApiKey()]),
 
@@ -248,13 +249,13 @@ const schema = a.schema({
     isPublic: a.boolean().default(false),
     images: a.string().array(),
     tags: a.string().array(),
-    relatedMilestones: a.hasMany("Milestone", "blogPostId"),
     likes: a.integer().default(0),
     isFlagged: a.boolean().default(false),
     flaggedReason: a.string(),
     shareUrl: a.string(),
     ogImage: a.string(),
     comments: a.hasMany("BlogComment", "blogPostId"),
+    blogPostMilestoneTasks: a.hasMany("BlogPostMilestoneTask", "blogPostId"),
   })
   .authorization((allow) => [
     allow.publicApiKey().to(["read"]),
@@ -282,6 +283,15 @@ const schema = a.schema({
     allow.owner(),
     allow.groups(["ADMIN"]),
   ]),
+
+  // Join Table for Many-to-Many BlogPost <-> MilestoneTask
+  BlogPostMilestoneTask: a.model({
+    id: a.id(),
+    blogPostId: a.id().required(),
+    blogPost: a.belongsTo("BlogPost", "blogPostId"),
+    milestoneTaskId: a.id().required(),
+    milestoneTask: a.belongsTo("MilestoneTask", "milestoneTaskId"),
+  }),
 
 });
 
