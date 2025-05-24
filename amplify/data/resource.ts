@@ -21,12 +21,12 @@ const schema = a.schema({
     dob: a.date(),
     role: a.enum(["PARENT", "CAREGIVER", "CLINICIAN", "ADMIN", "SME", "DOCTOR"]),
     kidProfiles: a.hasMany("KidProfile", "parentId"),
+    blogPosts: a.hasMany("BlogPost", "authorId"),
     teamMemberships: a.hasMany("TeamMember", "userId"),
     taskFeedbacks: a.hasMany("TaskFeedback", "userId"),
     teamAccessRequests: a.hasMany("TeamAccessRequest", "userId"),
     status: a.enum(["ACTIVE", "PENDING", "INACTIVE"]),
     admin: a.boolean().default(false),
-    blogPosts: a.hasMany("BlogPost", "authorId"),
   })
   .authorization((allow) => [allow.owner(), allow.publicApiKey()]),
 
