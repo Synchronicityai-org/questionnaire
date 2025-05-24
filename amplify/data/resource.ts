@@ -26,6 +26,7 @@ const schema = a.schema({
     teamAccessRequests: a.hasMany("TeamAccessRequest", "userId"),
     status: a.enum(["ACTIVE", "PENDING", "INACTIVE"]),
     admin: a.boolean().default(false),
+    blogPosts: a.hasMany("BlogPost", "authorId"),
   })
   .authorization((allow) => [allow.owner(), allow.publicApiKey()]),
 
