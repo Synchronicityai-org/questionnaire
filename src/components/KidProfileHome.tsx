@@ -4,7 +4,7 @@ import { getCurrentUser } from 'aws-amplify/auth';
 import type { Schema } from '../../amplify/data/resource';
 import './KidProfileHome.css';
 import { AssessmentHistory } from './AssessmentHistory';
-import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
+import { useNavigate, useParams, useSearchParams, Link } from 'react-router-dom';
 import { 
   CalendarIcon, 
   ChatBubbleBottomCenterTextIcon,
@@ -17,6 +17,7 @@ import {
   StarIcon
 } from '@heroicons/react/24/outline';
 import styled from 'styled-components';
+import { useBlog } from '../context/BlogContext';
 
 const client = generateClient<Schema>();
 
@@ -1016,6 +1017,9 @@ export function KidProfileHome() {
             View History
           </ActionButton>
         </div>
+        <ActionButton variant="primary" onClick={() => navigate('/blog/create')}>
+          Create Blog Post
+        </ActionButton>
       </Header>
 
       <DashboardGrid>
@@ -1066,39 +1070,40 @@ export function KidProfileHome() {
         <Sidebar>
           <Card>
             <CardHeader>
-              <h2>Support Team</h2>
-              <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
+              <h2 style={{ fontSize: '1.15rem' }}>Support Team</h2>
+              <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
                 <ActionButton 
                   onClick={handleManageTeam}
-                  style={{ padding: '0.75rem 1.25rem', fontSize: '1rem' }}
+                  style={{ padding: '0.5rem 1rem', fontSize: '0.95rem' }}
                 >
                   Manage Team
                 </ActionButton>
-                <UserGroupIcon style={{ color: '#60A5FA', width: 28, height: 28 }} />
+                <UserGroupIcon style={{ color: '#60A5FA', width: 22, height: 22 }} />
               </div>
             </CardHeader>
             {teamMembers.length === 0 ? (
               <div style={{ 
                 textAlign: 'center', 
-                padding: '3rem 2rem', 
+                padding: '2rem 1rem', 
                 color: '#64748B',
                 background: 'linear-gradient(135deg, #F8FAFC 0%, #F1F5F9 100%)',
-                borderRadius: '16px',
-                marginTop: '1rem'
+                borderRadius: '12px',
+                marginTop: '0.5rem',
+                fontSize: '0.95rem'
               }}>
                 <UserGroupIcon style={{ 
-                  width: 64, 
-                  height: 64, 
-                  marginBottom: '1.5rem', 
+                  width: 40, 
+                  height: 40, 
+                  marginBottom: '1rem', 
                   color: '#94A3B8' 
                 }} />
                 <p style={{ 
-                  fontSize: '1.125rem', 
+                  fontSize: '1rem', 
                   fontWeight: '500',
-                  marginBottom: '0.5rem'
+                  marginBottom: '0.25rem'
                 }}>Build Your Support Network</p>
                 <p style={{ 
-                  fontSize: '0.9375rem',
+                  fontSize: '0.85rem',
                   color: '#64748B',
                   maxWidth: '80%',
                   margin: '0 auto'
@@ -1106,19 +1111,19 @@ export function KidProfileHome() {
               </div>
             ) :
               teamMembers.map(member => (
-                <TeamMember key={member.id}>
+                <TeamMember key={member.id} style={{ fontSize: '0.95rem', padding: '0.75rem' }}>
                   <Avatar>{member.name.charAt(0)}</Avatar>
                   <div>
                     <h4 style={{ 
                       margin: 0, 
-                      fontSize: '1.125rem', 
+                      fontSize: '1rem', 
                       color: '#1E293B',
                       fontWeight: '600'
                     }}>{member.name}</h4>
                     <p style={{ 
-                      margin: '0.375rem 0 0', 
+                      margin: '0.25rem 0 0', 
                       color: '#64748B', 
-                      fontSize: '0.9375rem'
+                      fontSize: '0.85rem'
                     }}>
                       {member.role}
                     </p>
@@ -1126,6 +1131,42 @@ export function KidProfileHome() {
                 </TeamMember>
               ))
             }
+          </Card>
+
+          {/* Community Links Card */}
+          <Card>
+            <CardHeader>
+              <h2 style={{ fontSize: '1.15rem' }}>Community Links</h2>
+            </CardHeader>
+            <div style={{ padding: '0.5rem 1rem 1rem 1rem' }}>
+              {(() => {
+                const { posts } = useBlog();
+                const latest = posts
+                  .filter(p => p.status === 'PUBLISHED')
+                  .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+                  .slice(0, 3);
+                if (latest.length === 0) {
+                  return <p style={{ color: '#64748B', fontSize: '0.95rem' }}>No community posts yet.</p>;
+                }
+                return (
+                  <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
+                    {latest.map(post => (
+                      <li key={post.id} style={{ marginBottom: '0.75rem' }}>
+                        <Link to={`/blog/${post.id}`} style={{ textDecoration: 'none', color: '#2563EB', fontWeight: 600, fontSize: '1rem' }}>
+                          {post.title}
+                        </Link>
+                        <div style={{ color: '#64748B', fontSize: '0.85rem' }}>
+                          by {post.author?.username || 'Unknown'} &middot; {new Date(post.createdAt).toLocaleDateString()}
+                        </div>
+                      </li>
+                    ))}
+                  </ul>
+                );
+              })()}
+              <div style={{ marginTop: '0.5rem', textAlign: 'right' }}>
+                <Link to="/blog" style={{ color: '#10B981', fontWeight: 500, fontSize: '0.95rem' }}>View All</Link>
+              </div>
+            </div>
           </Card>
 
           <GameCard onClick={() => navigate('/games')}>

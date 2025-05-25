@@ -3,6 +3,7 @@ import { Users, ListChecks, MessageSquare, Star, ChevronDown, ChevronRight } fro
 import { generateClient } from 'aws-amplify/data';
 import type { Schema } from '../../../amplify/data/resource';
 import { useNavigate } from 'react-router-dom';
+import { Button } from '@mui/material';
 
 // Define allowed user roles as a TypeScript type
 const USER_ROLES = ["PARENT", "CAREGIVER", "CLINICIAN", "ADMIN", "SME", "DOCTOR"] as const;
@@ -504,6 +505,14 @@ const AdminDashboard: React.FC = () => {
           <div className="flex items-center justify-center h-full text-gray-400 text-xl">DLM Review module coming soon...</div>
         )}
       </main>
+      <Button
+        variant="contained"
+        color="primary"
+        style={{ margin: '16px 0' }}
+        onClick={() => navigate('/blog/create')}
+      >
+        Create Blog Post
+      </Button>
     </div>
   );
 };

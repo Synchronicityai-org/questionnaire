@@ -1,5 +1,9 @@
 import React, { createContext, useContext, useState, useCallback } from 'react';
-import { BlogPost, BlogPostInput, BlogCommentInput, BlogFilters } from '../types/blog';
+import { BlogPost, BlogPostInput, BlogCommentInput, BlogFilters, PostStatus } from '../types/blog';
+import { generateClient } from 'aws-amplify/data';
+import type { Schema } from '../../amplify/data/resource';
+import { getCurrentUser } from 'aws-amplify/auth';
+import { User } from '../types/auth';
 
 interface BlogContextType {
   posts: BlogPost[];
@@ -21,42 +25,115 @@ interface BlogContextType {
 const BlogContext = createContext<BlogContextType | undefined>(undefined);
 
 export const BlogProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [posts] = useState<BlogPost[]>([]);
+  const [posts, setPosts] = useState<BlogPost[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const createPost = useCallback(async (_post: BlogPostInput) => {
+  const fetchPosts = useCallback(async () => {
+    setLoading(true);
+    setError(null);
     try {
-      setLoading(true);
-      // TODO: Implement post creation with Amplify
+      const client = generateClient<Schema>();
+      const response = await client.models.BlogPost.list({});
+      const validPosts = (response.data || [])
+        .filter(p => p && typeof p.id === 'string' && p.id)
+        .map(p => ({
+          ...p,
+          id: String(p.id),
+          createdAt: p.createdAt ? String(p.createdAt) : '',
+          updatedAt: p.updatedAt ? String(p.updatedAt) : '',
+          status: (p.status || 'DRAFT') as PostStatus,
+          images: Array.isArray(p.images) ? p.images.filter((img): img is string => typeof img === 'string') : [],
+          tags: Array.isArray(p.tags) ? p.tags.filter((tag): tag is string => typeof tag === 'string') : [],
+          comments: Array.isArray(p.comments) ? p.comments : [],
+          likes: typeof p.likes === 'number' ? p.likes : 0,
+          isFlagged: typeof p.isFlagged === 'boolean' ? p.isFlagged : false,
+          flaggedReason: p.flaggedReason === null ? undefined : p.flaggedReason,
+          author: typeof p.author === 'function'
+            ? { id: p.authorId || '', username: p.authorName || 'Unknown', email: '', role: 'PARENT' as any }
+            : (p.author || { id: '', username: 'Unknown', email: '', role: 'PARENT' as any })
+        }));
+      setPosts(validPosts);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to create post');
+      setError(err instanceof Error ? err.message : 'Failed to fetch posts');
     } finally {
       setLoading(false);
     }
   }, []);
 
-  const updatePost = useCallback(async (_id: string, _post: Partial<BlogPostInput>) => {
+  // Helper to generate a slug from the title
+  function generateSlug(title: string) {
+    return title
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-+|-+$/g, '')
+      .substring(0, 60);
+  }
+
+  const createPost = useCallback(async (post: BlogPostInput) => {
     try {
       setLoading(true);
-      // TODO: Implement post update with Amplify
+      setError(null);
+      const currentUser = await getCurrentUser();
+      if (!currentUser?.userId) throw new Error('User not authenticated');
+      const slug = generateSlug(post.title);
+      const now = new Date().toISOString();
+      const client = generateClient<Schema>();
+      await client.models.BlogPost.create({
+        ...post,
+        slug,
+        authorId: currentUser.userId,
+        createdAt: now,
+        updatedAt: now,
+        status: post.status || 'DRAFT',
+        isPublic: true,
+        images: post.images ?? [],
+        tags: post.tags ?? [],
+        summary: post.content.slice(0, 120),
+        authorName: currentUser.username || 'Unknown',
+        authorAvatar: '',
+        likes: 0,
+        isFlagged: false,
+        flaggedReason: '',
+        shareUrl: '',
+        ogImage: '',
+      });
+      await fetchPosts();
+    } catch (err) {
+      console.error('Amplify create error:', err);
+      setError(err instanceof Error ? err.message : 'Failed to create post');
+    } finally {
+      setLoading(false);
+    }
+  }, [fetchPosts]);
+
+  const updatePost = useCallback(async (id: string, post: Partial<BlogPostInput>) => {
+    try {
+      setLoading(true);
+      setError(null);
+      const client = generateClient<Schema>();
+      await client.models.BlogPost.update({ id, ...post });
+      await fetchPosts();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to update post');
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [fetchPosts]);
 
-  const deletePost = useCallback(async (_id: string) => {
+  const deletePost = useCallback(async (id: string) => {
     try {
       setLoading(true);
-      // TODO: Implement post deletion with Amplify
+      setError(null);
+      const client = generateClient<Schema>();
+      await client.models.BlogPost.delete({ id });
+      await fetchPosts();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to delete post');
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [fetchPosts]);
 
   const flagPost = useCallback(async (_id: string, _reason: string) => {
     try {
@@ -124,16 +201,23 @@ export const BlogProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   }, []);
 
-  const filterPosts = useCallback(async (_filters: BlogFilters) => {
-    try {
-      setLoading(true);
-      // TODO: Implement post filtering with Amplify
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to filter posts');
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+  const filterPosts = useCallback(async (filters: BlogFilters) => {
+    await fetchPosts();
+    setPosts(prevPosts => {
+      let filtered = [...prevPosts];
+      if (filters.status) {
+        filtered = filtered.filter(post => post.status === filters.status);
+      }
+      if (filters.searchTerm) {
+        const term = filters.searchTerm.toLowerCase();
+        filtered = filtered.filter(post =>
+          post.title.toLowerCase().includes(term) ||
+          post.content.toLowerCase().includes(term)
+        );
+      }
+      return filtered;
+    });
+  }, [fetchPosts]);
 
   const uploadImage = useCallback(async (_file: File): Promise<string> => {
     try {
@@ -147,6 +231,10 @@ export const BlogProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setLoading(false);
     }
   }, []);
+
+  React.useEffect(() => {
+    fetchPosts();
+  }, [fetchPosts]);
 
   return (
     <BlogContext.Provider

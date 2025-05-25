@@ -237,9 +237,9 @@ const schema = a.schema({
   BlogPost: a.model({
     id: a.id(),
     title: a.string().required(),
-    slug: a.string().required(), // SEO-friendly unique slug
+    slug: a.string().required(),
     content: a.string().required(),
-    summary: a.string(), // Short summary for SEO/social
+    summary: a.string(),
     authorId: a.id().required(),
     author: a.belongsTo("User", "authorId"),
     authorName: a.string(),
@@ -260,7 +260,7 @@ const schema = a.schema({
   })
   .authorization((allow) => [
     allow.publicApiKey().to(["read"]),
-    allow.owner(),
+    allow.authenticated(),
     allow.groups(["ADMIN"]),
   ]),
 

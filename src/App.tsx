@@ -34,6 +34,7 @@ import AdminKidMilestones from './components/pages/AdminKidMilestones';
 import BlogList from './components/blog/BlogList';
 import CreateBlogPost from './components/blog/CreateBlogPost';
 import BlogPostView from './components/blog/BlogPostView';
+import { BlogProvider } from './context/BlogContext';
 import './App.css';
 
 
@@ -229,7 +230,9 @@ const MilestoneTaskListWrapper = () => {
 const App: React.FC = () => {
   return (
     <Router>
-      <AppContent />
+      <BlogProvider>
+        <AppContent />
+      </BlogProvider>
     </Router>
   );
 };
